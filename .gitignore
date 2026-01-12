@@ -1,0 +1,101 @@
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+# Visual Studio cache/options
+.vs/
+.vscode/
+
+# Visual Studio Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+
+# Rider
+.idea/
+*.sln.iml
+*.swp
+*.swo
+*~
+.DS_Store
+
+# User-specific files
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Test Results
+TestResults/
+*.trx
+*.coverage
+
+# NuGet Packages
+*.nupkg
+*.snupkg
+*.nuget.props
+*.nuget.targets
+
+# Database files
+*.mdf
+*.ldf
+*.ndf
+*.db
+*.db-shm
+*.db-wal
+
+# Local environment files
+.env
+.env.local
+
+# Build Folder
+dist/
+publish/
+PublishProfiles/
+
+# Entity Framework
+Migrations/
+*.edmx.sql
+
+# Application Insights
+ApplicationInsights.config
+
+# Publish Web Output
+_Publish/
+.PublishProfiles/
+*.azurePubxml
+
+# dotnet
+project.lock.json
+project.fragments.lock.json
+artifacts/
+.dotnet/
+
+# Tye
+.tye/
+
+# Local History for Visual Studio
+.localhistory/
+
+# BeatPulse health checks
+healthchecksdb
+
+# Backup Files
+*.bak
+*.tmp
