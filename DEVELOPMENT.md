@@ -8,8 +8,6 @@
 - **Git** (https://git-scm.com)
 - **GitHub Desktop** (opzionale, ma consigliato per Windows)
 
-> ⚠️ **Non è richiesto SQL Server**: l'app usa un database **SQLite locale criptato** gestito da Entity Framework Core.
-
 ### Verificare Installazione
 ```bash
 # Verificare .NET
