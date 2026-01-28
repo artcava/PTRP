@@ -20,7 +20,7 @@ Questo documento descrive lo **schema logico del database SQLite** utilizzato da
 ### Architettura Concettuale
 
 **Relazioni Fondamentali**:
-1. **Paziente ← 1:N → Progetto**: Un paziente può avere più progetti nel tempo (sequenziali o paralleli)
+1. **Paziente ← 1:N → Progetto**: Un paziente può avere più progetti sequenziali nel tempo
 2. **Progetto ← N:N → Operatore**: Un progetto può coinvolgere più operatori; un operatore può lavorare su più progetti
 3. **Progetto ← 1:N → Visita Programmata**: Un progetto ha fino a 4 visite canoniche (apertura, intermedia, finale, dimissioni)
 4. **Visita Programmata ← 1:N → Visita Effettiva**: Una visita programmata può avere più registrazioni (es. rinvii riprogrammati)
