@@ -29,7 +29,7 @@ L'obiettivo del modello dati è garantire **trasparenza**, **auditabilità** e *
 A livello concettuale il dominio è organizzato così:
 
 1. **Paziente ← 1:N → Progetto**  
-   Un paziente può avere più progetti nel tempo (sequenziali o paralleli). Ogni **progetto terapeutico (PTRP)** appartiene ad un solo paziente.
+   Un paziente può avere più progetti sequenziali nel tempo. Ogni **progetto terapeutico (PTRP)** appartiene ad un solo paziente.
 
 2. **Progetto ← N:N → Operatore**  
    Un progetto può coinvolgere **più operatori** (educatori, coordinatore, supervisore), e ogni operatore può lavorare su **più progetti**.  
