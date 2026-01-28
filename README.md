@@ -26,7 +26,7 @@ L'applicazione opera con **paradigma offline-first**: ogni nodo (Coordinatore e 
 ## 🛠️ Stack Tecnologico
 
 | Componente | Tecnologia | Versione | Motivazione |
-|-----------|-----------|----------|------------|
+|-----------|-----------|----------|------------|}
 | **Runtime** | .NET | 10 (LTS) | Supporto esteso, Self-Contained publishing con Velopack |
 | **UI Framework** | WinUI 3 | Latest | Desktop nativa Windows, moderno |
 | **Language** | C# | 13.0+ | Type inference avanzato, pattern matching |
@@ -95,7 +95,7 @@ PTRP/
 ├── docs/
 │   ├── ARCHITECTURE.md           # Pattern MVVM e offline-first
 │   ├── SETUP-GUIDE.md            # Setup Visual Studio
-│   ├── DATABASE.md               # Schema SQLite, crittografia
+│   ├── DATABASE.md               # Schema SQLite, crittografia, ER diagram
 │   ├── SYNC-PROTOCOL.md          # Protocollo sincronizzazione
 │   ├── SECURITY.md               # Crittografia, HMAC, key management
 │   ├── API.md                    # Services API
@@ -191,7 +191,7 @@ Visualizzazione UI con badge/colori differenti per auditabilità.
 
 - 📖 [Setup Guide](docs/SETUP-GUIDE.md) - Setup Visual Studio e primo avvio
 - 🏗️ [Architecture](docs/ARCHITECTURE.md) - Pattern MVVM, offline-first spiegato
-- 💾 [Database](docs/DATABASE.md) - Schema SQLite, crittografia AES
+- 💾 [Database](docs/DATABASE.md) - **Schema SQLite, crittografia AES, ER diagram, query comuni**
 - 🔄 [Sync Protocol](docs/SYNC-PROTOCOL.md) - Algoritmo sincronizzazione, conflict resolution
 - 🔐 [Security](docs/SECURITY.md) - Crittografia, HMAC, key management
 - 🌱 [Seeding](SEED.md) - Strategia data initialization, DbContextSeeder
