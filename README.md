@@ -2,7 +2,8 @@
 
 ![Status](https://img.shields.io/badge/status-active-brightgreen)
 ![.NET](https://img.shields.io/badge/.NET-10-blue)
-![Architecture](https://img.shields.io/badge/architecture-offline--first-orange)
+![UI Framework](https://img.shields.io/badge/UI-WPF-orange)
+![Architecture](https://img.shields.io/badge/architecture-offline--first-purple)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
 ## 📋 Descrizione Progetto
@@ -28,13 +29,13 @@ L'applicazione opera con **paradigma offline-first**: ogni nodo (Coordinatore e 
 | Componente | Tecnologia | Versione | Motivazione |
 |-----------|-----------|----------|-------------|
 | **Runtime** | .NET | 10 (LTS) | Supporto esteso, Self-Contained publishing con Velopack |
-| **UI Framework** | WinUI 3 | Latest | Desktop nativa Windows, moderno |
+| **UI Framework** | WPF | .NET 10 | Desktop nativa Windows, MVVM-native, XAML data binding |
 | **Language** | C# | 13.0+ | Type inference avanzato, pattern matching |
 | **Pattern Architecture** | MVVM + MVVM Toolkit | Microsoft | Separazione concerns, testabilità |
 | **Database Locale** | SQLite | Criptato | Assenza SQL Server, portabilità, crittografia nativa |
 | **ORM** | Entity Framework Core | 10+ | Migrazioni schema, LINQ queries |
 | **Distribuzione** | Velopack | Latest | Delta updates, zero-click deployment |
-| **UI Design** | MaterialDesign XAML | 4.0+ | Design system coerente |
+| **UI Design** | Material Design for WPF | Latest | Design system coerente e moderno |
 | **Testing** | xUnit + Moq | Latest | Framework robusto |
 | **Crittografia** | System.Security.Cryptography | Built-in | HMAC firma pacchetti, AES database |
 
@@ -56,7 +57,7 @@ PTRP/
 │   │   ├── PatientListViewModel.cs
 │   │   ├── ProjectDetailViewModel.cs
 │   │   └── SyncViewModel.cs      # Gestione sincronizzazione
-│   ├── PTRP.Views/               # Viste XAML - UI Pages
+│   ├── PTRP.Views/               # Viste XAML (UserControls)
 │   │   ├── PatientListView.xaml
 │   │   ├── ProjectDetailView.xaml
 │   │   └── SyncStatusView.xaml
@@ -81,7 +82,7 @@ PTRP/
 │   │   └── Security/
 │   │       ├── EncryptionService.cs         # AES database
 │   │       └── HmacSigningService.cs        # Firma pacchetti
-│   └── PTRP.App/                 # Applicazione principale WinUI 3
+│   └── PTRP.App/                 # Applicazione principale WPF
 │       ├── App.xaml / App.xaml.cs
 │       ├── MainWindow.xaml / MainWindow.xaml.cs
 │       └── Bootstrapper.cs       # DI configuration
@@ -242,5 +243,5 @@ Per domande, bug o feature requests:
 
 ---
 
-**Last Updated**: January 28, 2026
-**Architecture Version**: PTRP-Sync v1.0 (Offline-First)
+**Last Updated**: January 29, 2026
+**Architecture Version**: PTRP-Sync v1.0 (Offline-First) - WPF Desktop
