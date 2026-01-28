@@ -5,63 +5,62 @@
 MVVM (Model-View-ViewModel) è un pattern architetturale che separa la logica dell'applicazione dalla presentazione.
 
 ```
-┌─────────────────────────────────────────────────────────────┐
+┌────────────────────────────────────────────────────────────────┐
 │                      PTRP Application                        │
-├─────────────────────────────────────────────────────────────┤
+├────────────────────────────────────────────────────────────────┤
 │                                                              │
-│  ┌──────────────┐          ┌──────────────┐                │
-│  │     VIEW     │◄─────────►│  VIEWMODEL   │                │
+│  ┌────────────┐          ┌────────────┐                │
+│  │     VIEW     │◄────────┐ │  VIEWMODEL   │                │
 │  │   (XAML)     │ Binding   │  (Logic)     │                │
 │  │              │           │              │                │
-│  └──────────────┘           └──────────────┘                │
-│         ▲                           │                        │
-│         │                           │                        │
-│         └───────────────────────────┘                        │
+│  └────────────╘           └────────────└                │
+│         ↑                           │                        │
+│         └────────────────────────────────────────────────────────────────│
 │                 User Events                                  │
 │                                                              │
-│         ┌──────────────────────────────────────┐            │
+│         ┌────────────────────────────────┐            │
 │         │         MODEL (Entities)              │            │
 │         │  Patient, Project, Operator, etc.    │            │
-│         └──────────────────────────────────────┘            │
-│                       ▲                                       │
+│         └────────────────────────────────┘            │
+│                       ↑                                       │
 │                       │                                       │
-│                       │                                       │
-│         ┌──────────────────────────────────────┐            │
+│         ┌────────────────────────────────┐            │
 │         │      SERVICES (Business Logic)       │            │
 │         │  PatientService, ProjectService...  │            │
-│         └──────────────────────────────────────┘            │
-│                       ▲                                       │
+│         └────────────────────────────────┘            │
+│                       ↑                                       │
 │                       │                                       │
-│                       │                                       │
-│         ┌──────────────────────────────────────┐            │
-│         │    DATABASE (SQL Server Express)     │            │
-│         │     Persistence Layer (EF Core)      │            │
-│         └──────────────────────────────────────┘            │
+│         ┌────────────────────────────────┐            │
+│         │    DATABASE (SQLite + EF Core)      │            │
+│         │     Persistence Layer (Encrypted)      │            │
+│         └────────────────────────────────┘            │
 │                                                              │
-└─────────────────────────────────────────────────────────────┘
+└────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 📦 Layer Definitions
+## 📆 Layer Definitions
 
-### 1️⃣ VIEW (XAML)
+### 1️⃣ VIEW (XAML/UserControl)
 **Responsabilità**: Presentazione UI
 
 ```xaml
 <!-- File: Views/PatientListView.xaml -->
-<Page x:Class="PTRP.Views.PatientListView">
+<UserControl x:Class="PTRP.App.Views.PatientListView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <Grid>
         <!-- UI Controls -->
-        <DataGrid ItemsSource="{x:Bind ViewModel.Patients}" />
-        <Button Click="{x:Bind ViewModel.AddPatientCommand}" />
+        <DataGrid ItemsSource="{Binding Patients}" />
+        <Button Content="Add Patient" Command="{Binding AddPatientCommand}" />
     </Grid>
-</Page>
+</UserControl>
 ```
 
 **Caratteristiche**:
 - ✅ Solo elementi UI (Button, TextBox, DataGrid, etc)
-- ✅ Binding ai ViewModels
+- ✅ Binding ai ViewModels (WPF `{Binding}` syntax)
 - ✅ NO logica di business
 - ✅ NO accesso diretto al database
 - ✅ Reattiva agli eventi dell'utente
@@ -73,11 +72,19 @@ MVVM (Model-View-ViewModel) è un pattern architetturale che separa la logica de
 
 ```csharp
 // File: ViewModels/PatientListViewModel.cs
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+
 public class PatientListViewModel : ObservableObject
 {
     private readonly IPatientService _patientService;
     
-    public ObservableCollection<PatientModel> Patients { get; }
+    private ObservableCollection<PatientModel> _patients;
+    public ObservableCollection<PatientModel> Patients
+    {
+        get => _patients;
+        set => SetProperty(ref _patients, value);
+    }
     
     public RelayCommand AddPatientCommand { get; }
     public RelayCommand<PatientModel> DeletePatientCommand { get; }
@@ -105,7 +112,7 @@ public class PatientListViewModel : ObservableObject
 - ✅ Implementa comandi (ICommand, RelayCommand)
 - ✅ Mantiene lo stato della UI
 - ✅ Coordina le chiamate ai Services
-- ✅ Implementa INotifyPropertyChanged (ObservableObject)
+- ✅ Implementa INotifyPropertyChanged (ObservableObject da MVVM Toolkit)
 
 ---
 
@@ -188,22 +195,22 @@ public class PatientService : IPatientService
 
 ---
 
-### 5️⃣ DATABASE (Entity Framework Core)
-**Responsabilità**: Persistenza dati
+### 5️⃣ DATABASE (Entity Framework Core + SQLite)
+**Responsabilità**: Persistenza dati locale criptata
 
 ```csharp
-// File: Services/Database/ApplicationDbContext.cs
-public class ApplicationDbContext : DbContext
+// File: Services/Database/PtrpDbContext.cs
+public class PtrpDbContext : DbContext
 {
     public DbSet<PatientEntity> Patients { get; set; }
     public DbSet<ProjectEntity> Projects { get; set; }
     public DbSet<OperatorEntity> Operators { get; set; }
     
-    protected override void OnConfiguring(
-        DbContextOptionsBuilder optionsBuilder)
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
-        var connectionString = "Server=.;Database=PTRP;Trusted_Connection=true;";
-        optionsBuilder.UseSqlServer(connectionString);
+        // SQLite con crittografia locale (vedi docs/SECURITY.md)
+        var connectionString = "Data Source=ptrp.db;";
+        optionsBuilder.UseSqlite(connectionString);
     }
     
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -229,9 +236,9 @@ public interface IPatientRepository
 
 public class PatientRepository : IPatientRepository
 {
-    private readonly ApplicationDbContext _context;
+    private readonly PtrpDbContext _context;
     
-    public PatientRepository(ApplicationDbContext context)
+    public PatientRepository(PtrpDbContext context)
     {
         _context = context;
     }
@@ -253,35 +260,36 @@ public class PatientRepository : IPatientRepository
 
 **Caratteristiche**:
 - ✅ Entity Framework Core per ORM
-- ✅ DbContext per gestione connessione
+- ✅ SQLite per database locale
 - ✅ Repository pattern per data access
 - ✅ Migrations per versionamento schema
+- ✅ Crittografia AES per dati sensibili
 
 ---
 
 ## 🔄 Data Flow Esempio: Aggiungere un Paziente
 
 ```
-1. USER ─────────────────────────────────────────────────────────────
+1. USER ──────────────────────────────────────────────────
    Clicca bottone "Add Patient"
-   ▼
+   ↓
 
-2. VIEW (XAML) ──────────────────────────────────────────────────────
-   <Button Click="{x:Bind ViewModel.AddPatientCommand}" />
-   ▼
+2. VIEW (XAML) ─────────────────────────────────────────────────
+   <Button Command="{Binding AddPatientCommand}" />
+   ↓
 
-3. VIEWMODEL (C#) ──────────────────────────────────────────────────
+3. VIEWMODEL (C#) ──────────────────────────────────────────────
    public RelayCommand AddPatientCommand { get; }
    
    private async void AddPatient()
    {
        var patient = new PatientModel { ... };
-       await _patientService.AddAsync(patient);  ◄───┐
-       Patients.Add(patient);                       │
-   }                                                │
-   ▼                                                │
-                                                    │
-4. SERVICE (C#) ────────────────────────────────────┘─────────────────
+       await _patientService.AddAsync(patient);  ◄─────────────────────────────────────────────
+       Patients.Add(patient);
+   }
+   ↓
+
+4. SERVICE (C#) ─────────────────────────────────────────────────
    public async Task AddAsync(PatientModel patient)
    {
        // Validazioni
@@ -291,33 +299,33 @@ public class PatientRepository : IPatientRepository
        patient.CreatedAt = DateTime.Now;
        
        // Chiama repository
-       await _repository.AddAsync(patient);  ◄───┐
-   }                                            │
-   ▼                                            │
-                                               │
-5. REPOSITORY (C#) ────────────────────────────┘──────────────────────
+       await _repository.AddAsync(patient);  ◄─────────────────────────────────────────────
+   }
+   ↓
+
+5. REPOSITORY (C#) ─────────────────────────────────────────────────
    public async Task AddAsync(PatientModel patient)
    {
        var entity = MapToEntity(patient);
        _context.Patients.Add(entity);
-       await _context.SaveChangesAsync();  ◄───┐
-   }                                          │
-   ▼                                          │
-                                             │
-6. DATABASE (SQL Server) ─────────────────────┘─────────────────────
+       await _context.SaveChangesAsync();  ◄─────────────────────────────────────────────
+   }
+   ↓
+
+6. DATABASE (SQLite) ─────────────────────────────────────────────────
    INSERT INTO Patients (FirstName, LastName, ...)
    VALUES ('Marco', 'Cavallo', ...)
-   ▼
+   ↓
 
-7. VIEWMODEL ──────────────────────────────────────────────────────
+7. VIEWMODEL ──────────────────────────────────────────────────
    Aggiorna ObservableCollection<PatientModel>
-   ▼
+   ↓
 
-8. VIEW (XAML) ────────────────────────────────────────────────────
+8. VIEW (XAML) ─────────────────────────────────────────────────
    DataGrid si aggiorna automaticamente (binding)
-   ▼
+   ↓
 
-9. USER ───────────────────────────────────────────────────────────
+9. USER ─────────────────────────────────────────────────
    Vede il nuovo paziente nella lista!
 ```
 
@@ -333,6 +341,7 @@ public class PatientRepository : IPatientRepository
 | **Maintainability** | Codice organizzato e facile da modificare |
 | **Binding** | XAML binding automatico tra View e ViewModel |
 | **Loose Coupling** | Componenti indipendenti grazie alle interfacce |
+| **No Code-Behind** | Logica nel ViewModel, non nel .xaml.cs |
 
 ---
 
@@ -345,38 +354,52 @@ Quando implementi una nuova feature:
 - [ ] Creo Repository (data access)
 - [ ] Creo Service (business logic)
 - [ ] Creo ViewModel (logica presentazione)
-- [ ] Creo View (XAML UI)
+- [ ] Creo View/UserControl (XAML UI)
 - [ ] Aggiungo unit tests per Service/ViewModel
-- [ ] Testo manualmente nella app
+- [ ] Testo manualmente nell'app
 
 ---
 
 ## 🔧 Dependency Injection
 
-Tutti i servizi sono registrati nel DI container:
+Tutti i servizi sono registrati nel DI container in App.xaml.cs:
 
 ```csharp
 // File: App.xaml.cs
 public partial class App : Application
 {
-    private readonly IServiceProvider _serviceProvider;
+    private IServiceProvider _serviceProvider;
     
-    public App()
+    private void ConfigureServices()
     {
-        InitializeComponent();
-        
         var services = new ServiceCollection();
+        
+        // Register Database
+        services.AddScoped<PtrpDbContext>();
+        
+        // Register Repositories
+        services.AddScoped<IPatientRepository, PatientRepository>();
+        services.AddScoped<IProjectRepository, ProjectRepository>();
         
         // Register Services
         services.AddScoped<IPatientService, PatientService>();
-        services.AddScoped<IPatientRepository, PatientRepository>();
-        services.AddScoped<ApplicationDbContext>();
+        services.AddScoped<IProjectService, ProjectService>();
         
         // Register ViewModels
         services.AddScoped<PatientListViewModel>();
+        services.AddScoped<ProjectDetailViewModel>();
         
         _serviceProvider = services.BuildServiceProvider();
     }
+}
+```
+
+Injected nel ViewModel costruttore:
+
+```csharp
+public PatientListViewModel(IPatientService patientService)
+{
+    _patientService = patientService; // Automatic injection
 }
 ```
 
@@ -386,8 +409,9 @@ public partial class App : Application
 
 - [Microsoft MVVM Toolkit](https://learn.microsoft.com/en-us/windows/communitytoolkit/mvvm/)
 - [Entity Framework Core](https://learn.microsoft.com/en-us/ef/core/)
-- [WinUI 3 Data Binding](https://learn.microsoft.com/en-us/windows/apps/winui/winui3/)
+- [WPF Data Binding](https://learn.microsoft.com/en-us/dotnet/desktop/wpf/data/)
 - [Repository Pattern](https://martinfowler.com/eaaCatalog/repository.html)
+- [Material Design for WPF](https://github.com/MaterialDesignInXAML/MaterialDesignInXamlToolkit)
 
 ---
 
