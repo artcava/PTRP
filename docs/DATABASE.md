@@ -31,13 +31,13 @@ Questo documento descrive lo **schema logico del database SQLite** utilizzato da
 ```
 ┌────────────────────────────────────────────────────────────────────────────────┐
 │                          PTRP DATABASE MODEL                                   │
-│                   (Offline-First, Many-to-Many Operators)                      │
+│                   (Offline-First)                                              │
 └────────────────────────────────────────────────────────────────────────────────┘
 
-┌──────────────────────────┐
-│     OPERATORS            │  (Educatori, Coordinatori, Supervisori)
-│  (id, first_name, ...) │
-└──────────────┬───────────┘
+┌────────────────────────────────┐
+│     OPERATORS                  │  (Educatori, Coordinatori, Supervisori)
+│  (id, first_name, last_name)   │
+└──────────────┬─────────────────┘
                │
                │ N:N (relazione molti a molti)
                │ Ogni operatore può lavorare su più progetti
@@ -51,23 +51,28 @@ Questo documento descrive lo **schema logico del database SQLite** utilizzato da
         │ - role_in_project      │  (Primary | Assistant | Supervisor)
         │ - assignment_date      │
         │ - end_date             │
-        └──────┬──────────────────┘
+        └──────┬─────────────────┘
                │
                │ 1:N (un progetto, molti operatori)
                │
-        ┌──────▼────────────────────────────────────────────┐
-        │    THERAPEUTIC_PROJECTS (PTRP)                     │
-        │  - id                                              │
-        │  - patient_id (FK 1:N) ◄─────┐                     │
+        ┌──────▼─────────────────────────┐
+        │    PROJECTS (PTRP)             │
+        │  - id                          │
+        │  - patient_id (FK 1:N)         │◄──────────────────┐
         │  - assignment_date             │ 1:N (un paziente  │
         │  - status (Active/Closed...)   │ molti progetti)   │
         │  - objectives, details         │                   │
-        └──────┬──────────────────────────┼──────────────────┘
-               │ 1:N (un progetto, 4 visite canoniche)       ┌──────────────────────┐
-               │                                              │  PATIENTS            │
-               ▼                                              │ (id, first_name,..│
-        ┌────────────────────┐                               │  status, notes)      │
-        │ SCHEDULED_VISITS   │                               └──────────────────────┘
+        └──────┬─────────────────────────┘                   │
+               │ 1:N (un progetto, 4 visite canoniche)      ┌──────────────────────┐
+               │                                            │    PATIENTS          │
+               │                                            │  - id                │
+               │                                            │  - first_name        │
+               │                                            │  - status            │
+               │                                            │  - notes,            │
+               │                                            │  - notes,            │
+               ▼                                            └──────────────────────┘
+        ┌────────────────────┐
+        │ SCHEDULED_VISITS   │
         │ - id               │
         │ - project_id (FK)  │
         │ - phase            │  (InitialOpening,
