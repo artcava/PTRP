@@ -18,7 +18,7 @@ L'applicazione opera con **paradigma offline-first**: ogni nodo (Coordinatore e 
 - 🔒 **Offline-First**: Funzionamento garantito senza connessione internet
 - 🔐 **Crittografia End-to-End**: Database locale SQLite criptato + HMAC sui pacchetti di scambio
 - ♻️ **Sincronizzazione Asincrona**: Risoluzione automatica dei conflitti tramite Master-Slave logic
-- 📍 **Tracciabilità Clinica**: Discriminazione fonte dato (EducatorImport vs CoordinatorDirect)
+- 📋 **Tracciabilità Clinica**: Discriminazione fonte dato (EducatorImport vs CoordinatorDirect)
 - 🎯 **Conflict Resolution**: Timestamp-based con gerarchia di permessi (Coordinatore = Master per anagrafiche)
 
 ---
@@ -63,6 +63,7 @@ PTRP/
 │   ├── PTRP.Services/            # Servizi di business logic
 │   │   ├── Database/
 │   │   │   ├── PtrpDbContext.cs  # SQLite DbContext con crittografia
+│   │   │   ├── DbContextSeeder.cs # Data seeding da registro pazienti
 │   │   │   └── Migrations/       # Schema migrations
 │   │   ├── Repositories/         # Data Access Pattern
 │   │   │   ├── PatientRepository.cs
@@ -106,6 +107,7 @@ PTRP/
 │       ├── security.yml          # Security checks (chiavi, credenziali)
 │       └── deploy-velopack.yml   # Compile + Velopack release
 ├── DEVELOPMENT.md                # Guida sviluppatori
+├── SEED.md                       # Data seeding strategy
 ├── PROGETTO_PTRP_SYNC.md         # Analisi tecnica architettura
 └── [config files]
 ```
@@ -118,6 +120,8 @@ PTRP/
 - Visual Studio 2022 (Community, Pro, Enterprise)
 - **.NET 10 SDK** (https://dotnet.microsoft.com/download/dotnet/10.0)
 - **Git** (https://git-scm.com)
+
+> ⚠️ **SQL Server non è necessario**: il sistema usa SQLite locale criptato
 
 ### Setup Locale
 
@@ -136,10 +140,16 @@ PTRP/
    - Visual Studio lo farà automaticamente
    - Oppure: `dotnet restore`
 
-4. **Database Setup** (Automatic Migrations)
-   - Alla prima esecuzione, EF Core crea SQLite locale
-   - Dati iniziali caricati da seed
+4. **Database Setup** (Automatic Migrations + Data Seeding)
+   - Alla prima esecuzione, EF Core crea SQLite locale criptato
+   - **Dati iniziali estratti automaticamente** dal registro pazienti Excel (DbContextSeeder):
+     - ~100 pazienti con stati (Active/Suspended/Deceased)
+     - ~50+ operatori/educatori assegnati
+     - ~400+ visite programmate (4 fasi: apertura, verifica intermedia, verifica finale, dimissioni)
+     - ~280 visite registrate effettive (70% completion rate)
+   - Seeding idempotente: riavvii successivi non duplicano
    - Crittografia AES applicata automaticamente
+   - 👉 **Leggi [SEED.md](SEED.md)** per dettagli completi sulla strategia di data initialization
 
 5. **Build & Run**
    ```bash
@@ -184,6 +194,7 @@ Visualizzazione UI con badge/colori differenti per auditabilità.
 - 💾 [Database](docs/DATABASE.md) - Schema SQLite, crittografia AES
 - 🔄 [Sync Protocol](docs/SYNC-PROTOCOL.md) - Algoritmo sincronizzazione, conflict resolution
 - 🔐 [Security](docs/SECURITY.md) - Crittografia, HMAC, key management
+- 🌱 [Seeding](SEED.md) - Strategia data initialization, DbContextSeeder
 - 🛠️ [Development](DEVELOPMENT.md) - Guida per sviluppatori, Git workflow
 - 🚀 [Deployment](docs/DEPLOYMENT.md) - Velopack, zero-click updates
 - 📄 [Technical Analysis](PROGETTO_PTRP_SYNC.md) - Analisi tecnica completa (architetto)
