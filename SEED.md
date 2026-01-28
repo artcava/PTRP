@@ -1,1 +1,489 @@
-# SEED.md - Strategia Seeding Database PTRP\n\n## 📋 Panoramica\n\nQuesto documento descrive la strategia di **data seeding** per inizializzare il database SQLite locale di PTRP con dati reali provenienti dal registro dei pazienti.\n\nI dati seed vengono applicati automaticamente alla **prima esecuzione dell'applicazione**, durante le migrazioni EF Core, garantendo che ogni installazione disponga di un dataset coerente e completo.\n\n---\n\n## 🎯 Obiettivi del Seeding\n\n1. **Inizializzazione automatica** - Nessuna configurazione manuale del database necessaria\n2. **Ambiente di sviluppo realistico** - Dati reali per testing e debug\n3. **Audit trail completo** - Tracciabilità di pazienti, progetti, visite e operatori\n4. **Coerenza offline-first** - Dati pronti per la sincronizzazione distribuita\n5. **Reproducibilità** - Ambienti identici su tutte le istanze\n\n---\n\n## 📊 Struttura Dati da Seedare\n\n### 1. **Operators (Educatori e Coordinatori)**\n\nEstratti da: colonna \"OPERATORE DI RIFERIMENTO\" del foglio dati.\n\n**Model**:\n```csharp\npublic record OperatorSeed\n{\n    public Guid Id { get; init; } = Guid.NewGuid();\n    public string FirstName { get; init; } = string.Empty;  // es. \"Daniele\"\n    public string LastName { get; init; } = string.Empty;   // es. \"Corrias\"\n    public OperatorRole Role { get; init; } = OperatorRole.Educator;\n    public bool IsActive { get; init; } = true;\n    public DateTime CreatedAt { get; init; } = DateTime.UtcNow;\n}\n\npublic enum OperatorRole\n{\n    Educator,      // Educatore di base\n    Coordinator,   // Coordinatore (Master per anagrafiche e stati PTRP)\n    Supervisor     // Supervisore (optional, per future estensioni)\n}\n```\n\n**Lista Operatori da seedare (dal foglio)**:\n- Daniele Corrias\n- Andrea Lapaglia\n- Debora Foschiano / Perziano\n- Fabrizio Lapaglia / Possidente\n- Michele Fatiga\n- ... (50+ operatori totali)\n\n### 2. **Patients (Pazienti)**\n\nEstratti da: prima colonna del foglio dati (nomi pazienti).\n\n**Model**:\n```csharp\npublic record PatientSeed\n{\n    public Guid Id { get; init; } = Guid.NewGuid();\n    public string FirstName { get; init; } = string.Empty;    // es. \"Daniele\"\n    public string LastName { get; init; } = string.Empty;     // es. \"Calamita\"\n    public DateTime DateOfBirth { get; init; }                 // Optional\n    public string FiscalCode { get; init; } = string.Empty;   // Optional\n    public PatientStatus Status { get; init; } = PatientStatus.Active;\n    public string ClinicalNotes { get; init; } = string.Empty;\n    public DateTime CreatedAt { get; init; } = DateTime.UtcNow;\n}\n\npublic enum PatientStatus\n{\n    Active,        // Paziente attivo in programma\n    Suspended,     // Sospeso (status \"sospeso\" dal foglio)\n    Discharged,    // Dimesso\n    Deceased       // Deceduto (status \"Deceduto\" dal foglio)\n}\n```\n\n**Campione Pazienti**:\n- Daniele Calamita (Active)\n- Andrea Distante (Active)\n- Debora Coraglia (Suspended)\n- Fabrizio Betti (Deceased)\n- Rosaria Biagione (Active)\n- ~100 pazienti totali\n\n### 3. **Therapeutic Projects**\n\nConiugazione: Paziente + Operatore + Cronologia visite.\n\n**Model**:\n```csharp\npublic record TherapeuticProjectSeed\n{\n    public Guid Id { get; init; } = Guid.NewGuid();\n    public Guid PatientId { get; init; }\n    public Guid OperatorId { get; init; }  // Operatore di riferimento\n    public DateTime AssignmentDate { get; init; }  // \"DATA ASSEGNAZIONE\" dal foglio\n    public ProjectStatus Status { get; init; } = ProjectStatus.Active;\n    public string PtDetails { get; init; } = string.Empty;  // Dettagli PTRP\n    public DateTime CreatedAt { get; init; } = DateTime.UtcNow;\n}\n\npublic enum ProjectStatus\n{\n    Active,      // Progetto in corso\n    Suspended,   // Sospeso\n    Closed,      // Chiuso/concluso\n    Archived     // Archiviato\n}\n```\n\n### 4. **Scheduled Visits**\n\nRicavate da: colonne \"DATA ... PROGRAMMATA\" del foglio.\n\n**Model**:\n```csharp\npublic record ScheduledVisitSeed\n{\n    public Guid Id { get; init; } = Guid.NewGuid();\n    public Guid ProjectId { get; init; }\n    public VisitPhase Phase { get; init; }\n    public DateTime ScheduledDate { get; init; }  // Data programmata dal foglio\n    public VisitStatus Status { get; init; } = VisitStatus.Scheduled;\n    public DateTime CreatedAt { get; init; } = DateTime.UtcNow;\n}\n\npublic enum VisitPhase\n{\n    InitialOpening,        // PRIMA APERTURA\n    IntermediateVerification,  // VERIFICA INTERMEDIA (6 mesi dopo)\n    FinalVerification,         // VERIFICA FINALE (6 mesi dopo)\n    Discharge                  // DIMISSIONI (1 mese dopo)\n}\n\npublic enum VisitStatus\n{\n    Scheduled,      // Programmata\n    Completed,      // Completata\n    Suspended,      // Sospesa\n    Missed          // Mancata\n}\n```\n\n### 5. **Actual Visits**\n\nRicavate da: colonne \"DATA ... EFFETTIVA\" del foglio. **Discriminano la sorgente** tramite `VisitSource`:\n\n**Model**:\n```csharp\npublic enum VisitSource\n{\n    EducatorImport,    // Importato da app Educatore\n    CoordinatorDirect  // Registrato direttamente dal Coordinatore\n}\n\npublic record ActualVisitSeed\n{\n    public Guid Id { get; init; } = Guid.NewGuid();\n    public Guid ScheduledVisitId { get; init; }\n    public DateTime ActualDate { get; init; }    // Data effettiva dal foglio\n    public VisitSource Source { get; init; } = VisitSource.CoordinatorDirect;  // Nel seed: CoordinatorDirect\n    public string RegisteredBy { get; init; } = string.Empty;  // Nome operatore\n    public DateTime RegistrationDate { get; init; }             // Timestamp registrazione\n    public string ClinicalNotes { get; init; } = string.Empty;\n    public DateTime CreatedAt { get; init; } = DateTime.UtcNow;\n}\n```\n\n---\n\n## 🔧 Implementazione: Classe DbContextSeeder\n\n**File**: `src/PTRP.Services/Database/DbContextSeeder.cs`\n\n```csharp\nusing PTRP.Models;\nusing Microsoft.EntityFrameworkCore;\nusing System;\nusing System.Collections.Generic;\nusing System.Linq;\nusing System.Threading.Tasks;\n\nnamespace PTRP.Services.Database\n{\n    /// <summary>\n    /// Seeder per popolare il database SQLite con dati iniziali da registro pazienti.\n    /// Eseguito automaticamente da EF Core Migrations al primo avvio.\n    /// </summary>\n    public static class DbContextSeeder\n    {\n        /// <summary>\n        /// Seed dati iniziali nel DbContext.\n        /// Idempotente: esecuzioni multiple non duplicano i dati.\n        /// </summary>\n        public static async Task SeedAsync(PtrpDbContext context)\n        {\n            // Verificare se il database è già stato seedato\n            if (await context.Patients.AnyAsync())\n            {\n                return;  // Saltare il seeding se dati già presenti\n            }\n\n            // 1. Seed Operatori\n            var operators = GetOperatorSeeds();\n            await context.Operators.AddRangeAsync(operators);\n            await context.SaveChangesAsync();\n\n            // 2. Seed Pazienti\n            var patients = GetPatientSeeds();\n            await context.Patients.AddRangeAsync(patients);\n            await context.SaveChangesAsync();\n\n            // 3. Seed Progetti Terapeutici\n            var projects = GetTherapeuticProjectSeeds(patients, operators);\n            await context.TherapeuticProjects.AddRangeAsync(projects);\n            await context.SaveChangesAsync();\n\n            // 4. Seed Visite Programmate\n            var scheduledVisits = GetScheduledVisitSeeds(projects);\n            await context.ScheduledVisits.AddRangeAsync(scheduledVisits);\n            await context.SaveChangesAsync();\n\n            // 5. Seed Visite Registrate (con VisitSource)\n            var actualVisits = GetActualVisitSeeds(scheduledVisits, operators);\n            await context.ActualVisits.AddRangeAsync(actualVisits);\n            await context.SaveChangesAsync();\n        }\n\n        private static List<Operator> GetOperatorSeeds()\n        {\n            var now = DateTime.UtcNow;\n            return new()\n            {\n                new() { Id = Guid.NewGuid(), FirstName = \"Daniele\", LastName = \"Corrias\", Role = OperatorRole.Educator, IsActive = true, CreatedAt = now },\n                new() { Id = Guid.NewGuid(), FirstName = \"Andrea\", LastName = \"Lapaglia\", Role = OperatorRole.Educator, IsActive = true, CreatedAt = now },\n                new() { Id = Guid.NewGuid(), FirstName = \"Debora\", LastName = \"Foschiano\", Role = OperatorRole.Educator, IsActive = true, CreatedAt = now },\n                new() { Id = Guid.NewGuid(), FirstName = \"Fabrizio\", LastName = \"Lapaglia\", Role = OperatorRole.Educator, IsActive = true, CreatedAt = now },\n                new() { Id = Guid.NewGuid(), FirstName = \"Michele\", LastName = \"Fatiga\", Role = OperatorRole.Educator, IsActive = true, CreatedAt = now },\n                new() { Id = Guid.NewGuid(), FirstName = \"Coordinatore\", LastName = \"PTRP\", Role = OperatorRole.Coordinator, IsActive = true, CreatedAt = now },\n                // Aggiungi altri operatori dal foglio Nominativi...\n            };\n        }\n\n        private static List<Patient> GetPatientSeeds()\n        {\n            var now = DateTime.UtcNow;\n            return new()\n            {\n                new() { Id = Guid.NewGuid(), FirstName = \"Daniele\", LastName = \"Calamita\", Status = PatientStatus.Active, CreatedAt = now },\n                new() { Id = Guid.NewGuid(), FirstName = \"Andrea\", LastName = \"Distante\", Status = PatientStatus.Active, CreatedAt = now },\n                new() { Id = Guid.NewGuid(), FirstName = \"Debora\", LastName = \"Coraglia\", Status = PatientStatus.Suspended, CreatedAt = now },\n                new() { Id = Guid.NewGuid(), FirstName = \"Fabrizio\", LastName = \"Betti\", Status = PatientStatus.Deceased, CreatedAt = now },\n                new() { Id = Guid.NewGuid(), FirstName = \"Rosaria\", LastName = \"Biagione\", Status = PatientStatus.Active, CreatedAt = now },\n                // Aggiungi altri pazienti dal foglio (~100 totali)...\n            };\n        }\n\n        private static List<TherapeuticProject> GetTherapeuticProjectSeeds(\n            List<Patient> patients,\n            List<Operator> operators)\n        {\n            var projects = new List<TherapeuticProject>();\n            var random = new Random(42);  // Seed fisso per reproducibilità\n            var now = DateTime.UtcNow;\n\n            foreach (var patient in patients)\n            {\n                var operator_ = operators[random.Next(operators.Count)];\n                var assignmentDate = new DateTime(2025, random.Next(1, 13), random.Next(1, 29));\n\n                projects.Add(new()\n                {\n                    Id = Guid.NewGuid(),\n                    PatientId = patient.Id,\n                    OperatorId = operator_.Id,\n                    AssignmentDate = assignmentDate,\n                    Status = patient.Status == PatientStatus.Active ? ProjectStatus.Active : ProjectStatus.Closed,\n                    PtDetails = $\"PTRP per {patient.FirstName} {patient.LastName} - Assegnato a {operator_.FirstName}\",\n                    CreatedAt = now\n                });\n            }\n\n            return projects;\n        }\n\n        private static List<ScheduledVisit> GetScheduledVisitSeeds(List<TherapeuticProject> projects)\n        {\n            var visits = new List<ScheduledVisit>();\n            var now = DateTime.UtcNow;\n\n            foreach (var project in projects)\n            {\n                // Visita 1: Prima Apertura (1 mese dopo assegnazione)\n                visits.Add(new()\n                {\n                    Id = Guid.NewGuid(),\n                    ProjectId = project.Id,\n                    Phase = VisitPhase.InitialOpening,\n                    ScheduledDate = project.AssignmentDate.AddMonths(1),\n                    Status = VisitStatus.Scheduled,\n                    CreatedAt = now\n                });\n\n                // Visita 2: Verifica Intermedia (6 mesi dopo prima apertura)\n                visits.Add(new()\n                {\n                    Id = Guid.NewGuid(),\n                    ProjectId = project.Id,\n                    Phase = VisitPhase.IntermediateVerification,\n                    ScheduledDate = project.AssignmentDate.AddMonths(7),\n                    Status = VisitStatus.Scheduled,\n                    CreatedAt = now\n                });\n\n                // Visita 3: Verifica Finale (6 mesi dopo verifica intermedia)\n                visits.Add(new()\n                {\n                    Id = Guid.NewGuid(),\n                    ProjectId = project.Id,\n                    Phase = VisitPhase.FinalVerification,\n                    ScheduledDate = project.AssignmentDate.AddMonths(13),\n                    Status = VisitStatus.Scheduled,\n                    CreatedAt = now\n                });\n\n                // Visita 4: Dimissioni\n                visits.Add(new()\n                {\n                    Id = Guid.NewGuid(),\n                    ProjectId = project.Id,\n                    Phase = VisitPhase.Discharge,\n                    ScheduledDate = project.AssignmentDate.AddMonths(14),\n                    Status = VisitStatus.Scheduled,\n                    CreatedAt = now\n                });\n            }\n\n            return visits;\n        }\n\n        private static List<ActualVisit> GetActualVisitSeeds(\n            List<ScheduledVisit> scheduledVisits,\n            List<Operator> operators)\n        {\n            var actualVisits = new List<ActualVisit>();\n            var random = new Random(42);\n            var now = DateTime.UtcNow;\n            var coordinator = operators.FirstOrDefault(o => o.Role == OperatorRole.Coordinator) ?? operators[0];\n\n            foreach (var scheduled in scheduledVisits.Where(v => v.ScheduledDate < now))\n            {\n                // 70% probabilità che la visita sia stata effettuata\n                if (random.Next(100) < 70)\n                {\n                    actualVisits.Add(new()\n                    {\n                        Id = Guid.NewGuid(),\n                        ScheduledVisitId = scheduled.Id,\n                        ActualDate = scheduled.ScheduledDate.AddDays(random.Next(-3, 5)),\n                        Source = VisitSource.CoordinatorDirect,\n                        RegisteredBy = $\"{coordinator.FirstName} {coordinator.LastName}\",\n                        RegistrationDate = now.AddDays(-random.Next(1, 30)),\n                        ClinicalNotes = $\"Visita {scheduled.Phase} effettuata. Paziente in buone condizioni.\",\n                        CreatedAt = now\n                    });\n                }\n            }\n\n            return actualVisits;\n        }\n    }\n}\n```\n\n---\n\n## 🔌 Integrazione con EF Core Migrations\n\n**File**: `src/PTRP.Services/Database/PtrpDbContext.cs`\n\nAggiungi metodo per inizializzazione:\n\n```csharp\npublic async Task InitializeAsync()\n{\n    // Applica migrazioni\n    await Database.MigrateAsync();\n    \n    // Seed dati iniziali\n    await DbContextSeeder.SeedAsync(this);\n}\n```\n\n**File**: `src/PTRP.App/Bootstrapper.cs`\n\n```csharp\nprivate async void ConfigureServices()\n{\n    // ... DI setup ...\n    \n    var dbContext = _serviceProvider.GetRequiredService<PtrpDbContext>();\n    await dbContext.InitializeAsync();  // Esegui migrazioni + seed\n}\n```\n\n---\n\n## 📊 Statistiche Dataset Seed\n\n**Dal foglio Nominativi PTRP**:\n- **Pazienti**: ~100\n- **Operatori**: ~50+\n- **Progetti Terapeutici**: ~100 (1 per paziente in media)\n- **Visite Programmate**: ~400 (4 fasi per progetto)\n- **Visite Registrate**: ~280 (70% completamento)\n- **Timespan**: 2025-2028 (planimetria triennale)\n\n---\n\n## 🎯 Mapping Foglio Excel → Modello C#\n\n| Colonna Excel | Modello C# | Descrizione |\n|---|---|---|\n| Paziente (colonna A) | `Patient.FirstName` + `LastName` | Es: \"CALAMITA Daniele\" |\n| OPERATORE DI RIFERIMENTO | `Operator` reference | Associazione paziente-operatore |\n| DATA ASSEGNAZIONE | `TherapeuticProject.AssignmentDate` | Data inizio progetto |\n| PRIMA APERTURA (programmata) | `ScheduledVisit` (Phase=InitialOpening) | Visita fase 1 |\n| PRIMA APERTURA (effettiva) | `ActualVisit` (VisitSource=CoordinatorDirect) | Registrazione effettuata |\n| Stato speciale | `Patient.Status` enum | \"sospeso\"→Suspended; \"Deceduto\"→Deceased |\n\n---\n\n## ⚙️ Idempotenza e Reseeding\n\n### Protezione da Re-seeding\n\n```csharp\nif (await context.Patients.AnyAsync())\n{\n    return;  // Saltare se già seedato\n}\n```\n\nGarantisce:\n- ✅ Prima esecuzione: popola il DB\n- ✅ Esecuzioni successive: non duplicano\n- ✅ Migrazioni rimangono idempotenti\n\n### Reseeding Manuale (Testing)\n\n```bash\n# Eliminare il database e ricrearlo\nrm database.db\ndotnet run --project src/PTRP.App\n```\n\nOppure tramite EF CLI:\n\n```bash\ndotnet ef database drop --context PtrpDbContext\ndotnet ef database update --context PtrpDbContext\n```\n\n---\n\n## 🔐 Sicurezza nel Seeding\n\n⚠️ **Important**: Il seeding produce dati di test, MAI dati di produzione reali:\n\n- ✅ Dati estratti con **pseudonimizzazione** per GDPR\n- ❌ MAI includere dati sensibili (SSN, indirizzi completi)\n- ✅ Per produzione: seed solo strutture base (operatori, categorie)\n- ✅ Nessun dato reale del paziente nel seed\n\n---\n\n## 📚 Riferimenti\n\n- [EF Core Seeding Docs](https://learn.microsoft.com/en-us/ef/core/modeling/data-seeding)\n- [PROGETTO_PTRP_SYNC.md](PROGETTO_PTRP_SYNC.md) - Modello dati architetturale\n- [DATABASE.md](docs/DATABASE.md) - Schema SQLite e migrazioni\n\n---\n\n**Last Updated**: January 28, 2026  \n**Status**: Implementation Ready\n", "sha": "", "_tool_input_summary": "Creating SEED.md with complete seeding strategy including DbContextSeeder class, data model mapping from Excel registry, idempotence implementation, and integration with EF Core migrations", "_requires_user_approval": true}
+# SEED.md - Strategia Seeding Database PTRP
+
+## 📋 Panoramica
+
+Questo documento descrive la strategia di **data seeding** per inizializzare il database SQLite locale di PTRP con dati realistici derivati dal registro pazienti/operatori usato dal Coordinatore.
+
+I dati seed vengono applicati automaticamente alla **prima esecuzione dell'applicazione**, durante le migrazioni EF Core, così che ogni installazione parta da uno stato coerente e completo.
+
+---
+
+## 🎯 Obiettivi del Seeding
+
+1. **Inizializzazione automatica** – evitare configurazioni manuali del DB.
+2. **Ambiente di sviluppo realistico** – dataset vicino a quello reale per test e debug.
+3. **Audit trail completo** – tracciare pazienti, progetti, visite e operatori.
+4. **Allineamento con l’architettura offline-first** – dati pronti per la sincronizzazione.
+5. **Idempotenza** – lo stesso seed può essere eseguito più volte senza duplicare i dati.
+
+---
+
+## 📊 Struttura dei Dati Seed
+
+In termini concettuali, il seeding popola cinque insiemi principali:
+
+1. **Operatori** (educatori, coordinatori, eventuali supervisori)
+2. **Pazienti**
+3. **Progetti terapeutici (PTRP)** associati a paziente + operatore
+4. **Visite programmate** (prima apertura, verifica intermedia, verifica finale, dimissioni)
+5. **Visite effettive** (registrazioni reali, con `VisitSource`)
+
+Le definizioni di dominio reali sono in `PTRP.Models`; in questo documento usiamo versioni semplificate per chiarire la struttura.
+
+### 1. Operators (Educatori e Coordinatori)
+
+Origine: colonna **“OPERATORE DI RIFERIMENTO”** del foglio Excel.
+
+Esempio di modello concettuale:
+
+```csharp
+public enum OperatorRole
+{
+    Educator,      // Educatore di base
+    Coordinator,   // Coordinatore (master per anagrafiche e stati PTRP)
+    Supervisor
+}
+
+public record OperatorSeed
+{
+    public Guid Id { get; init; } = Guid.NewGuid();
+    public string FirstName { get; init; } = string.Empty;   // es. "Daniele"
+    public string LastName { get; init; } = string.Empty;    // es. "Corrias"
+    public OperatorRole Role { get; init; } = OperatorRole.Educator;
+    public bool IsActive { get; init; } = true;
+    public DateTime CreatedAt { get; init; } = DateTime.UtcNow;
+}
+```
+
+Esempi di operatori (estratti dal foglio):
+- Daniele Corrias
+- Andrea Lapaglia
+- Debora Foschiano / Perziano
+- Fabrizio Lapaglia / Possidente
+- Michele Fatiga
+- … (in totale ~50 operatori)
+
+### 2. Patients (Pazienti)
+
+Origine: colonna con i nominativi dei pazienti.
+
+```csharp
+public enum PatientStatus
+{
+    Active,        // Paziente attivo in programma
+    Suspended,     // "sospeso" nel foglio
+    Discharged,    // Dimesso
+    Deceased       // "Deceduto" nel foglio
+}
+
+public record PatientSeed
+{
+    public Guid Id { get; init; } = Guid.NewGuid();
+    public string FirstName { get; init; } = string.Empty;    // es. "Daniele"
+    public string LastName { get; init; } = string.Empty;     // es. "Calamita"
+    public PatientStatus Status { get; init; } = PatientStatus.Active;
+    public string ClinicalNotes { get; init; } = string.Empty;
+    public DateTime CreatedAt { get; init; } = DateTime.UtcNow;
+}
+```
+
+Esempi (dal registro):
+- Daniele Calamita – Active
+- Andrea Distante – Active
+- Debora Coraglia – Suspended
+- Fabrizio Betti – Deceased
+- Rosaria Biagione – Active
+- … (~100 pazienti totali)
+
+### 3. Therapeutic Projects (PTRP)
+
+Per ogni paziente si genera almeno un progetto terapeutico, legato a un operatore di riferimento e a una data di assegnazione.
+
+```csharp
+public enum ProjectStatus
+{
+    Active,
+    Suspended,
+    Closed,
+    Archived
+}
+
+public record TherapeuticProjectSeed
+{
+    public Guid Id { get; init; } = Guid.NewGuid();
+    public Guid PatientId { get; init; }
+    public Guid OperatorId { get; init; }          // Operatore di riferimento
+    public DateTime AssignmentDate { get; init; }  // "DATA ASSEGNAZIONE" dal foglio
+    public ProjectStatus Status { get; init; } = ProjectStatus.Active;
+    public string PtDetails { get; init; } = string.Empty;
+    public DateTime CreatedAt { get; init; } = DateTime.UtcNow;
+}
+```
+
+### 4. Scheduled Visits (Visite Programmate)
+
+Origine: colonne del foglio con le date **programmate** per:
+- Prima apertura
+- Verifica intermedia
+- Verifica finale
+- Dimissioni
+
+```csharp
+public enum VisitPhase
+{
+    InitialOpening,          // PRIMA APERTURA
+    IntermediateVerification, // VERIFICA INTERMEDIA
+    FinalVerification,        // VERIFICA FINALE
+    Discharge                 // DIMISSIONI
+}
+
+public enum VisitStatus
+{
+    Scheduled,
+    Completed,
+    Suspended,
+    Missed
+}
+
+public record ScheduledVisitSeed
+{
+    public Guid Id { get; init; } = Guid.NewGuid();
+    public Guid ProjectId { get; init; }
+    public VisitPhase Phase { get; init; }
+    public DateTime ScheduledDate { get; init; }
+    public VisitStatus Status { get; init; } = VisitStatus.Scheduled;
+    public DateTime CreatedAt { get; init; } = DateTime.UtcNow;
+}
+```
+
+### 5. Actual Visits (Visite Effettive)
+
+Origine: colonne **“DATA … EFFETTIVA”**. Qui è importante la distinzione di origine (`VisitSource`) già definita in PROGETTO_PTRP_SYNC.md.
+
+```csharp
+public enum VisitSource
+{
+    EducatorImport,    // Dato importato dall’app Educatore
+    CoordinatorDirect  // Inserimento diretto dal Coordinatore
+}
+
+public record ActualVisitSeed
+{
+    public Guid Id { get; init; } = Guid.NewGuid();
+    public Guid ScheduledVisitId { get; init; }
+    public DateTime ActualDate { get; init; }
+    public VisitSource Source { get; init; } = VisitSource.CoordinatorDirect;
+    public string RegisteredBy { get; init; } = string.Empty;
+    public DateTime RegistrationDate { get; init; }
+    public string ClinicalNotes { get; init; } = string.Empty;
+    public DateTime CreatedAt { get; init; } = DateTime.UtcNow;
+}
+```
+
+Nel seed iniziale si possono marcare tutte le visite effettive come `CoordinatorDirect`, lasciando alla sincronizzazione con le app Educatore l’introduzione di `EducatorImport`.
+
+---
+
+## 🛠️ Implementazione: DbContextSeeder (bozza)
+
+**File suggerito**: `src/PTRP.Services/Database/DbContextSeeder.cs`
+
+```csharp
+using Microsoft.EntityFrameworkCore;
+using PTRP.Models;
+
+namespace PTRP.Services.Database;
+
+/// <summary>
+/// Seeder per popolare il database SQLite con dati iniziali
+/// derivati dal registro pazienti/operatori.
+/// </summary>
+public static class DbContextSeeder
+{
+    /// <summary>
+    /// Seed dei dati iniziali.
+    /// Idempotente: se esistono già pazienti, non fa nulla.
+    /// </summary>
+    public static async Task SeedAsync(PtrpDbContext context)
+    {
+        if (await context.Patients.AnyAsync())
+            return;
+
+        // 1. Operatori
+        var operators = GetOperatorSeeds();
+        await context.Operators.AddRangeAsync(operators);
+        await context.SaveChangesAsync();
+
+        // 2. Pazienti
+        var patients = GetPatientSeeds();
+        await context.Patients.AddRangeAsync(patients);
+        await context.SaveChangesAsync();
+
+        // 3. Progetti terapeutici
+        var projects = GetTherapeuticProjectSeeds(patients, operators);
+        await context.TherapeuticProjects.AddRangeAsync(projects);
+        await context.SaveChangesAsync();
+
+        // 4. Visite programmate
+        var scheduledVisits = GetScheduledVisitSeeds(projects);
+        await context.ScheduledVisits.AddRangeAsync(scheduledVisits);
+        await context.SaveChangesAsync();
+
+        // 5. Visite effettive
+        var actualVisits = GetActualVisitSeeds(scheduledVisits, operators);
+        await context.ActualVisits.AddRangeAsync(actualVisits);
+        await context.SaveChangesAsync();
+    }
+
+    // --- Metodi helper (da riempire con mapping reale da Excel) ---
+
+    private static List<Operator> GetOperatorSeeds()
+    {
+        var now = DateTime.UtcNow;
+
+        return new List<Operator>
+        {
+            new() { Id = Guid.NewGuid(), FirstName = "Daniele", LastName = "Corrias",  Role = OperatorRole.Educator,    IsActive = true, CreatedAt = now },
+            new() { Id = Guid.NewGuid(), FirstName = "Andrea",  LastName = "Lapaglia", Role = OperatorRole.Educator,    IsActive = true, CreatedAt = now },
+            new() { Id = Guid.NewGuid(), FirstName = "Debora",  LastName = "Foschiano",Role = OperatorRole.Educator,    IsActive = true, CreatedAt = now },
+            new() { Id = Guid.NewGuid(), FirstName = "Michele", LastName = "Fatiga",   Role = OperatorRole.Educator,    IsActive = true, CreatedAt = now },
+            new() { Id = Guid.NewGuid(), FirstName = "PTRP",    LastName = "Coordinator", Role = OperatorRole.Coordinator, IsActive = true, CreatedAt = now },
+            // … completare con gli altri operatori del foglio
+        };
+    }
+
+    private static List<Patient> GetPatientSeeds()
+    {
+        var now = DateTime.UtcNow;
+
+        return new List<Patient>
+        {
+            new() { Id = Guid.NewGuid(), FirstName = "Daniele", LastName = "Calamita", Status = PatientStatus.Active,    CreatedAt = now },
+            new() { Id = Guid.NewGuid(), FirstName = "Andrea",  LastName = "Distante", Status = PatientStatus.Active,    CreatedAt = now },
+            new() { Id = Guid.NewGuid(), FirstName = "Debora",  LastName = "Coraglia", Status = PatientStatus.Suspended, CreatedAt = now },
+            new() { Id = Guid.NewGuid(), FirstName = "Fabrizio",LastName = "Betti",    Status = PatientStatus.Deceased,  CreatedAt = now },
+            new() { Id = Guid.NewGuid(), FirstName = "Rosaria", LastName = "Biagione", Status = PatientStatus.Active,    CreatedAt = now },
+            // … completare con gli altri pazienti
+        };
+    }
+
+    private static List<TherapeuticProject> GetTherapeuticProjectSeeds(
+        List<Patient> patients,
+        List<Operator> operators)
+    {
+        var projects = new List<TherapeuticProject>();
+        var rng = new Random(42);
+        var now = DateTime.UtcNow;
+
+        foreach (var patient in patients)
+        {
+            var op = operators[rng.Next(operators.Count)];
+            var assignmentDate = new DateTime(2025, rng.Next(1, 13), rng.Next(1, 28));
+
+            projects.Add(new TherapeuticProject
+            {
+                Id = Guid.NewGuid(),
+                PatientId = patient.Id,
+                OperatorId = op.Id,
+                AssignmentDate = assignmentDate,
+                Status = patient.Status == PatientStatus.Active
+                    ? ProjectStatus.Active
+                    : ProjectStatus.Closed,
+                PtDetails = $"PTRP per {patient.FirstName} {patient.LastName} – {op.FirstName} {op.LastName}",
+                CreatedAt = now
+            });
+        }
+
+        return projects;
+    }
+
+    private static List<ScheduledVisit> GetScheduledVisitSeeds(List<TherapeuticProject> projects)
+    {
+        var visits = new List<ScheduledVisit>();
+        var now = DateTime.UtcNow;
+
+        foreach (var project in projects)
+        {
+            // Prima apertura: ~1 mese dopo assegnazione
+            visits.Add(new ScheduledVisit
+            {
+                Id = Guid.NewGuid(),
+                ProjectId = project.Id,
+                Phase = VisitPhase.InitialOpening,
+                ScheduledDate = project.AssignmentDate.AddMonths(1),
+                Status = VisitStatus.Scheduled,
+                CreatedAt = now
+            });
+
+            // Verifica intermedia: +6 mesi
+            visits.Add(new ScheduledVisit
+            {
+                Id = Guid.NewGuid(),
+                ProjectId = project.Id,
+                Phase = VisitPhase.IntermediateVerification,
+                ScheduledDate = project.AssignmentDate.AddMonths(7),
+                Status = VisitStatus.Scheduled,
+                CreatedAt = now
+            });
+
+            // Verifica finale: +12 mesi (rispetto alla prima apertura)
+            visits.Add(new ScheduledVisit
+            {
+                Id = Guid.NewGuid(),
+                ProjectId = project.Id,
+                Phase = VisitPhase.FinalVerification,
+                ScheduledDate = project.AssignmentDate.AddMonths(13),
+                Status = VisitStatus.Scheduled,
+                CreatedAt = now
+            });
+
+            // Dimissioni: +13 mesi
+            visits.Add(new ScheduledVisit
+            {
+                Id = Guid.NewGuid(),
+                ProjectId = project.Id,
+                Phase = VisitPhase.Discharge,
+                ScheduledDate = project.AssignmentDate.AddMonths(14),
+                Status = VisitStatus.Scheduled,
+                CreatedAt = now
+            });
+        }
+
+        return visits;
+    }
+
+    private static List<ActualVisit> GetActualVisitSeeds(
+        List<ScheduledVisit> scheduledVisits,
+        List<Operator> operators)
+    {
+        var result = new List<ActualVisit>();
+        var rng = new Random(42);
+        var now = DateTime.UtcNow;
+        var coordinator = operators.FirstOrDefault(o => o.Role == OperatorRole.Coordinator)
+                          ?? operators.First();
+
+        foreach (var scheduled in scheduledVisits.Where(v => v.ScheduledDate < now))
+        {
+            // 70% di probabilità che la visita sia stata effettivamente svolta
+            if (rng.Next(100) >= 70)
+                continue;
+
+            result.Add(new ActualVisit
+            {
+                Id = Guid.NewGuid(),
+                ScheduledVisitId = scheduled.Id,
+                Source = VisitSource.CoordinatorDirect,
+                RegisteredBy = $"{coordinator.FirstName} {coordinator.LastName}",
+                RegistrationDate = now.AddDays(-rng.Next(1, 30)),
+                ClinicalNotes = $"Visita {scheduled.Phase} effettuata.",
+                // In un seed realistico si può introdurre un piccolo jitter
+                // rispetto alla data programmata
+                // (qui omesso per semplicità)
+            });
+        }
+
+        return result;
+    }
+}
+```
+
+> Nota: il codice sopra è una **bozza concettuale**: va adattato alle firme reali delle entità (`Patient`, `Operator`, `TherapeuticProject`, ecc.) e ai namespace effettivi del progetto.
+
+---
+
+## 🔌 Integrazione con EF Core
+
+### In `PtrpDbContext`
+
+```csharp
+public async Task InitializeAsync()
+{
+    await Database.MigrateAsync();
+    await DbContextSeeder.SeedAsync(this);
+}
+```
+
+### In Bootstrapper / Startup dell’app
+
+```csharp
+var dbContext = serviceProvider.GetRequiredService<PtrpDbContext>();
+await dbContext.InitializeAsync();
+```
+
+Così, alla prima esecuzione, il database viene creato/migrato e popolato con i dati iniziali.
+
+---
+
+## 📊 Ordine di Grandezza del Dataset Seed
+
+Stimato dal foglio "Nominativi PTRP – Progetto Terapeutico Riabilitativo Personalizzato.xlsx":[file:1]
+
+- ~100 pazienti
+- ~50+ operatori
+- ~100 progetti terapeutici (in media 1 per paziente)
+- ~400 visite programmate (4 fasi per progetto)
+- ~280 visite effettive (circa 70% di completamento simulato)
+- Orizzonte temporale: circa 2025–2028
+
+Questi valori servono a dare un’idea del carico dati in sviluppo e test.
+
+---
+
+## 📌 Mapping Excel → Modello Dati (linee guida)
+
+| Colonna Excel                         | Campo modello                     | Note                                                               |
+|--------------------------------------|-----------------------------------|--------------------------------------------------------------------|
+| Nome paziente                        | `Patient.FirstName`/`LastName`    | Parse da stringa completa (es. "CALAMITA Daniele").              |
+| OPERATORE DI RIFERIMENTO             | `Operator` associato al progetto  | Match su nome/cognome.                                            |
+| DATA ASSEGNAZIONE                    | `TherapeuticProject.AssignmentDate` | Data inizio progetto.                                         |
+| DATA PRIMA APERTURA (programmata)    | `ScheduledVisit` (InitialOpening) | Se assente → non creare visita.                                   |
+| DATA PRIMA APERTURA (effettiva)      | `ActualVisit` collegata           | Se "sospeso"/vuoto → nessuna visita effettiva.                    |
+| VERIFICA INTERMEDIA / FINALE …       | Ulteriori `ScheduledVisit`/`ActualVisit` | Con `VisitPhase` adeguato.                             |
+| stato ("sospeso", "Deceduto", …)   | `Patient.Status`                  | Mapping su enum `PatientStatus`.                                  |
+
+Le funzioni di parsing vere e proprie (per esempio per date compresse tipo `21012025`) vanno implementate in un modulo separato, in modo testabile.
+
+---
+
+## ⚙️ Idempotenza e Reseeding
+
+La prima riga del `SeedAsync`:
+
+```csharp
+if (await context.Patients.AnyAsync())
+    return;
+```
+
+rende il seeding **sicuro** rispetto a più esecuzioni:
+
+- Prima esecuzione → popola il database.
+- Esecuzioni successive → non fanno nulla.
+
+Per rifare completamente il seed in sviluppo:
+
+```bash
+# Esempio generico (da adattare al percorso reale)
+rm database.db
+
+dotnet ef database update --project src/PTRP.Services
+```
+
+---
+
+## 🔐 Considerazioni di Sicurezza
+
+- I dati di seed devono essere **pseudo-anonimizzati** se derivati da casi reali.
+- Mai includere nel seed dati sensibili non necessari (es. codice fiscale completo, indirizzo, recapiti).
+- In produzione è consigliabile limitare il seeding a:
+  - operatori,
+  - strutture statiche,
+  - eventuali tabelle di configurazione,
+  lasciando i dati clinici ai soli flussi operativi.
+
+---
+
+## 📚 Riferimenti
+
+- Documentazione EF Core data seeding: <https://learn.microsoft.com/en-us/ef/core/modeling/data-seeding>
+- `PROGETTO_PTRP_SYNC.md` – modello dati e architettura offline-first
+- `DATABASE.md` – schema logico del database SQLite
