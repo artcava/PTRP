@@ -119,8 +119,6 @@ PTRP/
 - **.NET 10 SDK** (https://dotnet.microsoft.com/download/dotnet/10.0)
 - **Git** (https://git-scm.com)
 
-> ⚠️ **SQL Server non è necessario**: il sistema usa SQLite locale criptato
-
 ### Setup Locale
 
 1. **Clone repository**
