@@ -7,18 +7,18 @@ Questa guida ti accompagna nella creazione del **progetto iniziale** in Visual S
 ## 1️⃣ Creazione Solution in Visual Studio
 
 1. Apri **Visual Studio 2022**
-2. Vai su **Create a new project**
+2. Vai su **Crea un nuovo progetto** (Create a new project)
 3. Cerca: **"Blank App, Packaged (WinUI 3 in Desktop)"**
-   - Se non la trovi, installa il workload: **"Desktop development with C++"** e **".NET Desktop Development"** + componenti WinUI 3
-4. Seleziona il template e clicca **Next**
+   - Se non la trovi, installa il workload: **"Sviluppo desktop con C++"** e **"Sviluppo desktop .NET"** + componenti WinUI 3
+4. Seleziona il template e clicca **Avanti** (Next)
 
 ### Parametri progetto
 - **Project name**: `PTRP.App`
 - **Solution name**: `PTRP`
-- **Location**: cartella `src` del repository clonato (`...epos	runkbvepos	runkbv...` → per noi: `PTRP\src`)
-- **Place solution and project in the same directory**: **DISABILITATO** (NO spunta)
+- **Location**: cartella `src` del repository clonato (`PTRP\src`)
+- **Place solution and project in the same directory**: **DISABILITATO** (nessuna spunta)
 
-Clicca **Create**.
+Clicca **Crea**.
 
 Alla fine avrai:
 
@@ -40,26 +40,26 @@ Nella Solution **PTRP** aggiungerai i progetti logici:
 
 ### 2.1. Aggiungi `PTRP.Models`
 
-1. Right click sulla Solution → **Add → New Project...**
-2. Scegli template: **Class Library (.NET)**
+1. Right click sulla Solution → **Aggiungi → Nuovo progetto...**
+2. Scegli template: **Libreria di classi (.NET)** / **Class Library (.NET)**
 3. Nome progetto: `PTRP.Models`
-4. Target Framework: **.NET 8.0**
+4. Target Framework: **.NET 8.0** (o quello usato dal repo)
 
 ### 2.2. Aggiungi `PTRP.ViewModels`
 
-1. Add → New Project → **Class Library (.NET)**
+1. Aggiungi → Nuovo progetto → **Libreria di classi (.NET)**
 2. Nome: `PTRP.ViewModels`
 3. Target: .NET 8.0
 
 ### 2.3. Aggiungi `PTRP.Services`
 
-1. Add → New Project → **Class Library (.NET)**
+1. Aggiungi → Nuovo progetto → **Libreria di classi (.NET)**
 2. Nome: `PTRP.Services`
 3. Target: .NET 8.0
 
 ### 2.4. (Facoltativo per ora) `PTRP.Tests`
 
-1. Add → New Project → **xUnit Test Project (.NET)**
+1. Aggiungi → Nuovo progetto → **Progetto di test xUnit (.NET)**
 2. Nome: `PTRP.Tests`
 3. Target: .NET 8.0
 
@@ -84,7 +84,7 @@ Se Visual Studio ha creato `PTRP.Tests` sotto `src/`, puoi:
 - Chiudere Visual Studio
 - Spostare la cartella `PTRP.Tests` manualmente in `tests/`
 - Aprire nuovamente la solution
-- Rimuovere e riaggiungere il progetto alla solution (Add → Existing Project)
+- Rimuovere e riaggiungere il progetto alla solution (**Add → Existing Project**) in `tests/PTRP.Tests/PTRP.Tests.csproj`
 
 ---
 
@@ -94,28 +94,42 @@ Se Visual Studio ha creato `PTRP.Tests` sotto `src/`, puoi:
 
 Per il progetto **PTRP.ViewModels**:
 
-1. Right click su `PTRP.ViewModels` → **Manage NuGet Packages...**
-2. Tab **Browse**, cerca: `CommunityToolkit.Mvvm`
+1. Right click su `PTRP.ViewModels` → **Gestisci pacchetti NuGet...**
+2. Tab **Sfoglia** (Browse), cerca: `CommunityToolkit.Mvvm`
 3. Installa il pacchetto **CommunityToolkit.Mvvm** (Microsoft)
 
-### 4.2. Entity Framework Core + SQL Server
+### 4.2. Entity Framework Core + SQLite
 
-Per il progetto **PTRP.Services**:
+Per il progetto **PTRP.Services** (e dove risiederà il `DbContext`):
 
-1. Manage NuGet Packages...
-2. Installa:
+1. Right click su `PTRP.Services` → **Gestisci pacchetti NuGet...**
+2. Installa i seguenti pacchetti:
    - `Microsoft.EntityFrameworkCore`
-   - `Microsoft.EntityFrameworkCore.SqlServer`
+   - `Microsoft.EntityFrameworkCore.Sqlite`
    - `Microsoft.EntityFrameworkCore.Tools`
 
-### 4.3. Material Design (UI)
+> 🔎 **Nota**: PTRP utilizza **SQLite** come database locale **criptato**, non SQL Server. Questo significa:
+> - nessun requisito di installare un'istanza di SQL Server o SQL Server Express;
+> - il file di database sarà un singolo `.db` (o `.sqlite`) locale;
+> - la connection string sarà del tipo `Data Source=ptrp.db;` (eventualmente con parametri di crittografia aggiunti) e non avrà server/istanza.
 
-Per WinUI 3 non possiamo usare direttamente **MaterialDesignInXamlToolkit** (pensato per WPF).
+In una fase successiva, al `DbContext` (es. `PtrpDbContext`) assocerai la configurazione:
+
+```csharp
+options.UseSqlite("Data Source=ptrp.db");
+```
+
+Tenendo conto delle estensioni necessarie per la crittografia (vedi `docs/SECURITY.md`).
+
+### 4.3. UI / Design System
+
+Per WinUI 3 non è possibile usare direttamente **MaterialDesignInXamlToolkit** (pensato per WPF).
 Per ottenere un look & feel professionale in WinUI 3 useremo:
 - Stili WinUI 3
-- Possibile integrazione futura di librerie UI di terze parti (se necessario)
+- Eventuali risorse XAML condivise nel progetto `PTRP.App`
+- In futuro, eventuali librerie UI di terze parti compatibili con WinUI 3.
 
-Per ora ci concentriamo su una base "clean" usando WinUI 3 vanilla e DataGrid.
+Per ora ci concentriamo su una base "pulita" usando WinUI 3 vanilla.
 
 ---
 
@@ -132,9 +146,9 @@ Imposta le dipendenze tra progetti in modo da rispettare il layering:
   - `PTRP.ViewModels`
   - `PTRP.Models`
 
-### Come aggiungere una reference:
+### Come aggiungere una reference
 
-1. Right click su `PTRP.ViewModels` → **Add → Project Reference...**
+1. Right click su `PTRP.ViewModels` → **Aggiungi → Riferimento a progetto...**
 2. Seleziona `PTRP.Models` e `PTRP.Services`
 
 Ripeti per `PTRP.App` e `PTRP.Services`.
@@ -143,10 +157,10 @@ Ripeti per `PTRP.App` e `PTRP.Services`.
 
 ## 6️⃣ Prima Build e Run
 
-1. Imposta `PTRP.App` come **Startup Project**
-   - Right click → **Set as Startup Project**
-2. Seleziona configurazione `Debug` e `x64`
-3. Premi **F5** (Debug) o **Ctrl+F5** (Run without debug)
+1. Imposta `PTRP.App` come **Progetto di avvio**
+   - Right click → **Imposta come progetto di avvio**
+2. Seleziona configurazione `Debug` e piattaforma `x64`
+3. Premi **F5** (Debug) o **Ctrl+F5** (Avvia senza debug)
 
 Dovresti vedere la window base di WinUI 3.
 
