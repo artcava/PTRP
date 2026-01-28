@@ -17,32 +17,83 @@ Questo documento descrive lo **schema logico del database SQLite** utilizzato da
 
 ## 🗂️ Struttura Entità Principale (ER Diagram)
 
+### Architettura Concettuale
+
+**Relazioni Fondamentali**:
+1. **Paziente ← 1:N → Progetto**: Un paziente può avere più progetti nel tempo (sequenziali o paralleli)
+2. **Progetto ← N:N → Operatore**: Un progetto può coinvolgere più operatori; un operatore può lavorare su più progetti
+3. **Progetto ← 1:N → Visita Programmata**: Un progetto ha fino a 4 visite canoniche (apertura, intermedia, finale, dimissioni)
+4. **Visita Programmata ← 1:N → Visita Effettiva**: Una visita programmata può avere più registrazioni (es. rinvii riprogrammati)
+5. **Visita Effettiva ← N:1 → Operatore**: Traccia quale operatore ha registrato la visita
+
+### ER Diagram ASCII
+
 ```
-┌──────────────────────────────────────────────────────────────────────┐
-│                         PTRP DATABASE MODEL                          │
-└──────────────────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────────────────────┐
+│                          PTRP DATABASE MODEL                                   │
+│                   (Offline-First, Many-to-Many Operators)                      │
+└────────────────────────────────────────────────────────────────────────────────┘
 
-                              ┌─────────────┐
-                              │  OPERATORS  │ (Educatori, Coordinatori)
-                              └─────┬───────┘
-                                    │
-                   ┌────────────────┼────────────────┐
-                   │                │                │
-                   ▼                ▼                ▼
-          ┌──────────────┐  ┌──────────────┐  ┌──────────────┐
-          │   PATIENTS   │  │ THERAPEUTIC  │  │   VISITS     │
-          │              │  │  PROJECTS    │  │  (Programmed)│
-          └──────┬───────┘  └──────┬───────┘  └──────┬───────┘
-                 │                 │                 │
-                 └─────────┬────────┴─────────┬───────┘
-                           │                  │
-                           ▼                  ▼
-                     ┌──────────────────┐  ┌──────────────┐
-                     │  THERAPEUTIC     │  │  ACTUAL      │
-                     │  PROJECT_VISITS  │  │  VISITS      │
-                     │  (Join/Phases)   │  │  (Recorded)  │
-                     └──────────────────┘  └──────────────┘
+┌──────────────────────────┐
+│     OPERATORS            │  (Educatori, Coordinatori, Supervisori)
+│  (id, first_name, ...) │
+└──────────────┬───────────┘
+               │
+               │ N:N (relazione molti a molti)
+               │ Ogni operatore può lavorare su più progetti
+               │ Ogni progetto può coinvolgere più operatori
+               │
+        ┌──────▼─────────────────┐
+        │  PROJECT_OPERATORS     │  (Tabella di giunzione)
+        │  (Join Table)          │
+        │ - project_id (FK)      │
+        │ - operator_id (FK)     │
+        │ - role_in_project      │  (Primary | Assistant | Supervisor)
+        │ - assignment_date      │
+        │ - end_date             │
+        └──────┬──────────────────┘
+               │
+               │ 1:N (un progetto, molti operatori)
+               │
+        ┌──────▼────────────────────────────────────────────┐
+        │    THERAPEUTIC_PROJECTS (PTRP)                     │
+        │  - id                                              │
+        │  - patient_id (FK 1:N) ◄─────┐                     │
+        │  - assignment_date             │ 1:N (un paziente  │
+        │  - status (Active/Closed...)   │ molti progetti)   │
+        │  - objectives, details         │                   │
+        └──────┬──────────────────────────┼──────────────────┘
+               │ 1:N (un progetto, 4 visite canoniche)       ┌──────────────────────┐
+               │                                              │  PATIENTS            │
+               ▼                                              │ (id, first_name,..│
+        ┌────────────────────┐                               │  status, notes)      │
+        │ SCHEDULED_VISITS   │                               └──────────────────────┘
+        │ - id               │
+        │ - project_id (FK)  │
+        │ - phase            │  (InitialOpening,
+        │ - scheduled_date   │   IntermediateVerification,
+        │ - status           │   FinalVerification,
+        │ - notes            │   Discharge)
+        └────────┬───────────┘
+                 │ 1:N (una visita programmata,
+                 │     multiple registrazioni)
+                 │
+                 ▼
+        ┌────────────────────────┐
+        │ ACTUAL_VISITS          │
+        │ - id                   │
+        │ - scheduled_visit_id   │
+        │ - actual_date          │
+        │ - source               │  (EducatorImport |
+        │ - registered_by_operator_id (FK)  CoordinatorDirect)
+        │ - clinical_notes       │
+        │ - registration_date    │
+        └────────────────────────┘
 
+┌────────────────────────────────────────┐
+│ SYNC_METADATA                          │
+│ (Standalone - non ha FK esterne)      │
+└────────────────────────────────────────┘
 ```
 
 ---
@@ -80,8 +131,7 @@ CREATE INDEX idx_operators_updated_at ON operators(updated_at);
 ```
 
 **Relazioni**:
-- FK da `therapeutic_projects` (OperatorId)
-- FK da `scheduled_visits` (RegisteredByOperatorId)
+- N:N con `therapeutic_projects` tramite `project_operators` (tabella di giunzione)
 - FK da `actual_visits` (RegisteredByOperatorId)
 
 ---
@@ -121,13 +171,13 @@ CREATE INDEX idx_patients_internal_id ON patients(internal_id);
 ```
 
 **Relazioni**:
-- FK da `therapeutic_projects` (PatientId) – 1:N (un paziente, molti progetti nel tempo)
+- 1:N con `therapeutic_projects` (PatientId) – Un paziente, molti progetti nel tempo
 
 ---
 
 ### 3. **THERAPEUTIC_PROJECTS** (Progetti Terapeutici PTRP)
 
-**Descrizione**: Progetto terapeutico personalizzato assegnato a paziente + operatore di riferimento.
+**Descrizione**: Progetto terapeutico personalizzato assegnato a paziente. **NON contiene direttamente FK a operatore** – gli operatori sono collegati tramite la tabella di giunzione `project_operators`.
 
 **Enum ProjectStatus**:
 - `Active` – Progetto attivo
@@ -138,9 +188,8 @@ CREATE INDEX idx_patients_internal_id ON patients(internal_id);
 ```sql
 CREATE TABLE therapeutic_projects (
     id                      TEXT PRIMARY KEY,              -- GUID
-    patient_id              TEXT NOT NULL,                 -- FK → patients
-    operator_id             TEXT NOT NULL,                 -- FK → operators (Operatore di riferimento)
-    assignment_date         DATE NOT NULL,                 -- Data assegnazione progetto
+    patient_id              TEXT NOT NULL,                 -- FK → patients (1:N)
+    assignment_date         DATE NOT NULL,                 -- Data inizio primo progetto per paziente
     status                  TEXT NOT NULL DEFAULT 'Active', -- Active | Suspended | Closed | Archived
     pt_details              TEXT,                          -- Descrizione PTRP
     objectives              TEXT,                          -- Obiettivi terapeutici
@@ -152,21 +201,82 @@ CREATE TABLE therapeutic_projects (
     updated_by              TEXT,                          -- GUID operatore ultimo edit
     version                 INTEGER DEFAULT 1,            -- Per conflict resolution
     
-    FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE,
-    FOREIGN KEY (operator_id) REFERENCES operators(id) ON DELETE RESTRICT
+    FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE
 );
 
 CREATE INDEX idx_therapeutic_projects_patient_id ON therapeutic_projects(patient_id);
-CREATE INDEX idx_therapeutic_projects_operator_id ON therapeutic_projects(operator_id);
 CREATE INDEX idx_therapeutic_projects_status ON therapeutic_projects(status);
 CREATE INDEX idx_therapeutic_projects_assignment_date ON therapeutic_projects(assignment_date);
 CREATE INDEX idx_therapeutic_projects_updated_at ON therapeutic_projects(updated_at);
 ```
 
 **Relazioni**:
-- FK a `patients` (1:N – un paziente, molti progetti nel tempo)
-- FK a `operators` (N:1 – tanti progetti, un coordinatore)
-- FK da `scheduled_visits` (1:N)
+- 1:N con `patients` (PatientId) – Un paziente, molti progetti nel tempo
+- N:N con `operators` tramite `project_operators` – Un progetto, molti operatori
+- 1:N con `scheduled_visits`
+
+---
+
+### 3b. **PROJECT_OPERATORS** (Tabella di Giunzione - Many-to-Many)
+
+**Descrizione**: Relazione molti-a-molti tra Progetti e Operatori. Traccia:
+- Quali operatori sono assegnati a quale progetto
+- Il ruolo dell'operatore nel progetto (primario, assistente, supervisore)
+- Le date di assegnazione/fine incarico
+
+**Enum OperatorRole In Project**:
+- `Primary` – Educatore primario (responsabile principale)
+- `Assistant` – Assistente (supporto)
+- `Supervisor` – Supervisore (monitoraggio)
+
+```sql
+CREATE TABLE project_operators (
+    id                      TEXT PRIMARY KEY,              -- GUID
+    project_id              TEXT NOT NULL,                 -- FK → therapeutic_projects
+    operator_id             TEXT NOT NULL,                 -- FK → operators
+    role_in_project         TEXT NOT NULL,                 -- Primary | Assistant | Supervisor
+    assignment_date         DATE NOT NULL,                 -- Data inizio incarico
+    end_date                DATE,                          -- Data fine incarico (NULL = ancora attivo)
+    notes                   TEXT,                          -- Note specifiche sul ruolo
+    created_at              DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at              DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_by              TEXT,
+    updated_by              TEXT,
+    version                 INTEGER DEFAULT 1,
+    
+    FOREIGN KEY (project_id) REFERENCES therapeutic_projects(id) ON DELETE CASCADE,
+    FOREIGN KEY (operator_id) REFERENCES operators(id) ON DELETE RESTRICT,
+    
+    -- Vincolo: Un operatore non può avere due ruoli attivi contemporaneamente nello stesso progetto
+    UNIQUE(project_id, operator_id, assignment_date)
+);
+
+CREATE INDEX idx_project_operators_project_id ON project_operators(project_id);
+CREATE INDEX idx_project_operators_operator_id ON project_operators(operator_id);
+CREATE INDEX idx_project_operators_role ON project_operators(role_in_project);
+CREATE INDEX idx_project_operators_active ON project_operators(end_date) 
+    WHERE end_date IS NULL;  -- Indice solo per assegnazioni attive
+```
+
+**Relazioni**:
+- FK a `therapeutic_projects` (N:N side)
+- FK a `operators` (N:N side)
+
+**Utilità della tabella**:
+```sql
+-- Esempio: Trovare tutti gli operatori attivi su un progetto
+SELECT o.first_name, o.last_name, po.role_in_project, po.assignment_date
+FROM project_operators po
+JOIN operators o ON po.operator_id = o.id
+WHERE po.project_id = ? AND po.end_date IS NULL;
+
+-- Esempio: Trovare tutti i progetti su cui lavora un operatore
+SELECT p.first_name, p.last_name, tp.pt_details, po.role_in_project
+FROM project_operators po
+JOIN therapeutic_projects tp ON po.project_id = tp.id
+JOIN patients p ON tp.patient_id = p.id
+WHERE po.operator_id = ? AND po.end_date IS NULL;
+```
 
 ---
 
@@ -264,7 +374,7 @@ CREATE UNIQUE INDEX idx_actual_visits_unique_per_scheduled ON actual_visits(sche
 
 **Relazioni**:
 - FK a `scheduled_visits` (1:1 o 1:N se più registrazioni per stessa visita)
-- FK a `operators` (N:1 – tante visite registrate, un operatore)
+- FK a `operators` (N:1 – tante visite registrate, un operatore che le registra)
 
 ---
 
@@ -339,7 +449,8 @@ public record SyncPacket
 | Relazione | Tipo | ON DELETE | Motivazione |
 |-----------|------|-----------|-------------|
 | `therapeutic_projects → patients` | 1:N | CASCADE | Se paziente cancellato, cancella progetti |
-| `therapeutic_projects → operators` | N:1 | RESTRICT | Non permette cancellazione operatore se assegnato a progetti |
+| `project_operators → therapeutic_projects` | N:1 | CASCADE | Se progetto cancellato, cancella assegnazioni operatori |
+| `project_operators → operators` | N:1 | RESTRICT | Non permette cancellazione operatore se ancora assegnato a progetti |
 | `scheduled_visits → therapeutic_projects` | 1:N | CASCADE | Se progetto cancellato, cancella visite programmate |
 | `actual_visits → scheduled_visits` | 1:N | CASCADE | Se visita programmata cancellata, cancella registrazioni |
 | `actual_visits → operators` | N:1 | SET NULL | Se operatore cancellato, azzera il campo registered_by_operator_id |
@@ -358,13 +469,16 @@ public record SyncPacket
 **Query frequenti in UI**:
 1. **Pazienti attivi**: `idx_patients_status`
 2. **Progetti recenti**: `idx_therapeutic_projects_updated_at`
-3. **Visite programmate per data**: `idx_scheduled_visits_scheduled_date`
-4. **Visite registrate per operatore**: `idx_actual_visits_registered_by_operator_id`
-5. **Sync delta queries**: `idx_*_updated_at` (su tutte le tabelle)
+3. **Operatori attivi su progetto**: `idx_project_operators_project_id`, `idx_project_operators_active`
+4. **Progetti di un operatore**: `idx_project_operators_operator_id`
+5. **Visite programmate per data**: `idx_scheduled_visits_scheduled_date`
+6. **Visite registrate per operatore**: `idx_actual_visits_registered_by_operator_id`
+7. **Sync delta queries**: `idx_*_updated_at` (su tutte le tabelle)
 
 ### Indici Compositi
 - `idx_scheduled_visits_unique_phase_per_project`: Garantisce una sola visita per fase/progetto
 - `idx_actual_visits_unique_per_scheduled`: Evita duplicati registrazioni per stessa visita
+- `idx_project_operators_active`: Indice parziale solo per assegnazioni attive (end_date IS NULL)
 
 ---
 
@@ -389,21 +503,24 @@ version         INTEGER,   -- Numero versione per conflict resolution
 
 ## 📈 Query Comuni
 
-### 1. Pazienti Attivi con Progetti Aperti
+### 1. Pazienti Attivi con Progetti Aperti e Operatori Assegnati
 ```sql
 SELECT 
-    p.id, 
-    p.first_name, 
-    p.last_name, 
+    p.id as patient_id,
+    p.first_name, p.last_name, 
     tp.id as project_id,
+    tp.pt_details,
     o.first_name as operator_first_name,
-    o.last_name as operator_last_name
+    o.last_name as operator_last_name,
+    po.role_in_project
 FROM patients p
 JOIN therapeutic_projects tp ON p.id = tp.patient_id
-JOIN operators o ON tp.operator_id = o.id
+JOIN project_operators po ON tp.id = po.project_id
+JOIN operators o ON po.operator_id = o.id
 WHERE p.status = 'Active' 
   AND tp.status = 'Active'
-ORDER BY p.last_name, p.first_name;
+  AND po.end_date IS NULL  -- Solo assegnazioni attive
+ORDER BY p.last_name, p.first_name, po.role_in_project;
 ```
 
 ### 2. Visite Non Ancora Effettuate (Scadute)
@@ -413,14 +530,19 @@ SELECT
     sv.phase,
     sv.scheduled_date,
     p.first_name, p.last_name,
-    tp.id as project_id
+    tp.id as project_id,
+    GROUP_CONCAT(o.first_name || ' ' || o.last_name, ', ') as assigned_operators
 FROM scheduled_visits sv
 JOIN therapeutic_projects tp ON sv.project_id = tp.id
 JOIN patients p ON tp.patient_id = p.id
+JOIN project_operators po ON tp.id = po.project_id
+JOIN operators o ON po.operator_id = o.id
 LEFT JOIN actual_visits av ON sv.id = av.scheduled_visit_id
 WHERE sv.scheduled_date < DATE('now')
   AND sv.status = 'Scheduled'
   AND av.id IS NULL
+  AND po.end_date IS NULL
+GROUP BY sv.id
 ORDER BY sv.scheduled_date ASC;
 ```
 
@@ -437,11 +559,30 @@ GROUP BY av.registered_by_operator_id, month
 ORDER BY visit_count DESC;
 ```
 
-### 4. Delta Sync (Modifiche dal Timestamp)
+### 4. Progetti di un Operatore (Attivi e Storici)
+```sql
+SELECT 
+    p.first_name as patient_first_name,
+    p.last_name as patient_last_name,
+    tp.pt_details,
+    po.role_in_project,
+    po.assignment_date,
+    po.end_date,
+    tp.status
+FROM project_operators po
+JOIN therapeutic_projects tp ON po.project_id = tp.id
+JOIN patients p ON tp.patient_id = p.id
+WHERE po.operator_id = ?
+ORDER BY po.assignment_date DESC;
+```
+
+### 5. Delta Sync (Modifiche dal Timestamp)
 ```sql
 SELECT 'Patient' as entity_type, id, updated_at FROM patients WHERE updated_at > ?
 UNION ALL
 SELECT 'TherapeuticProject', id, updated_at FROM therapeutic_projects WHERE updated_at > ?
+UNION ALL
+SELECT 'ProjectOperator', id, updated_at FROM project_operators WHERE updated_at > ?
 UNION ALL
 SELECT 'ScheduledVisit', id, updated_at FROM scheduled_visits WHERE updated_at > ?
 UNION ALL
@@ -466,7 +607,7 @@ Vedi [SEED.md](../SEED.md) per dettagli sul seeding automatico.
 
 ## 📊 Dimensioni Stimate Database
 
-Con dataset seed standard (~100 pazienti, ~400 visite):
+Con dataset seed standard (~100 pazienti, ~100 progetti, ~150 assegnazioni operatore, ~400 visite):
 
 | Elemento | Stima | Note |
 |----------|-------|-------|
@@ -487,6 +628,7 @@ Con dataset seed standard (~100 pazienti, ~400 visite):
 3. **No chiavi hardcoded**: Key derivation da password locale (PBKDF2)
 4. **FK constraints**: Integrità referenziale garantita a DB level
 5. **Audit trail**: Traccia completa operazioni (CreatedBy, UpdatedBy, timestamps)
+6. **Isolation per operatore**: Tabella `project_operators` permette audit fine-grained di chi fa cosa
 
 ### Non Implementato (Roadmap)
 - Encryption field-level (sensibile solo per dati molto critici)
@@ -507,5 +649,5 @@ Con dataset seed standard (~100 pazienti, ~400 visite):
 ---
 
 **Last Updated**: January 28, 2026
-**Database Version**: PTRP-SQLite v1.0
+**Database Version**: PTRP-SQLite v1.1 (Many-to-Many Operators)
 **EF Core Version**: 10+
