@@ -26,7 +26,7 @@ L'applicazione opera con **paradigma offline-first**: ogni nodo (Coordinatore e 
 ## 🛠️ Stack Tecnologico
 
 | Componente | Tecnologia | Versione | Motivazione |
-|-----------|-----------|----------|------------|}
+|-----------|-----------|----------|-------------|
 | **Runtime** | .NET | 10 (LTS) | Supporto esteso, Self-Contained publishing con Velopack |
 | **UI Framework** | WinUI 3 | Latest | Desktop nativa Windows, moderno |
 | **Language** | C# | 13.0+ | Type inference avanzato, pattern matching |
@@ -100,15 +100,15 @@ PTRP/
 │   ├── SECURITY.md               # Crittografia, HMAC, key management
 │   ├── API.md                    # Services API
 │   ├── WORKFLOW.md               # Workflow applicativo
-│   └── DEPLOYMENT.md             # Velopack, distribution, updates
+│   ├── DEPLOYMENT.md             # Velopack, distribution, updates
+│   ├── DEVELOPMENT.md            # Guida sviluppatori, Git workflow
+│   ├── PROGETTO_PTRP_SYNC.md     # Analisi tecnica architettura
+│   └── SEED.md                   # Data seeding strategy
 ├── .github/
 │   └── workflows/
 │       ├── validate.yml          # Unit tests, SAST scan
 │       ├── security.yml          # Security checks (chiavi, credenziali)
 │       └── deploy-velopack.yml   # Compile + Velopack release
-├── DEVELOPMENT.md                # Guida sviluppatori
-├── SEED.md                       # Data seeding strategy
-├── PROGETTO_PTRP_SYNC.md         # Analisi tecnica architettura
 └── [config files]
 ```
 
@@ -149,7 +149,7 @@ PTRP/
      - ~280 visite registrate effettive (70% completion rate)
    - Seeding idempotente: riavvii successivi non duplicano
    - Crittografia AES applicata automaticamente
-   - 👉 **Leggi [SEED.md](SEED.md)** per dettagli completi sulla strategia di data initialization
+   - 👉 **Leggi [docs/SEED.md](docs/SEED.md)** per dettagli completi sulla strategia di data initialization
 
 5. **Build & Run**
    ```bash
@@ -194,10 +194,10 @@ Visualizzazione UI con badge/colori differenti per auditabilità.
 - 💾 [Database](docs/DATABASE.md) - **Schema SQLite, crittografia AES, ER diagram, query comuni**
 - 🔄 [Sync Protocol](docs/SYNC-PROTOCOL.md) - Algoritmo sincronizzazione, conflict resolution
 - 🔐 [Security](docs/SECURITY.md) - Crittografia, HMAC, key management
-- 🌱 [Seeding](SEED.md) - Strategia data initialization, DbContextSeeder
-- 🛠️ [Development](DEVELOPMENT.md) - Guida per sviluppatori, Git workflow
+- 🌱 [Seeding](docs/SEED.md) - Strategia data initialization, DbContextSeeder
+- 🛠️ [Development](docs/DEVELOPMENT.md) - Guida per sviluppatori, Git workflow
 - 🚀 [Deployment](docs/DEPLOYMENT.md) - Velopack, zero-click updates
-- 📄 [Technical Analysis](PROGETTO_PTRP_SYNC.md) - Analisi tecnica completa (architetto)
+- 📄 [Technical Analysis](docs/PROGETTO_PTRP_SYNC.md) - Analisi tecnica completa (architetto)
 
 ---
 
@@ -207,7 +207,7 @@ Visualizzazione UI con badge/colori differenti per auditabilità.
 Feature Branch → Pull Request → Code Review → Merge → Test Suite → Release (Velopack)
 ```
 
-Vedi [DEVELOPMENT.md](DEVELOPMENT.md) per workflow Git dettagliato.
+Vedi [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) per workflow Git dettagliato.
 
 ---
 
