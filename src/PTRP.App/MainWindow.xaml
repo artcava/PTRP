@@ -55,12 +55,12 @@
             </Setter>
         </Style>
         
-        <!-- Style per riga selezionata con colore più tenue -->
+        <!-- Style per riga selezionata: background rimosso, solo indicatore visuale minimo -->
         <Style x:Key="DataGridRowStyle" TargetType="DataGridRow">
             <Setter Property="Background" Value="White"/>
             <Style.Triggers>
                 <Trigger Property="IsSelected" Value="True">
-                    <Setter Property="Background" Value="#E3F2FD"/>
+                    <Setter Property="Background" Value="White"/>
                     <Setter Property="Foreground" Value="Black"/>
                 </Trigger>
                 <Trigger Property="IsMouseOver" Value="True">
@@ -197,21 +197,30 @@
                   Margin="20">
             
             <DataGrid.Columns>
-                <!-- Indicatore Selezione -->
-                <DataGridTemplateColumn Header="" Width="30">
+                <!-- Indicatore Selezione con Freccia -->
+                <DataGridTemplateColumn Header="" Width="40">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
-                            <Border Background="Transparent" Width="4" Height="30" HorizontalAlignment="Left">
-                                <Border.Style>
-                                    <Style TargetType="Border">
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=DataGridRow}}" Value="True">
-                                                <Setter Property="Background" Value="#007ACC"/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Border.Style>
-                            </Border>
+                            <Grid Background="Transparent" Width="30" Height="30" HorizontalAlignment="Center">
+                                <!-- Freccia verso destra visibile solo quando la riga è selezionata -->
+                                <materialDesign:PackIcon Kind="ChevronRight" 
+                                                         Width="24" 
+                                                         Height="24"
+                                                         Foreground="#007ACC"
+                                                         HorizontalAlignment="Center"
+                                                         VerticalAlignment="Center">
+                                    <materialDesign:PackIcon.Style>
+                                        <Style TargetType="materialDesign:PackIcon">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=DataGridRow}}" Value="True">
+                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </materialDesign:PackIcon.Style>
+                                </materialDesign:PackIcon>
+                            </Grid>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
