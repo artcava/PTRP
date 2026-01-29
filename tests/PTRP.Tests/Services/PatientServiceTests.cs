@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
-using PTRP.App.Models;
-using PTRP.App.Services;
-using PTRP.App.Services.Interfaces;
+using PTRP.Models;
+using PTRP.Services;
+using PTRP.Services.Interfaces;
 using PTRP.Data;
 using PTRP.Data.Repositories;
 using PTRP.Data.Repositories.Interfaces;
@@ -242,8 +242,9 @@ namespace PTRP.Tests.Services
             var results = await _service.SearchAsync("Gallo");
 
             // assert
-            Assert.Equal(2, results.Count());
-            Assert.All(results, p => Assert.Equal("Gallo", p.LastName));
+            var resultList = results.ToList();
+            Assert.Equal(2, resultList.Count);
+            Assert.All(resultList, p => Assert.Equal("Gallo", p.LastName));
         }
 
         /// <summary>

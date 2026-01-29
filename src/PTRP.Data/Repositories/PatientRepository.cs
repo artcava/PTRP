@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using PTRP.App.Models;
+using PTRP.Models;
 using PTRP.Data.Repositories.Interfaces;
 
 namespace PTRP.Data.Repositories;
@@ -57,8 +57,8 @@ public class PatientRepository : IPatientRepository
         return await _context.Patients
             .AsNoTracking()
             .Where(p => 
-                p.FirstName.ToLower().Contains(normalizedSearchTerm) ||
-                p.LastName.ToLower().Contains(normalizedSearchTerm))
+                (p.FirstName ?? "").ToLower().Contains(normalizedSearchTerm) ||
+                (p.LastName ?? "").ToLower().Contains(normalizedSearchTerm))
             .OrderBy(p => p.LastName)
             .ThenBy(p => p.FirstName)
             .ToListAsync();

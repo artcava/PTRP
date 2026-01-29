@@ -1,10 +1,13 @@
-using PTRP.App.Models;
+using PTRP.Models;
 
 namespace PTRP.Data.Repositories.Interfaces;
 
 /// <summary>
 /// Interfaccia per il repository dei Pazienti
 /// Definisce le operazioni CRUD e di ricerca per l'entità Patient
+/// 
+/// NOTA: Ogni operazione CRUD (Add, Update, Delete) effettua il commit atomico.
+/// Non è necessario chiamare un metodo SaveChangesAsync() separato.
 /// </summary>
 public interface IPatientRepository
 {
@@ -36,21 +39,21 @@ public interface IPatientRepository
     Task<IEnumerable<PatientModel>> SearchAsync(string searchTerm);
 
     /// <summary>
-    /// Aggiunge un nuovo paziente al database
+    /// Aggiunge un nuovo paziente al database (commit atomico)
     /// </summary>
     /// <param name="patient">Paziente da aggiungere</param>
     /// <returns>Task completato</returns>
     Task AddAsync(PatientModel patient);
 
     /// <summary>
-    /// Aggiorna un paziente esistente
+    /// Aggiorna un paziente esistente (commit atomico)
     /// </summary>
     /// <param name="patient">Paziente con dati aggiornati</param>
     /// <returns>Task completato</returns>
     Task UpdateAsync(PatientModel patient);
 
     /// <summary>
-    /// Elimina un paziente per ID
+    /// Elimina un paziente per ID (commit atomico)
     /// </summary>
     /// <param name="id">ID del paziente da eliminare</param>
     /// <returns>True se eliminato, False se non trovato</returns>
@@ -62,10 +65,4 @@ public interface IPatientRepository
     /// <param name="id">ID del paziente</param>
     /// <returns>True se esiste, False altrimenti</returns>
     Task<bool> ExistsAsync(Guid id);
-
-    /// <summary>
-    /// Salva tutte le modifiche pending nel database
-    /// </summary>
-    /// <returns>Numero di entità modificate</returns>
-    Task<int> SaveChangesAsync();
 }

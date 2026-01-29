@@ -1,4 +1,4 @@
-using PTRP.App.ViewModels;
+using PTRP.ViewModels;
 using System.Windows;
 using System.Windows.Controls;
 

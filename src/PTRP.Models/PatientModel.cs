@@ -3,20 +3,19 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Runtime.CompilerServices;
-using PTRP.App.Models;
 
-namespace PTRP.App.Models
+namespace PTRP.Models
 {
     /// <summary>
     /// Modello per rappresentare un Paziente
     /// </summary>
     public class PatientModel : INotifyPropertyChanged
     {
-        private string _firstName;
-        private string _lastName;
+        private string? _firstName;
+        private string? _lastName;
         private bool _isEditing;
 
-        public event PropertyChangedEventHandler PropertyChanged;
+        public event PropertyChangedEventHandler? PropertyChanged;
 
         /// <summary>
         /// Identificatore univoco del paziente
@@ -26,7 +25,7 @@ namespace PTRP.App.Models
         /// <summary>
         /// Nome del paziente
         /// </summary>
-        public string FirstName
+        public string? FirstName
         {
             get => _firstName;
             set
@@ -39,7 +38,7 @@ namespace PTRP.App.Models
         /// <summary>
         /// Cognome del paziente
         /// </summary>
-        public string LastName
+        public string? LastName
         {
             get => _lastName;
             set
@@ -101,14 +100,14 @@ namespace PTRP.App.Models
         /// Solo per UI, non persistito nel database
         /// </summary>
         [NotMapped]
-        public string OriginalFirstName { get; set; }
+        public string? OriginalFirstName { get; set; }
 
         /// <summary>
         /// Valore originale del LastName (per annullamento modifiche)
         /// Solo per UI, non persistito nel database
         /// </summary>
         [NotMapped]
-        public string OriginalLastName { get; set; }
+        public string? OriginalLastName { get; set; }
 
         #endregion
 
@@ -117,7 +116,7 @@ namespace PTRP.App.Models
         /// </summary>
         public override string ToString() => $"{FirstName} {LastName}";
 
-        protected void OnPropertyChanged([CallerMemberName] string propertyName = null)
+        protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }

@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using PTRP.App.Models;
+using PTRP.Models;
 
 namespace PTRP.Data;
 
