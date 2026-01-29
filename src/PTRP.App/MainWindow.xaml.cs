@@ -1,16 +1,18 @@
-﻿using PTRP.App.ViewModels;
+using PTRP.App.ViewModels;
 using System.Windows;
 
 namespace PTRP.App
 {
     /// <summary>
     /// MainWindow.xaml.cs
-    /// Code-behind minimalista - solo per il collegamento del ViewModel
+    /// Code-behind per la finestra principale dell'applicazione
     /// 
-    /// IMPORTANTE: La logica rimane nel ViewModel (MainWindowViewModel)
-    /// Questo file contiene solo:
-    /// 1. Collegamento del DataContext (binding)
+    /// Gestisce:
+    /// 1. Collegamento del ViewModel (binding)
     /// 2. EventHandler per lifecycle (caricamento finestra)
+    /// 
+    /// NOTA: La logica di visibilità della selezione è stata spostata nel XAML
+    /// usando binding e converter, rispettando il pattern MVVM.
     /// </summary>
     public partial class MainWindow : Window
     {
