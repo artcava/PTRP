@@ -54,20 +54,6 @@
                 </Setter.Value>
             </Setter>
         </Style>
-        
-        <!-- Style per riga selezionata con colore più tenue -->
-        <Style x:Key="DataGridRowStyle" TargetType="DataGridRow">
-            <Setter Property="Background" Value="White"/>
-            <Style.Triggers>
-                <Trigger Property="IsSelected" Value="True">
-                    <Setter Property="Background" Value="#E3F2FD"/>
-                    <Setter Property="Foreground" Value="Black"/>
-                </Trigger>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#F5F5F5"/>
-                </Trigger>
-            </Style.Triggers>
-        </Style>
     </Window.Resources>
     
     <Grid Background="#F5F5F5">
@@ -184,7 +170,6 @@
                   AutoGenerateColumns="False"
                   CanUserAddRows="False"
                   CanUserDeleteRows="False"
-                  RowStyle="{StaticResource DataGridRowStyle}"
                   Background="White"
                   AlternatingRowBackground="#FAFAFA"
                   BorderBrush="#E0E0E0"
@@ -197,6 +182,30 @@
                   SelectionUnit="FullRow"
                   Margin="20"
                   SelectedCellsChanged="PatientsDataGrid_SelectedCellsChanged">
+            
+            <!-- Style inline per eliminare il background della riga selezionata -->
+            <DataGrid.RowStyle>
+                <Style TargetType="DataGridRow">
+                    <Setter Property="Background" Value="White"/>
+                    <Setter Property="BorderBrush" Value="Transparent"/>
+                    <Style.Triggers>
+                        <!-- Quando la riga è selezionata: NESSUN background azzurro -->
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Setter Property="BorderBrush" Value="Transparent"/>
+                            <Setter Property="Foreground" Value="Black"/>
+                        </Trigger>
+                        <!-- Hover: sfondo grigio chiaro -->
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="Background" Value="#F5F5F5"/>
+                        </Trigger>
+                        <!-- Focus visivo rimosso -->
+                        <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                            <Setter Property="Background" Value="Transparent"/>
+                        </Trigger>
+                    </Style.Triggers>
+                </Style>
+            </DataGrid.RowStyle>
             
             <DataGrid.Columns>
                 <!-- Indicatore Selezione: Freccia verso destra -->
