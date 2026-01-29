@@ -268,8 +268,6 @@ namespace PTRP.App
 
 Dovresti vedere la window WPF con il messaggio "PTRP - Application Started".
 
-> 📌 **Importante**: WPF NON richiede **Developer Mode** come WinUI 3. L'applicazione si avvierà immediatamente senza alcun blocco di sicurezza.
-
 ---
 
 ## 8️⃣ Verifica Versionamento Git
