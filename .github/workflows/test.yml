@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: [main, develop]
 
+permissions:
+  contents: read
+  checks: write
+  pull-requests: write
+
 jobs:
   test:
     runs-on: windows-latest
@@ -32,9 +37,9 @@ jobs:
           --configuration Release `
           --no-build `
           --logger "trx;LogFileName=test-results.trx" `
+          --logger "console;verbosity=detailed" `
           --collect:"XPlat Code Coverage" `
           -- RunConfiguration.DisableAppDomain=true
-      continue-on-error: true
     
     - name: Generate coverage report
       run: |
@@ -42,14 +47,13 @@ jobs:
         reportgenerator -reports:"**/coverage.cobertura.xml" -targetdir:"./coverage-report" -reporttypes:Html
       continue-on-error: true
     
-    - name: Publish Test Results
-      uses: dorny/test-reporter@v1
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
       if: always()
       with:
-        name: Unit Test Results
+        name: test-results
         path: '**/test-results.trx'
-        reporter: dotnet-trx
-        fail-on-error: false
+        retention-days: 30
     
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v4
