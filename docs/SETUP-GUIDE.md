@@ -110,11 +110,6 @@ Per il progetto **PTRP.Services** (e dove risiederà il `DbContext`):
    - `Microsoft.EntityFrameworkCore.Sqlite`
    - `Microsoft.EntityFrameworkCore.Tools`
 
-> 📌 **Nota**: PTRP utilizza **SQLite** come database locale **criptato**, non SQL Server. Questo significa:
-> - nessun requisito di installare un'istanza di SQL Server o SQL Server Express
-> - il file di database sarà un singolo `.db` (o `.sqlite`) locale
-> - la connection string sarà del tipo `Data Source=ptrp.db;` (eventualmente con parametri di crittografia aggiunti)
-
 In una fase successiva, al `DbContext` (es. `PtrpDbContext`) assocerai la configurazione:
 
 ```csharp
