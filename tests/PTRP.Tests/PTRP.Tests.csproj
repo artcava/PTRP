@@ -26,4 +26,10 @@
     <Using Include="Xunit" />
   </ItemGroup>
 
+  <!-- Riferimenti ai progetti da testare -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\PTRP.Models\PTRP.Models.csproj" />
+    <ProjectReference Include="..\..\src\PTRP.Services\PTRP.Services.csproj" />
+  </ItemGroup>
+
 </Project>
