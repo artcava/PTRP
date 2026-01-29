@@ -38,11 +38,12 @@ namespace PTRP.App.ViewModels
             Patients = new ObservableCollection<PatientModel>();
 
             // Inizializza comandi
-            SearchPatientsCommand = new RelayCommand(async _ => await SearchPatientsAsync());
+            LoadPatientsCommand = new AsyncRelayCommand(async _ => await LoadPatientsAsync());
+            SearchPatientsCommand = new AsyncRelayCommand(async _ => await SearchPatientsAsync());
             ClearSearchCommand = new RelayCommand(_ => ClearSearch());
-            AddPatientCommand = new RelayCommand(async _ => await AddPatientAsync());
-            UpdatePatientCommand = new RelayCommand(async _ => await UpdatePatientAsync(), _ => SelectedPatient != null);
-            DeletePatientCommand = new RelayCommand(async _ => await DeletePatientAsync(), _ => SelectedPatient != null);
+            AddPatientCommand = new AsyncRelayCommand(async _ => await AddPatientAsync());
+            UpdatePatientCommand = new AsyncRelayCommand(async _ => await UpdatePatientAsync(), _ => SelectedPatient != null);
+            DeletePatientCommand = new AsyncRelayCommand(async _ => await DeletePatientAsync(), _ => SelectedPatient != null);
         }
 
         #region Properties
@@ -116,11 +117,12 @@ namespace PTRP.App.ViewModels
 
         #region Commands
 
-        public ICommand SearchPatientsCommand { get; }
+        public IAsyncCommand LoadPatientsCommand { get; }
+        public IAsyncCommand SearchPatientsCommand { get; }
         public ICommand ClearSearchCommand { get; }
-        public ICommand AddPatientCommand { get; }
-        public ICommand UpdatePatientCommand { get; }
-        public ICommand DeletePatientCommand { get; }
+        public IAsyncCommand AddPatientCommand { get; }
+        public IAsyncCommand UpdatePatientCommand { get; }
+        public IAsyncCommand DeletePatientCommand { get; }
 
         #endregion
 
@@ -295,6 +297,64 @@ namespace PTRP.App.ViewModels
         }
 
         #endregion
+    }
+
+    /// <summary>
+    /// Interfaccia per comandi asincroni
+    /// </summary>
+    public interface IAsyncCommand : ICommand
+    {
+        Task ExecuteAsync(object parameter);
+    }
+
+    /// <summary>
+    /// Implementazione di comando asincrono per ViewModel
+    /// </summary>
+    public class AsyncRelayCommand : IAsyncCommand
+    {
+        private readonly Func<object, Task> _execute;
+        private readonly Func<object, bool> _canExecute;
+        private bool _isExecuting;
+
+        public event EventHandler CanExecuteChanged
+        {
+            add => CommandManager.RequerySuggested += value;
+            remove => CommandManager.RequerySuggested -= value;
+        }
+
+        public AsyncRelayCommand(Func<object, Task> execute, Func<object, bool> canExecute = null)
+        {
+            _execute = execute ?? throw new ArgumentNullException(nameof(execute));
+            _canExecute = canExecute;
+        }
+
+        public bool CanExecute(object parameter)
+        {
+            return !_isExecuting && (_canExecute == null || _canExecute(parameter));
+        }
+
+        public async void Execute(object parameter)
+        {
+            await ExecuteAsync(parameter);
+        }
+
+        public async Task ExecuteAsync(object parameter)
+        {
+            if (!CanExecute(parameter))
+                return;
+
+            try
+            {
+                _isExecuting = true;
+                CommandManager.InvalidateRequerySuggested();
+                await _execute(parameter);
+            }
+            finally
+            {
+                _isExecuting = false;
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
     }
 
     /// <summary>
