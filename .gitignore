@@ -46,8 +46,21 @@ Thumbs.db
 
 # Test Results
 TestResults/
+*.trx
 
 # Local database files
 ptrp.db
 ptrp.db-shm
 ptrp.db-wal
+
+# Velopack
+Releases/
+*.msi
+
+# Coverage
+coverage.cobertura.xml
+*.coverage
+*.coveragexml
+
+# GitHub
+.github/workflows/secrets.json
