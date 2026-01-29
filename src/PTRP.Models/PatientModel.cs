@@ -15,7 +15,7 @@ namespace PTRP.Models
         private string _lastName;
         private bool _isEditing;
 
-        public event PropertyChangedEventHandler PropertyChanged;
+        public event PropertyChangedEventHandler? PropertyChanged;
 
         /// <summary>
         /// Identificatore univoco del paziente
@@ -100,14 +100,14 @@ namespace PTRP.Models
         /// Solo per UI, non persistito nel database
         /// </summary>
         [NotMapped]
-        public string OriginalFirstName { get; set; }
+        public string? OriginalFirstName { get; set; }
 
         /// <summary>
         /// Valore originale del LastName (per annullamento modifiche)
         /// Solo per UI, non persistito nel database
         /// </summary>
         [NotMapped]
-        public string OriginalLastName { get; set; }
+        public string? OriginalLastName { get; set; }
 
         #endregion
 
@@ -116,7 +116,7 @@ namespace PTRP.Models
         /// </summary>
         public override string ToString() => $"{FirstName} {LastName}";
 
-        protected void OnPropertyChanged([CallerMemberName] string propertyName = null)
+        protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
