@@ -21,10 +21,10 @@ jobs:
         dotnet-version: '10.0.x'
     
     - name: Restore dependencies
-      run: dotnet restore
+      run: dotnet restore src/PTRP.sln
     
     - name: Build
-      run: dotnet build --configuration Release --no-restore
+      run: dotnet build src/PTRP.sln --configuration Release --no-restore
     
     - name: Publish
       run: dotnet publish src/PTRP.App/PTRP.App.csproj --configuration Release --output ./publish --no-build
