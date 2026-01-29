@@ -7,7 +7,7 @@
         Height="600"
         Width="1100"
         WindowStartupLocation="CenterScreen"
-        Loaded="Window_Loaded">
+        Loaded="Window_Loaded" Icon="{StaticResource AppIcon}">
     
     <Window.Resources>
         <!-- Converter Bool to Visibility -->
