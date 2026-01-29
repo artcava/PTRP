@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Runtime.CompilerServices;
 using PTRP.App.Models;
 
@@ -63,9 +64,13 @@ namespace PTRP.App.Models
         /// </summary>
         public ICollection<TherapyProjectModel> TherapyProjects { get; set; } = new List<TherapyProjectModel>();
 
+        #region UI-Only Properties (Not Mapped to Database)
+
         /// <summary>
         /// Indica se il paziente è in modalità editing (mostra pulsanti Salva/Annulla)
+        /// Solo per UI, non persistito nel database
         /// </summary>
+        [NotMapped]
         public bool IsEditing
         {
             get => _isEditing;
@@ -79,23 +84,33 @@ namespace PTRP.App.Models
 
         /// <summary>
         /// Inverso di IsEditing (per binding visibilità pulsanti)
+        /// Solo per UI, non persistito nel database
         /// </summary>
+        [NotMapped]
         public bool IsNotEditing => !IsEditing;
 
         /// <summary>
         /// Indica se è un nuovo paziente non ancora salvato
+        /// Solo per UI, non persistito nel database
         /// </summary>
+        [NotMapped]
         public bool IsNew { get; set; }
 
         /// <summary>
         /// Valore originale del FirstName (per annullamento modifiche)
+        /// Solo per UI, non persistito nel database
         /// </summary>
+        [NotMapped]
         public string OriginalFirstName { get; set; }
 
         /// <summary>
         /// Valore originale del LastName (per annullamento modifiche)
+        /// Solo per UI, non persistito nel database
         /// </summary>
+        [NotMapped]
         public string OriginalLastName { get; set; }
+
+        #endregion
 
         /// <summary>
         /// Rappresentazione testuale del paziente (Nome Cognome)
