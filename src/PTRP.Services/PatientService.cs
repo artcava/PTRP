@@ -1,4 +1,4 @@
-﻿using PTRP.App.Models;
+using PTRP.App.Models;
 using PTRP.App.Services.Interfaces;
 
 namespace PTRP.App.Services
@@ -18,27 +18,19 @@ namespace PTRP.App.Services
         {
             new PatientModel
             {
-                Id = 1,
+                Id = Guid.Parse("f1234567-89ab-cdef-0123-456789abcdef"),
                 FirstName = "Marco",
                 LastName = "Cavallo",
-                DateOfBirth = new DateTime(1990, 5, 15),
-                Email = "marco.cavallo@example.com",
-                PhoneNumber = "+39 123 456 7890",
                 CreatedAt = DateTime.Now
             },
             new PatientModel
             {
-                Id = 2,
+                Id = Guid.Parse("a0987654-3210-fedc-ba98-765432100abc"),
                 FirstName = "Anna",
                 LastName = "Rossi",
-                DateOfBirth = new DateTime(1988, 3, 22),
-                Email = "anna.rossi@example.com",
-                PhoneNumber = "+39 987 654 3210",
                 CreatedAt = DateTime.Now
             }
         };
-
-        private static int _nextId = 3;
 
         /// <summary>
         /// Costruttore del servizio
@@ -72,7 +64,7 @@ namespace PTRP.App.Services
         /// <summary>
         /// Recupera un paziente per ID
         /// </summary>
-        public async Task<PatientModel> GetByIdAsync(int id)
+        public async Task<PatientModel> GetByIdAsync(Guid id)
         {
             await Task.Delay(50);
 
@@ -95,15 +87,13 @@ namespace PTRP.App.Services
             if (string.IsNullOrWhiteSpace(patient.LastName))
                 throw new ArgumentException("Il cognome è obbligatorio", nameof(patient.LastName));
 
-            if (string.IsNullOrWhiteSpace(patient.Email))
-                throw new ArgumentException("L'email è obbligatoria", nameof(patient.Email));
+            // Se l'ID non è stato impostato, genera un nuovo Guid
+            if (patient.Id == Guid.Empty)
+                patient.Id = Guid.NewGuid();
 
-            if (patient.DateOfBirth >= DateTime.Now)
-                throw new ArgumentException("La data di nascita non può essere nel futuro", nameof(patient.DateOfBirth));
-
-            // Logica di business: setta ID e CreatedAt
-            patient.Id = _nextId++;
-            patient.CreatedAt = DateTime.Now;
+            // Logica di business: setta CreatedAt se non già impostato
+            if (patient.CreatedAt == default)
+                patient.CreatedAt = DateTime.Now;
 
             await Task.Delay(100);
 
@@ -119,7 +109,7 @@ namespace PTRP.App.Services
         /// </summary>
         public async Task UpdateAsync(PatientModel patient)
         {
-            if (patient.Id <= 0)
+            if (patient.Id == Guid.Empty)
                 throw new ArgumentException("ID paziente non valido", nameof(patient.Id));
 
             var existing = _patients.FirstOrDefault(p => p.Id == patient.Id);
@@ -129,9 +119,6 @@ namespace PTRP.App.Services
             // Logica: aggiorna campi e timestamp
             existing.FirstName = patient.FirstName;
             existing.LastName = patient.LastName;
-            existing.DateOfBirth = patient.DateOfBirth;
-            existing.Email = patient.Email;
-            existing.PhoneNumber = patient.PhoneNumber;
             existing.UpdatedAt = DateTime.Now;
 
             await Task.Delay(100);
@@ -143,7 +130,7 @@ namespace PTRP.App.Services
         /// <summary>
         /// Elimina un paziente
         /// </summary>
-        public async Task DeleteAsync(int id)
+        public async Task DeleteAsync(Guid id)
         {
             var patient = _patients.FirstOrDefault(p => p.Id == id);
             if (patient == null)
