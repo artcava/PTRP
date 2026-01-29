@@ -180,8 +180,7 @@
                   VerticalScrollBarVisibility="Auto"
                   SelectionMode="Single"
                   SelectionUnit="FullRow"
-                  Margin="20"
-                  SelectedCellsChanged="PatientsDataGrid_SelectedCellsChanged">
+                  Margin="20">
             
             <!-- CellStyle per rimuovere completamente il background della cella selezionata -->
             <DataGrid.CellStyle>
@@ -198,17 +197,19 @@
             
             <DataGrid.Columns>
                 <!-- Indicatore Selezione: Freccia verso destra -->
+                <!-- MVVM-friendly: Visibilità basata su binding IsSelected della riga -->
                 <DataGridTemplateColumn Header="" Width="40">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
-                            <TextBlock x:Name="SelectionIndicator"
-                                       Text="›" 
+                            <TextBlock Text="›" 
                                        FontSize="20" 
                                        Foreground="#007ACC"
                                        FontWeight="Bold"
                                        HorizontalAlignment="Center"
                                        VerticalAlignment="Center"
-                                       Visibility="Collapsed"/>
+                                       Visibility="{Binding IsSelected, 
+                                           RelativeSource={RelativeSource AncestorType=DataGridRow},
+                                           Converter={StaticResource BoolToVisibility}}"/>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
@@ -263,7 +264,7 @@
                                             Visibility="{Binding IsNotEditing, Converter={StaticResource BoolToVisibility}}">
                                     <!-- Modifica (matita) -->
                                     <Button Style="{StaticResource IconButtonStyle}"
-                                            Command="{Binding DataContext.EditPatientCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                            Command="{Binding DataContext.EditPatientCommand, ElementName=PatientsDataGrid}"
                                             CommandParameter="{Binding}"
                                             ToolTip="Modifica">
                                         <materialDesign:PackIcon Kind="Pencil" 
@@ -274,7 +275,7 @@
                                     
                                     <!-- Elimina (X rossa) -->
                                     <Button Style="{StaticResource IconButtonStyle}"
-                                            Command="{Binding DataContext.DeletePatientCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                            Command="{Binding DataContext.DeletePatientCommand, ElementName=PatientsDataGrid}"
                                             CommandParameter="{Binding}"
                                             ToolTip="Elimina">
                                         <materialDesign:PackIcon Kind="Delete" 
@@ -289,7 +290,7 @@
                                             Visibility="{Binding IsEditing, Converter={StaticResource BoolToVisibility}}">
                                     <!-- Salva (check verde) -->
                                     <Button Style="{StaticResource IconButtonStyle}"
-                                            Command="{Binding DataContext.SavePatientCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                            Command="{Binding DataContext.SavePatientCommand, ElementName=PatientsDataGrid}"
                                             CommandParameter="{Binding}"
                                             ToolTip="Salva">
                                         <materialDesign:PackIcon Kind="Check" 
@@ -300,7 +301,7 @@
                                     
                                     <!-- Annulla (X grigia) -->
                                     <Button Style="{StaticResource IconButtonStyle}"
-                                            Command="{Binding DataContext.CancelEditCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                            Command="{Binding DataContext.CancelEditCommand, ElementName=PatientsDataGrid}"
                                             CommandParameter="{Binding}"
                                             ToolTip="Annulla">
                                         <materialDesign:PackIcon Kind="Close" 
