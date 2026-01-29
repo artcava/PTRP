@@ -1,4 +1,4 @@
-﻿using PTRP.App.Models;
+using PTRP.App.Models;
 
 namespace PTRP.App.Services.Interfaces
 {
@@ -19,7 +19,7 @@ namespace PTRP.App.Services.Interfaces
         /// </summary>
         /// <param name="id">ID del paziente</param>
         /// <returns>PatientModel se trovato, altrimenti null</returns>
-        Task<PatientModel> GetByIdAsync(int id);
+        Task<PatientModel> GetByIdAsync(Guid id);
 
         /// <summary>
         /// Aggiunge un nuovo paziente
@@ -38,7 +38,7 @@ namespace PTRP.App.Services.Interfaces
         /// Elimina un paziente per ID
         /// </summary>
         /// <param name="id">ID del paziente da eliminare</param>
-        Task DeleteAsync(int id);
+        Task DeleteAsync(Guid id);
 
         /// <summary>
         /// Cerca pazienti per nome
