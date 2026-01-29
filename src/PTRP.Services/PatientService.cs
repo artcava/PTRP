@@ -1,49 +1,25 @@
 using PTRP.App.Models;
 using PTRP.App.Services.Interfaces;
+using PTRP.Data.Repositories.Interfaces;
 
 namespace PTRP.App.Services
 {
     /// <summary>
     /// Implementazione del servizio PatientService
     /// Contiene la logica di business per la gestione dei pazienti
-    /// 
-    /// NOTA: Attualmente implementazione STUB (mock in-memory)
-    /// Quando il database sarà disponibile, questo servizio
-    /// delegherà a IPatientRepository per la persistenza
+    /// Delega le operazioni di persistenza al repository
     /// </summary>
     public class PatientService : IPatientService
     {
-        // Stub in-memory per ora - sarà sostituito con repository quando il DB è pronto
-        private static List<PatientModel> _patients = new()
-        {
-            new PatientModel
-            {
-                Id = Guid.Parse("f1234567-89ab-cdef-0123-456789abcdef"),
-                FirstName = "Marco",
-                LastName = "Cavallo",
-                CreatedAt = DateTime.Now
-            },
-            new PatientModel
-            {
-                Id = Guid.Parse("a0987654-3210-fedc-ba98-765432100abc"),
-                FirstName = "Anna",
-                LastName = "Rossi",
-                CreatedAt = DateTime.Now
-            }
-        };
+        private readonly IPatientRepository _repository;
 
         /// <summary>
-        /// Costruttore del servizio
-        /// 
-        /// QUANDO IL DATABASE SARÀ PRONTO:
-        /// public PatientService(IPatientRepository repository)
-        /// {
-        ///     _repository = repository;
-        /// }
+        /// Costruttore con dependency injection
         /// </summary>
-        public PatientService()
+        /// <param name="repository">Repository per operazioni database</param>
+        public PatientService(IPatientRepository repository)
         {
-            // Attualmente stub - nessuna dependency
+            _repository = repository ?? throw new ArgumentNullException(nameof(repository));
         }
 
         /// <summary>
@@ -51,14 +27,7 @@ namespace PTRP.App.Services
         /// </summary>
         public async Task<IEnumerable<PatientModel>> GetAllAsync()
         {
-            // Simula latenza asincrona
-            await Task.Delay(100);
-
-            // STUB: restituisce dati in-memory
-            return _patients.OrderBy(p => p.LastName).ToList();
-
-            // IMPLEMENTAZIONE FINALE:
-            // return await _repository.GetAllAsync();
+            return await _repository.GetAllAsync();
         }
 
         /// <summary>
@@ -66,65 +35,64 @@ namespace PTRP.App.Services
         /// </summary>
         public async Task<PatientModel> GetByIdAsync(Guid id)
         {
-            await Task.Delay(50);
-
-            var patient = _patients.FirstOrDefault(p => p.Id == id);
+            var patient = await _repository.GetByIdAsync(id);
+            if (patient == null)
+            {
+                throw new InvalidOperationException($"Paziente con ID {id} non trovato");
+            }
             return patient;
-
-            // IMPLEMENTAZIONE FINALE:
-            // return await _repository.GetByIdAsync(id);
         }
 
         /// <summary>
-        /// Aggiunge un nuovo paziente con validazione
+        /// Aggiunge un nuovo paziente con validazione business
         /// </summary>
         public async Task AddAsync(PatientModel patient)
         {
-            // Validazioni (business logic)
+            // Validazioni business logic
             if (string.IsNullOrWhiteSpace(patient.FirstName))
                 throw new ArgumentException("Il nome è obbligatorio", nameof(patient.FirstName));
 
             if (string.IsNullOrWhiteSpace(patient.LastName))
                 throw new ArgumentException("Il cognome è obbligatorio", nameof(patient.LastName));
 
-            // Se l'ID non è stato impostato, genera un nuovo Guid
-            if (patient.Id == Guid.Empty)
-                patient.Id = Guid.NewGuid();
+            if (patient.FirstName.Length > 100)
+                throw new ArgumentException("Il nome non può superare i 100 caratteri", nameof(patient.FirstName));
 
-            // Logica di business: setta CreatedAt se non già impostato
-            if (patient.CreatedAt == default)
-                patient.CreatedAt = DateTime.Now;
+            if (patient.LastName.Length > 100)
+                throw new ArgumentException("Il cognome non può superare i 100 caratteri", nameof(patient.LastName));
 
-            await Task.Delay(100);
-
-            // STUB: aggiunge in-memory
-            _patients.Add(patient);
-
-            // IMPLEMENTAZIONE FINALE:
-            // await _repository.AddAsync(patient);
+            // Il repository gestirà la generazione dell'ID e CreatedAt
+            await _repository.AddAsync(patient);
         }
 
         /// <summary>
-        /// Aggiorna un paziente esistente
+        /// Aggiorna un paziente esistente con validazione
         /// </summary>
         public async Task UpdateAsync(PatientModel patient)
         {
             if (patient.Id == Guid.Empty)
                 throw new ArgumentException("ID paziente non valido", nameof(patient.Id));
 
-            var existing = _patients.FirstOrDefault(p => p.Id == patient.Id);
-            if (existing == null)
+            // Verifica esistenza
+            if (!await _repository.ExistsAsync(patient.Id))
+            {
                 throw new InvalidOperationException($"Paziente con ID {patient.Id} non trovato");
+            }
 
-            // Logica: aggiorna campi e timestamp
-            existing.FirstName = patient.FirstName;
-            existing.LastName = patient.LastName;
-            existing.UpdatedAt = DateTime.Now;
+            // Validazioni business logic
+            if (string.IsNullOrWhiteSpace(patient.FirstName))
+                throw new ArgumentException("Il nome è obbligatorio", nameof(patient.FirstName));
 
-            await Task.Delay(100);
+            if (string.IsNullOrWhiteSpace(patient.LastName))
+                throw new ArgumentException("Il cognome è obbligatorio", nameof(patient.LastName));
 
-            // IMPLEMENTAZIONE FINALE:
-            // await _repository.UpdateAsync(patient);
+            if (patient.FirstName.Length > 100)
+                throw new ArgumentException("Il nome non può superare i 100 caratteri", nameof(patient.FirstName));
+
+            if (patient.LastName.Length > 100)
+                throw new ArgumentException("Il cognome non può superare i 100 caratteri", nameof(patient.LastName));
+
+            await _repository.UpdateAsync(patient);
         }
 
         /// <summary>
@@ -132,38 +100,19 @@ namespace PTRP.App.Services
         /// </summary>
         public async Task DeleteAsync(Guid id)
         {
-            var patient = _patients.FirstOrDefault(p => p.Id == id);
-            if (patient == null)
+            bool deleted = await _repository.DeleteAsync(id);
+            if (!deleted)
+            {
                 throw new InvalidOperationException($"Paziente con ID {id} non trovato");
-
-            await Task.Delay(100);
-
-            _patients.Remove(patient);
-
-            // IMPLEMENTAZIONE FINALE:
-            // await _repository.DeleteAsync(id);
+            }
         }
 
         /// <summary>
-        /// Ricerca pazienti per nome (FirstName o LastName contiene il termine)
+        /// Ricerca pazienti per nome o cognome
         /// </summary>
         public async Task<IEnumerable<PatientModel>> SearchAsync(string searchTerm)
         {
-            if (string.IsNullOrWhiteSpace(searchTerm))
-                return await GetAllAsync();
-
-            await Task.Delay(100);
-
-            var results = _patients
-                .Where(p => p.FirstName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)
-                         || p.LastName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase))
-                .OrderBy(p => p.LastName)
-                .ToList();
-
-            return results;
-
-            // IMPLEMENTAZIONE FINALE:
-            // return await _repository.SearchAsync(searchTerm);
+            return await _repository.SearchAsync(searchTerm);
         }
     }
 }
