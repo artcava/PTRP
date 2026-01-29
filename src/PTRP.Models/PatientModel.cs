@@ -11,8 +11,8 @@ namespace PTRP.Models
     /// </summary>
     public class PatientModel : INotifyPropertyChanged
     {
-        private string _firstName;
-        private string _lastName;
+        private string? _firstName;
+        private string? _lastName;
         private bool _isEditing;
 
         public event PropertyChangedEventHandler? PropertyChanged;
@@ -25,7 +25,7 @@ namespace PTRP.Models
         /// <summary>
         /// Nome del paziente
         /// </summary>
-        public string FirstName
+        public string? FirstName
         {
             get => _firstName;
             set
@@ -38,7 +38,7 @@ namespace PTRP.Models
         /// <summary>
         /// Cognome del paziente
         /// </summary>
-        public string LastName
+        public string? LastName
         {
             get => _lastName;
             set

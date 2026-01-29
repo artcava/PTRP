@@ -17,22 +17,22 @@ namespace PTRP.Models
         /// <summary>
         /// Nome dell'educatore
         /// </summary>
-        public string FirstName { get; set; }
+        public string? FirstName { get; set; }
 
         /// <summary>
         /// Cognome dell'educatore
         /// </summary>
-        public string LastName { get; set; }
+        public string? LastName { get; set; }
 
         /// <summary>
         /// Email di contatto
         /// </summary>
-        public string Email { get; set; }
+        public string? Email { get; set; }
 
         /// <summary>
         /// Numero di telefono
         /// </summary>
-        public string PhoneNumber { get; set; }
+        public string? PhoneNumber { get; set; }
 
         /// <summary>
         /// Data di nascita
@@ -43,12 +43,12 @@ namespace PTRP.Models
         /// Specializzazione/titolo professionale
         /// (es. "Psicologo", "Fisioterapista", "Logopedista")
         /// </summary>
-        public string Specialization { get; set; }
+        public string? Specialization { get; set; }
 
         /// <summary>
         /// Numero di licenza/albo professionale
         /// </summary>
-        public string LicenseNumber { get; set; }
+        public string? LicenseNumber { get; set; }
 
         /// <summary>
         /// Data di inizio dell'impiego/collaborazione

@@ -6,49 +6,47 @@ namespace PTRP.Models
 {
     /// <summary>
     /// Modello per rappresentare un Progetto Terapeutico
-    /// È associato a un Paziente e può avere molteplici Educatori Professionali
+    /// Un progetto terapeutico è associato a un paziente e può coinvolgere più educatori professionali
     /// </summary>
     public class TherapyProjectModel : IValidatableObject
     {
         /// <summary>
-        /// Identificatore univoco del progetto terapeutico
+        /// Identificatore univoco del progetto
         /// </summary>
         public Guid Id { get; set; } = Guid.NewGuid();
 
         /// <summary>
-        /// ID del paziente a cui è associato il progetto
+        /// Chiave esterna: ID del paziente associato
         /// </summary>
         public Guid PatientId { get; set; }
 
         /// <summary>
-        /// Titolo/Nome del progetto terapeutico
+        /// Titolo del progetto terapeutico
         /// </summary>
         [Required(ErrorMessage = "Il titolo del progetto è obbligatorio")]
-        [StringLength(200, MinimumLength = 3, ErrorMessage = "Il titolo deve contenere tra 3 e 200 caratteri")]
-        public string Title { get; set; }
+        [StringLength(200, MinimumLength = 3, ErrorMessage = "Il titolo deve avere tra 3 e 200 caratteri")]
+        public string? Title { get; set; }
 
         /// <summary>
-        /// Descrizione dettagliata del progetto terapeutico
+        /// Descrizione dettagliata del progetto
         /// </summary>
-        [StringLength(2000, ErrorMessage = "La descrizione non può superare 2000 caratteri")]
-        public string Description { get; set; }
+        [StringLength(2000, ErrorMessage = "La descrizione non può superare i 2000 caratteri")]
+        public string? Description { get; set; }
 
         /// <summary>
-        /// Data di inizio del progetto terapeutico
+        /// Data di inizio del progetto
         /// </summary>
-        [Required(ErrorMessage = "La data di inizio è obbligatoria")]
         public DateTime StartDate { get; set; }
 
         /// <summary>
-        /// Data di fine prevista del progetto terapeutico
-        /// Validazione: non può essere prima di StartDate
+        /// Data di fine prevista del progetto
         /// </summary>
         public DateTime? EndDate { get; set; }
 
         /// <summary>
-        /// Stato del progetto terapeutico (es. "In Progress", "Completed", "Suspended")
+        /// Status del progetto (es. "In Progress", "Completed", "On Hold")
         /// </summary>
-        [Required(ErrorMessage = "Lo stato del progetto è obbligatorio")]
+        [Required]
         [StringLength(50)]
         public string Status { get; set; } = "In Progress";
 
@@ -63,48 +61,53 @@ namespace PTRP.Models
         public DateTime? UpdatedAt { get; set; }
 
         /// <summary>
-        /// Navigazione al paziente associato (relazione inversa)
+        /// Paziente associato al progetto (navigazione)
         /// </summary>
-        public PatientModel Patient { get; set; }
+        public PatientModel? Patient { get; set; }
 
         /// <summary>
-        /// Collezione di Educatori Professionali assegnati al progetto
+        /// Educatori professionali assegnati al progetto
         /// </summary>
         public ICollection<ProfessionalEducatorModel> ProfessionalEducators { get; set; } = new List<ProfessionalEducatorModel>();
 
         /// <summary>
-        /// Rappresentazione testuale del progetto terapeutico
-        /// </summary>
-        public override string ToString() => $"{Title} (Paziente ID: {PatientId:D})";
-
-        /// <summary>
-        /// Validazione custom per le regole di business
+        /// Validazione custom del modello
+        /// Verifica che EndDate non sia prima di StartDate e non nel passato
         /// </summary>
         public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
         {
-            // Validazione: EndDate non può essere nel passato
-            if (EndDate.HasValue && EndDate.Value < DateTime.Now)
-            {
-                yield return new ValidationResult(
-                    "La data di fine non può essere nel passato",
-                    new[] { nameof(EndDate) });
-            }
+            var errors = new List<ValidationResult>();
 
-            // Validazione: EndDate non può essere prima di StartDate
-            if (EndDate.HasValue && EndDate.Value < StartDate)
+            // EndDate non può essere prima di StartDate
+            if (EndDate.HasValue && EndDate < StartDate)
             {
-                yield return new ValidationResult(
+                errors.Add(new ValidationResult(
                     "La data di fine non può essere prima della data di inizio",
-                    new[] { nameof(EndDate) });
+                    new[] { nameof(EndDate) }));
             }
 
-            // Validazione: StartDate non può essere eccessivamente nel futuro
-            if (StartDate > DateTime.Now.AddHours(1))
+            // EndDate non può essere nel passato (rispetto a StartDate)
+            if (EndDate.HasValue && EndDate < DateTime.Now)
             {
-                yield return new ValidationResult(
-                    "La data di inizio non può essere eccessivamente nel futuro (massimo 1 ora da ora)",
-                    new[] { nameof(StartDate) });
+                errors.Add(new ValidationResult(
+                    "La data di fine non può essere nel passato",
+                    new[] { nameof(EndDate) }));
             }
+
+            // StartDate non può essere eccessivamente nel futuro (max 1 anno)
+            if (StartDate > DateTime.Now.AddYears(1))
+            {
+                errors.Add(new ValidationResult(
+                    "La data di inizio non può essere più di un anno nel futuro",
+                    new[] { nameof(StartDate) }));
+            }
+
+            return errors;
         }
+
+        /// <summary>
+        /// Rappresentazione testuale del progetto
+        /// </summary>
+        public override string ToString() => $"{Title} (Paziente: {PatientId}, Status: {Status})";
     }
 }
