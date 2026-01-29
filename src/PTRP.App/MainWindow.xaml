@@ -5,7 +5,7 @@
         xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
         Title="PTRP - Gestione Pazienti"
         Height="600"
-        Width="1000"
+        Width="1100"
         WindowStartupLocation="CenterScreen"
         Loaded="Window_Loaded">
     
@@ -54,6 +54,20 @@
                 </Setter.Value>
             </Setter>
         </Style>
+        
+        <!-- Style per riga selezionata con colore più tenue -->
+        <Style x:Key="DataGridRowStyle" TargetType="DataGridRow">
+            <Setter Property="Background" Value="White"/>
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="#E3F2FD"/>
+                    <Setter Property="Foreground" Value="Black"/>
+                </Trigger>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#F5F5F5"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
     </Window.Resources>
     
     <Grid Background="#F5F5F5">
@@ -63,55 +77,102 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- Header: Ricerca e Comando Aggiungi -->
-        <Border Grid.Row="0" Background="White" Padding="20">
+        <!-- Header: Titolo, Ricerca e Comando Aggiungi -->
+        <Border Grid.Row="0" Background="White" Padding="20" BorderBrush="#E0E0E0" BorderThickness="0,0,0,1">
             <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
                 
-                <!-- Ricerca con X interno -->
-                <Grid Grid.Column="0" MaxWidth="400" HorizontalAlignment="Left">
-                    <TextBox x:Name="SearchBox"
-                             Text="{Binding SearchTerm, UpdateSourceTrigger=PropertyChanged}"
-                             Height="40"
-                             Padding="12,8,40,8"
-                             VerticalContentAlignment="Center"
-                             Background="White"
-                             BorderBrush="#CCCCCC"
-                             BorderThickness="1"
-                             FontSize="14"
-                             materialDesign:HintAssist.Hint="Cerca per nome o cognome..."/>
+                <!-- Titolo Sezione -->
+                <TextBlock Grid.Row="0" 
+                           Text="Gestione Pazienti" 
+                           FontSize="20" 
+                           FontWeight="SemiBold" 
+                           Foreground="#333333"
+                           Margin="0,0,0,15"/>
+                
+                <!-- Ricerca e Aggiungi -->
+                <Grid Grid.Row="1">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
                     
-                    <!-- Bottone X per cancellare (appare solo con testo) -->
-                    <Button Style="{StaticResource IconButtonStyle}"
-                            Command="{Binding ClearSearchCommand}"
-                            HorizontalAlignment="Right"
-                            VerticalAlignment="Center"
-                            Margin="0,0,8,0"
-                            Width="24"
-                            Height="24"
-                            Visibility="{Binding HasSearchText, Converter={StaticResource BoolToVisibility}}">
-                        <materialDesign:PackIcon Kind="Close" 
-                                                 Width="18" 
-                                                 Height="18"
-                                                 Foreground="#666666"/>
+                    <!-- Label Ricerca -->
+                    <TextBlock Grid.Column="0" 
+                               Text="Ricerca:" 
+                               VerticalAlignment="Center"
+                               FontSize="14"
+                               Foreground="#666666"
+                               Margin="0,0,10,0"/>
+                    
+                    <!-- Campo Ricerca con X interno e placeholder -->
+                    <Grid Grid.Column="1" MaxWidth="500" HorizontalAlignment="Left">
+                        <TextBox x:Name="SearchBox"
+                                 Text="{Binding SearchTerm, UpdateSourceTrigger=PropertyChanged}"
+                                 Height="40"
+                                 MinWidth="350"
+                                 Padding="12,8,40,8"
+                                 VerticalContentAlignment="Center"
+                                 Background="White"
+                                 BorderBrush="#CCCCCC"
+                                 BorderThickness="1"
+                                 FontSize="14">
+                            <TextBox.Style>
+                                <Style TargetType="TextBox">
+                                    <Style.Triggers>
+                                        <Trigger Property="Text" Value="">
+                                            <Setter Property="Background">
+                                                <Setter.Value>
+                                                    <VisualBrush Stretch="None" AlignmentX="Left">
+                                                        <VisualBrush.Visual>
+                                                            <TextBlock Text="Cerca per nome o cognome..." 
+                                                                       Foreground="#999999" 
+                                                                       FontSize="14"
+                                                                       Margin="12,0,0,0"/>
+                                                        </VisualBrush.Visual>
+                                                    </VisualBrush>
+                                                </Setter.Value>
+                                            </Setter>
+                                        </Trigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBox.Style>
+                        </TextBox>
+                        
+                        <!-- Bottone X per cancellare (appare solo con testo) -->
+                        <Button Style="{StaticResource IconButtonStyle}"
+                                Command="{Binding ClearSearchCommand}"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Center"
+                                Margin="0,0,8,0"
+                                Width="24"
+                                Height="24"
+                                Visibility="{Binding HasSearchText, Converter={StaticResource BoolToVisibility}}">
+                            <materialDesign:PackIcon Kind="Close" 
+                                                     Width="18" 
+                                                     Height="18"
+                                                     Foreground="#666666"/>
+                        </Button>
+                    </Grid>
+                    
+                    <!-- Bottone Aggiungi con icona + verde circolare -->
+                    <Button Grid.Column="2"
+                            Command="{Binding AddNewPatientCommand}"
+                            Style="{StaticResource CircularGreenButtonStyle}"
+                            Width="40"
+                            Height="40"
+                            Margin="15,0,0,0"
+                            ToolTip="Aggiungi Paziente">
+                        <materialDesign:PackIcon Kind="Plus" 
+                                                 Width="24" 
+                                                 Height="24"
+                                                 Foreground="White"/>
                     </Button>
                 </Grid>
-                
-                <!-- Bottone Aggiungi con icona + verde circolare -->
-                <Button Grid.Column="1"
-                        Command="{Binding AddNewPatientCommand}"
-                        Style="{StaticResource CircularGreenButtonStyle}"
-                        Width="40"
-                        Height="40"
-                        ToolTip="Aggiungi Paziente">
-                    <materialDesign:PackIcon Kind="Plus" 
-                                             Width="24" 
-                                             Height="24"
-                                             Foreground="White"/>
-                </Button>
             </Grid>
         </Border>
 
@@ -122,18 +183,39 @@
                   AutoGenerateColumns="False"
                   CanUserAddRows="False"
                   CanUserDeleteRows="False"
+                  RowStyle="{StaticResource DataGridRowStyle}"
                   Background="White"
-                  RowBackground="White"
-                  AlternatingRowBackground="#F9F9F9"
+                  AlternatingRowBackground="#FAFAFA"
                   BorderBrush="#E0E0E0"
                   BorderThickness="1"
                   HeadersVisibility="Column"
                   GridLinesVisibility="Horizontal"
                   HorizontalGridLinesBrush="#E0E0E0"
                   VerticalScrollBarVisibility="Auto"
+                  SelectionMode="Single"
+                  SelectionUnit="FullRow"
                   Margin="20">
             
             <DataGrid.Columns>
+                <!-- Indicatore Selezione -->
+                <DataGridTemplateColumn Header="" Width="30">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Border Background="Transparent" Width="4" Height="30" HorizontalAlignment="Left">
+                                <Border.Style>
+                                    <Style TargetType="Border">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=DataGridRow}}" Value="True">
+                                                <Setter Property="Background" Value="#007ACC"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
+                            </Border>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                
                 <!-- Nome (editabile) -->
                 <DataGridTextColumn Header="Nome" 
                                     Binding="{Binding FirstName, UpdateSourceTrigger=PropertyChanged}" 
@@ -238,7 +320,7 @@
         </DataGrid>
 
         <!-- Status Bar: Messaggi e Loading -->
-        <Border Grid.Row="2" Background="#F0F0F0" Padding="20">
+        <Border Grid.Row="2" Background="#F0F0F0" Padding="20" BorderBrush="#E0E0E0" BorderThickness="0,1,0,0">
             <StackPanel Orientation="Horizontal">
                 <TextBlock Text="{Binding StatusMessage}"
                            Foreground="#333333"
