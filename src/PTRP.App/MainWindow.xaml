@@ -26,6 +26,34 @@
                 </Trigger>
             </Style.Triggers>
         </Style>
+        
+        <!-- Style per bottone circolare verde -->
+        <Style x:Key="CircularGreenButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="#28A745"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                CornerRadius="20"
+                                BorderThickness="0">
+                            <ContentPresenter HorizontalAlignment="Center" 
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Opacity" Value="0.8"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Opacity" Value="0.6"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Window.Resources>
     
     <Grid Background="#F5F5F5">
@@ -72,15 +100,13 @@
                     </Button>
                 </Grid>
                 
-                <!-- Bottone Aggiungi con icona + verde -->
+                <!-- Bottone Aggiungi con icona + verde circolare -->
                 <Button Grid.Column="1"
                         Command="{Binding AddNewPatientCommand}"
-                        Style="{StaticResource IconButtonStyle}"
+                        Style="{StaticResource CircularGreenButtonStyle}"
                         Width="40"
                         Height="40"
-                        ToolTip="Aggiungi Paziente"
-                        Background="#28A745"
-                        CornerRadius="20">
+                        ToolTip="Aggiungi Paziente">
                     <materialDesign:PackIcon Kind="Plus" 
                                              Width="24" 
                                              Height="24"
