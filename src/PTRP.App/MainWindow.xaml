@@ -55,7 +55,7 @@
             </Setter>
         </Style>
         
-        <!-- Style per riga selezionata: background rimosso, solo indicatore visuale minimo -->
+        <!-- Style per riga selezionata: RIMOSSO background azzurro, mantiene solo l'indicatore blu a sinistra -->
         <Style x:Key="DataGridRowStyle" TargetType="DataGridRow">
             <Setter Property="Background" Value="White"/>
             <Style.Triggers>
@@ -194,33 +194,38 @@
                   VerticalScrollBarVisibility="Auto"
                   SelectionMode="Single"
                   SelectionUnit="FullRow"
-                  Margin="20">
+                  Margin="20"
+                  Name="PatientsDataGrid">
             
             <DataGrid.Columns>
-                <!-- Indicatore Selezione con Freccia -->
-                <DataGridTemplateColumn Header="" Width="40">
+                <!-- Indicatore Selezione con Freccia (CHEVRON-RIGHT visibile solo quando selezionato) -->
+                <DataGridTemplateColumn Header="" Width="45">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
-                            <Grid Background="Transparent" Width="30" Height="30" HorizontalAlignment="Center">
-                                <!-- Freccia verso destra visibile solo quando la riga è selezionata -->
-                                <materialDesign:PackIcon Kind="ChevronRight" 
-                                                         Width="24" 
-                                                         Height="24"
-                                                         Foreground="#007ACC"
-                                                         HorizontalAlignment="Center"
-                                                         VerticalAlignment="Center">
-                                    <materialDesign:PackIcon.Style>
-                                        <Style TargetType="materialDesign:PackIcon">
-                                            <Setter Property="Visibility" Value="Collapsed"/>
+                            <StackPanel Orientation="Horizontal" 
+                                        VerticalAlignment="Center"
+                                        HorizontalAlignment="Center"
+                                        Width="30">
+                                <!-- Icona freccia destra: appare quando riga è selezionata -->
+                                <TextBlock Text="›" 
+                                           FontSize="24" 
+                                           Foreground="#007ACC"
+                                           FontWeight="Bold"
+                                           Margin="0,-2,0,0">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
                                             <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=DataGridRow}}" Value="False">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                </DataTrigger>
                                                 <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=DataGridRow}}" Value="True">
                                                     <Setter Property="Visibility" Value="Visible"/>
                                                 </DataTrigger>
                                             </Style.Triggers>
                                         </Style>
-                                    </materialDesign:PackIcon.Style>
-                                </materialDesign:PackIcon>
-                            </Grid>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </StackPanel>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
