@@ -1,0 +1,78 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  create-release:
+    runs-on: windows-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '10.0.x'
+    
+    - name: Restore dependencies
+      run: dotnet restore
+    
+    - name: Build Release
+      run: dotnet build --configuration Release --no-restore
+    
+    - name: Publish Application
+      run: dotnet publish src/PTRP.App/PTRP.App.csproj --configuration Release --output ./publish --self-contained
+    
+    - name: Install Velopack CLI
+      run: dotnet tool install -g Velopack.Cmd
+    
+    - name: Get version from tag
+      id: version
+      run: |
+        $tag = "${{ github.ref }}".Replace('refs/tags/v', '')
+        echo "VERSION=$tag" >> $env:GITHUB_OUTPUT
+        echo "Version: $tag"
+    
+    - name: Create Velopack Release
+      run: |
+        vpk pack `
+          --packId PTRP `
+          --packVersion ${{ steps.version.outputs.VERSION }} `
+          --packDir ./publish `
+          --outputDir ./Releases `
+          --icon ./src/PTRP.App/Assets/app-icon.ico
+      continue-on-error: true
+    
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        draft: false
+        prerelease: ${{ contains(github.ref, 'alpha') || contains(github.ref, 'beta') }}
+        files: |
+          ./Releases/**/*.nupkg
+          ./Releases/**/*.msi
+        body: |
+          ## Release v${{ steps.version.outputs.VERSION }}
+          
+          ### Download
+          - **Windows Installer (MSI)**: See assets below
+          - **Portable (NuGet)**: See assets below
+          
+          ### What's New
+          See [CHANGELOG.md](./CHANGELOG.md) for details.
+          
+          ### Installation
+          1. Download the `.msi` file from the Assets section
+          2. Run the installer
+          3. PTRP will be installed and auto-update enabled
+          
+          ### System Requirements
+          - Windows 7 or later
+          - .NET Runtime 10.0 or later
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
