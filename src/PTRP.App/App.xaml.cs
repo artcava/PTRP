@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using PTRP.Services;
 using PTRP.Services.Interfaces;
-using PTRP.App.ViewModels;
+using PTRP.ViewModels;
 using PTRP.Data;
 using PTRP.Data.Repositories;
 using PTRP.Data.Repositories.Interfaces;
@@ -20,7 +20,7 @@ namespace PTRP.App
         /// <summary>
         /// Service provider per la risoluzione delle dipendenze
         /// </summary>
-        private ServiceProvider _serviceProvider;
+        private ServiceProvider? _serviceProvider;
 
         /// <summary>
         /// Configurazione e costruzione del DI container
@@ -84,6 +84,8 @@ namespace PTRP.App
         /// </summary>
         private void EnsureDatabaseCreated()
         {
+            if (_serviceProvider == null) return;
+
             using var scope = _serviceProvider.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<PTRPDbContext>();
             

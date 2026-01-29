@@ -19,7 +19,7 @@ namespace PTRP.ViewModels
     public class MainWindowViewModel : INotifyPropertyChanged
     {
         private readonly IPatientService _patientService;
-        private CancellationTokenSource _searchCancellationTokenSource;
+        private CancellationTokenSource? _searchCancellationTokenSource;
         private const int SearchDelayMs = 400;
 
         // Backing fields
@@ -41,6 +41,7 @@ namespace PTRP.ViewModels
 
             // Inizializza collezioni
             Patients = new ObservableCollection<PatientModel>();
+            _searchCancellationTokenSource = new CancellationTokenSource();
 
             // Inizializza comandi
             LoadPatientsCommand = new AsyncRelayCommand(async _ => await LoadPatientsAsync());
