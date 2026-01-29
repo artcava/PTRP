@@ -1,82 +1,145 @@
-using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
+using System;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
+using System.Windows.Input;
 using PTRP.App.Models;
 using PTRP.App.Services.Interfaces;
-using System.Collections.ObjectModel;
 
 namespace PTRP.App.ViewModels
 {
     /// <summary>
-    /// ViewModel principale per MainWindow
-    /// Gestisce la logica di presentazione e lo stato della finestra principale
-    /// 
-    /// Utilizza MVVM Toolkit:
-    /// - ObservableObject: implementa INotifyPropertyChanged automaticamente
-    /// - RelayCommand: implementa ICommand automaticamente
-    /// - SetProperty: notifica binding sui cambiamenti di proprietà
+    /// ViewModel per la finestra principale dell'applicazione
+    /// Gestisce la lista dei pazienti e i comandi CRUD
     /// </summary>
-    public partial class MainWindowViewModel : ObservableObject
+    public class MainWindowViewModel : INotifyPropertyChanged
     {
         private readonly IPatientService _patientService;
 
-        /// <summary>
-        /// Collezione osservabile di pazienti (si aggiorna automaticamente nel binding)
-        /// </summary>
-        [ObservableProperty]
-        private ObservableCollection<PatientModel> patients;
+        // Backing fields
+        private ObservableCollection<PatientModel> _patients;
+        private PatientModel _selectedPatient;
+        private string _searchTerm;
+        private string _statusMessage;
+        private bool _isLoading;
+
+        public event PropertyChangedEventHandler PropertyChanged;
 
         /// <summary>
-        /// Paziente attualmente selezionato nella lista
+        /// Costruttore
         /// </summary>
-        [ObservableProperty]
-        private PatientModel selectedPatient;
-
-        /// <summary>
-        /// Termine di ricerca per filtrare i pazienti
-        /// </summary>
-        [ObservableProperty]
-        private string searchTerm;
-
-        /// <summary>
-        /// Flag per indicare se il caricamento dati è in corso
-        /// </summary>
-        [ObservableProperty]
-        private bool isLoading;
-
-        /// <summary>
-        /// Messaggio di stato (errori, successi, info)
-        /// </summary>
-        [ObservableProperty]
-        private string statusMessage;
-
-        /// <summary>
-        /// Costruttore con dependency injection del servizio
-        /// </summary>
-        /// <param name="patientService">Servizio per la gestione dei pazienti</param>
         public MainWindowViewModel(IPatientService patientService)
         {
             _patientService = patientService ?? throw new ArgumentNullException(nameof(patientService));
+
+            // Inizializza collezioni
             Patients = new ObservableCollection<PatientModel>();
-            SearchTerm = string.Empty;
+
+            // Inizializza comandi
+            SearchPatientsCommand = new RelayCommand(async _ => await SearchPatientsAsync());
+            ClearSearchCommand = new RelayCommand(_ => ClearSearch());
+            AddPatientCommand = new RelayCommand(async _ => await AddPatientAsync());
+            UpdatePatientCommand = new RelayCommand(async _ => await UpdatePatientAsync(), _ => SelectedPatient != null);
+            DeletePatientCommand = new RelayCommand(async _ => await DeletePatientAsync(), _ => SelectedPatient != null);
+        }
+
+        #region Properties
+
+        /// <summary>
+        /// Collezione di pazienti
+        /// </summary>
+        public ObservableCollection<PatientModel> Patients
+        {
+            get => _patients;
+            set
+            {
+                _patients = value;
+                OnPropertyChanged();
+            }
         }
 
         /// <summary>
-        /// Comando per caricare tutti i pazienti
-        /// Viene eseguito al caricamento della finestra
+        /// Paziente selezionato nella lista
         /// </summary>
-        [RelayCommand]
-        private async Task LoadPatients()
+        public PatientModel SelectedPatient
+        {
+            get => _selectedPatient;
+            set
+            {
+                _selectedPatient = value;
+                OnPropertyChanged();
+            }
+        }
+
+        /// <summary>
+        /// Termine di ricerca
+        /// </summary>
+        public string SearchTerm
+        {
+            get => _searchTerm;
+            set
+            {
+                _searchTerm = value;
+                OnPropertyChanged();
+            }
+        }
+
+        /// <summary>
+        /// Messaggio di stato mostrato nella status bar
+        /// </summary>
+        public string StatusMessage
+        {
+            get => _statusMessage;
+            set
+            {
+                _statusMessage = value;
+                OnPropertyChanged();
+            }
+        }
+
+        /// <summary>
+        /// Indica se Ã¨ in corso un'operazione asincrona
+        /// </summary>
+        public bool IsLoading
+        {
+            get => _isLoading;
+            set
+            {
+                _isLoading = value;
+                OnPropertyChanged();
+            }
+        }
+
+        #endregion
+
+        #region Commands
+
+        public ICommand SearchPatientsCommand { get; }
+        public ICommand ClearSearchCommand { get; }
+        public ICommand AddPatientCommand { get; }
+        public ICommand UpdatePatientCommand { get; }
+        public ICommand DeletePatientCommand { get; }
+
+        #endregion
+
+        #region Methods
+
+        /// <summary>
+        /// Carica tutti i pazienti dal servizio
+        /// </summary>
+        public async Task LoadPatientsAsync()
         {
             try
             {
                 IsLoading = true;
                 StatusMessage = "Caricamento pazienti...";
 
-                var patientsList = await _patientService.GetAllAsync();
-
-                // Pulisce e ripopola la collezione (il binding aggiornerà automaticamente l'UI)
+                var patients = await _patientService.GetAllAsync();
+                
                 Patients.Clear();
-                foreach (var patient in patientsList)
+                foreach (var patient in patients)
                 {
                     Patients.Add(patient);
                 }
@@ -86,7 +149,6 @@ namespace PTRP.App.ViewModels
             catch (Exception ex)
             {
                 StatusMessage = $"Errore nel caricamento: {ex.Message}";
-                System.Diagnostics.Debug.WriteLine($"Exception: {ex}");
             }
             finally
             {
@@ -95,27 +157,21 @@ namespace PTRP.App.ViewModels
         }
 
         /// <summary>
-        /// Comando per cercare pazienti in base al termine di ricerca
+        /// Cerca pazienti per termine di ricerca
         /// </summary>
-        [RelayCommand]
-        private async Task SearchPatients()
+        private async Task SearchPatientsAsync()
         {
             try
             {
                 IsLoading = true;
+                StatusMessage = string.IsNullOrWhiteSpace(SearchTerm) 
+                    ? "Caricamento tutti i pazienti..." 
+                    : $"Ricerca '{SearchTerm}'...";
 
-                if (string.IsNullOrWhiteSpace(SearchTerm))
-                {
-                    // Se il termine è vuoto, carica tutti
-                    await LoadPatientsCommand.ExecuteAsync(null);
-                    return;
-                }
-
-                StatusMessage = $"Ricerca in corso per: {SearchTerm}";
-                var results = await _patientService.SearchAsync(SearchTerm);
-
+                var patients = await _patientService.SearchAsync(SearchTerm ?? string.Empty);
+                
                 Patients.Clear();
-                foreach (var patient in results)
+                foreach (var patient in patients)
                 {
                     Patients.Add(patient);
                 }
@@ -133,34 +189,35 @@ namespace PTRP.App.ViewModels
         }
 
         /// <summary>
-        /// Comando per aggiungere un nuovo paziente
+        /// Cancella la ricerca e ricarica tutti i pazienti
         /// </summary>
-        [RelayCommand]
-        private async Task AddPatient()
+        private void ClearSearch()
+        {
+            SearchTerm = string.Empty;
+            _ = LoadPatientsAsync();
+        }
+
+        /// <summary>
+        /// Aggiunge un nuovo paziente (placeholder - da implementare con dialog)
+        /// </summary>
+        private async Task AddPatientAsync()
         {
             try
             {
-                // Stub: crea un paziente di esempio
-                var newPatient = new PatientModel
-                {
-                    FirstName = "Nuovo",
-                    LastName = "Paziente",
-                    Email = "nuovo@example.com",
-                    DateOfBirth = new DateTime(1995, 1, 1),
-                    PhoneNumber = "+39 000 000 0000"
-                };
-
                 IsLoading = true;
                 StatusMessage = "Aggiunta paziente...";
 
-                await _patientService.AddAsync(newPatient);
-                Patients.Add(newPatient);
+                // TODO: Mostrare dialog per input dati paziente
+                var newPatient = new PatientModel
+                {
+                    FirstName = "Nuovo",
+                    LastName = "Paziente"
+                };
 
-                StatusMessage = $"Paziente {newPatient} aggiunto con successo";
-            }
-            catch (ArgumentException ex)
-            {
-                StatusMessage = $"Validazione fallita: {ex.Message}";
+                await _patientService.AddAsync(newPatient);
+                await LoadPatientsAsync();
+
+                StatusMessage = "Paziente aggiunto con successo";
             }
             catch (Exception ex)
             {
@@ -173,59 +230,20 @@ namespace PTRP.App.ViewModels
         }
 
         /// <summary>
-        /// Comando per eliminare il paziente selezionato
+        /// Aggiorna il paziente selezionato (placeholder - da implementare con dialog)
         /// </summary>
-        [RelayCommand]
-        private async Task DeletePatient()
+        private async Task UpdatePatientAsync()
         {
-            if (SelectedPatient == null)
-            {
-                StatusMessage = "Selezionare un paziente da eliminare";
-                return;
-            }
+            if (SelectedPatient == null) return;
 
             try
             {
                 IsLoading = true;
-                StatusMessage = $"Eliminazione di {SelectedPatient}...";
+                StatusMessage = "Aggiornamento paziente...";
 
-                await _patientService.DeleteAsync(SelectedPatient.Id);
-                Patients.Remove(SelectedPatient);
-                SelectedPatient = null;
-
-                StatusMessage = "Paziente eliminato con successo";
-            }
-            catch (Exception ex)
-            {
-                StatusMessage = $"Errore nell'eliminazione: {ex.Message}";
-            }
-            finally
-            {
-                IsLoading = false;
-            }
-        }
-
-        /// <summary>
-        /// Comando per aggiornare il paziente selezionato
-        /// </summary>
-        [RelayCommand]
-        private async Task UpdatePatient()
-        {
-            if (SelectedPatient == null)
-            {
-                StatusMessage = "Selezionare un paziente da modificare";
-                return;
-            }
-
-            try
-            {
-                IsLoading = true;
-                StatusMessage = $"Aggiornamento di {SelectedPatient}...";
-
+                // TODO: Mostrare dialog per modifica dati paziente
                 await _patientService.UpdateAsync(SelectedPatient);
-
-                // Notifica il binding che la proprietà è cambiata
-                OnPropertyChanged(nameof(SelectedPatient));
+                await LoadPatientsAsync();
 
                 StatusMessage = "Paziente aggiornato con successo";
             }
@@ -240,13 +258,73 @@ namespace PTRP.App.ViewModels
         }
 
         /// <summary>
-        /// Comando per pulire il termine di ricerca e ricaricare tutti i pazienti
+        /// Elimina il paziente selezionato
         /// </summary>
-        [RelayCommand]
-        private async Task ClearSearch()
+        private async Task DeletePatientAsync()
         {
-            SearchTerm = string.Empty;
-            await LoadPatientsCommand.ExecuteAsync(null);
+            if (SelectedPatient == null) return;
+
+            try
+            {
+                IsLoading = true;
+                StatusMessage = "Eliminazione paziente...";
+
+                // TODO: Mostrare dialog di conferma
+                await _patientService.DeleteAsync(SelectedPatient.Id);
+                await LoadPatientsAsync();
+
+                StatusMessage = "Paziente eliminato con successo";
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"Errore nell'eliminazione: {ex.Message}";
+            }
+            finally
+            {
+                IsLoading = false;
+            }
+        }
+
+        #endregion
+
+        #region INotifyPropertyChanged
+
+        protected void OnPropertyChanged([CallerMemberName] string propertyName = null)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
+        #endregion
+    }
+
+    /// <summary>
+    /// Implementazione semplice di ICommand per i comandi del ViewModel
+    /// </summary>
+    public class RelayCommand : ICommand
+    {
+        private readonly Action<object> _execute;
+        private readonly Func<object, bool> _canExecute;
+
+        public event EventHandler CanExecuteChanged
+        {
+            add => CommandManager.RequerySuggested += value;
+            remove => CommandManager.RequerySuggested -= value;
+        }
+
+        public RelayCommand(Action<object> execute, Func<object, bool> canExecute = null)
+        {
+            _execute = execute ?? throw new ArgumentNullException(nameof(execute));
+            _canExecute = canExecute;
+        }
+
+        public bool CanExecute(object parameter)
+        {
+            return _canExecute == null || _canExecute(parameter);
+        }
+
+        public void Execute(object parameter)
+        {
+            _execute(parameter);
         }
     }
 }
