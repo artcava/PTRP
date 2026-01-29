@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using PTRP.App.Models;
+using PTRP.Models;
 using PTRP.Data.Repositories.Interfaces;
 
 namespace PTRP.Data.Repositories;
@@ -7,6 +7,8 @@ namespace PTRP.Data.Repositories;
 /// <summary>
 /// Implementazione del repository per l'entità Patient
 /// Usa Entity Framework Core per le operazioni database
+/// 
+/// Nota: Ogni operazione CRUD effettua un commit atomico automatico.
 /// </summary>
 public class PatientRepository : IPatientRepository
 {
@@ -127,11 +129,5 @@ public class PatientRepository : IPatientRepository
         return await _context.Patients
             .AsNoTracking()
             .AnyAsync(p => p.Id == id);
-    }
-
-    /// <inheritdoc />
-    public async Task<int> SaveChangesAsync()
-    {
-        return await _context.SaveChangesAsync();
     }
 }

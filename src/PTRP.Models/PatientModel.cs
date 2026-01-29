@@ -3,9 +3,8 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Runtime.CompilerServices;
-using PTRP.App.Models;
 
-namespace PTRP.App.Models
+namespace PTRP.Models
 {
     /// <summary>
     /// Modello per rappresentare un Paziente
