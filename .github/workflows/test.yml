@@ -21,14 +21,14 @@ jobs:
         dotnet-version: '10.0.x'
     
     - name: Restore dependencies
-      run: dotnet restore
+      run: dotnet restore src/PTRP.sln
     
     - name: Build
-      run: dotnet build --configuration Release --no-restore
+      run: dotnet build src/PTRP.sln --configuration Release --no-restore
     
     - name: Run tests with coverage
       run: |
-        dotnet test tests/PTRP.App.Tests/PTRP.App.Tests.csproj `
+        dotnet test tests/PTRP.Tests/PTRP.Tests.csproj `
           --configuration Release `
           --no-build `
           --logger "trx;LogFileName=test-results.trx" `
