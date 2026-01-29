@@ -1,0 +1,26 @@
+{
+  "packId": "PTRP",
+  "title": "PTRP - Gestione Progetti Terapeutici",
+  "author": "Marco Cavallo",
+  "description": "Applicazione MVVM WPF per la gestione dei Progetti Terapeutici, dei Pazienti e degli Educatori Professionali",
+  "homepage": "https://github.com/artcava/PTRP",
+  "license": "MIT",
+  "shortcutIcon": "./src/PTRP.App/Assets/app-icon.ico",
+  "releasesUrl": "https://github.com/artcava/PTRP/releases",
+  "updateUrl": "https://github.com/artcava/PTRP/releases",
+  "signingKey": "",
+  "packAuthors": [
+    {
+      "name": "Marco Cavallo",
+      "email": "cavallo.marco@gmail.com"
+    }
+  ],
+  "minimum": {
+    "windows": "7.0"
+  },
+  "delta": "BestSize",
+  "channels": {
+    "stable": true,
+    "preview": false
+  }
+}
