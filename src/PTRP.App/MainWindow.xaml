@@ -1,4 +1,5 @@
-﻿<Window x:Class="PTRP.App.MainWindow"
+<?xml version="1.0" encoding="utf-8"?>
+<Window x:Class="PTRP.App.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="PTRP - Gestione Pazienti"
@@ -85,12 +86,10 @@
                   BorderThickness="1"
                   Margin="20">
             <DataGrid.Columns>
-                <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="50"/>
-                <DataGridTextColumn Header="Nome" Binding="{Binding FirstName}" Width="150"/>
-                <DataGridTextColumn Header="Cognome" Binding="{Binding LastName}" Width="150"/>
-                <DataGridTextColumn Header="Data Nascita" Binding="{Binding DateOfBirth, StringFormat='dd/MM/yyyy'}" Width="120"/>
-                <DataGridTextColumn Header="Email" Binding="{Binding Email}" Width="200"/>
-                <DataGridTextColumn Header="Telefono" Binding="{Binding PhoneNumber}" Width="120"/>
+                <DataGridTextColumn Header="Nome" Binding="{Binding FirstName}" Width="200"/>
+                <DataGridTextColumn Header="Cognome" Binding="{Binding LastName}" Width="200"/>
+                <DataGridTextColumn Header="Data Creazione" Binding="{Binding CreatedAt, StringFormat='dd/MM/yyyy HH:mm'}" Width="180"/>
+                <DataGridTextColumn Header="Ultimo Aggiornamento" Binding="{Binding UpdatedAt, StringFormat='dd/MM/yyyy HH:mm'}" Width="180"/>
             </DataGrid.Columns>
         </DataGrid>
 

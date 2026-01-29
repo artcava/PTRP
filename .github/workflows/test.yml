@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: [main, develop]
 
+permissions:
+  contents: read
+  checks: write
+  pull-requests: write
+
 jobs:
   test:
     runs-on: windows-latest
@@ -21,20 +26,20 @@ jobs:
         dotnet-version: '10.0.x'
     
     - name: Restore dependencies
-      run: dotnet restore
+      run: dotnet restore src/PTRP.sln
     
     - name: Build
-      run: dotnet build --configuration Release --no-restore
+      run: dotnet build src/PTRP.sln --configuration Release --no-restore
     
     - name: Run tests with coverage
       run: |
-        dotnet test tests/PTRP.App.Tests/PTRP.App.Tests.csproj `
+        dotnet test tests/PTRP.Tests/PTRP.Tests.csproj `
           --configuration Release `
           --no-build `
           --logger "trx;LogFileName=test-results.trx" `
+          --logger "console;verbosity=detailed" `
           --collect:"XPlat Code Coverage" `
           -- RunConfiguration.DisableAppDomain=true
-      continue-on-error: true
     
     - name: Generate coverage report
       run: |
@@ -42,21 +47,22 @@ jobs:
         reportgenerator -reports:"**/coverage.cobertura.xml" -targetdir:"./coverage-report" -reporttypes:Html
       continue-on-error: true
     
-    - name: Publish Test Results
-      uses: EnricoMi/publish-unit-test-result-action@v2
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
       if: always()
       with:
-        files: |
-          **/test-results.trx
-        check_name: Unit Test Results
+        name: test-results
+        path: '**/test-results.trx'
+        retention-days: 30
     
     - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v4
       with:
-        files: ./coverage-report/coverage.cobertura.xml
+        files: '**/coverage.cobertura.xml'
         flags: unittests
         name: coverage-report
         fail_ci_if_error: false
+      continue-on-error: true
     
     - name: Upload coverage artifacts
       uses: actions/upload-artifact@v4
