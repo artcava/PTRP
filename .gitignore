@@ -1,0 +1,53 @@
+# Visual Studio
+.vs/
+.vscode/
+bin/
+obj/
+*.user
+*.sln.docstates
+
+# ReSharper
+.idea/
+*.sln.iml
+
+# Build results
+[Dd]ebug/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+
+# Entity Framework Core
+*.db
+*.db-shm
+*.db-wal
+
+# Rider
+.idea/
+*.sln.iml
+
+# User-specific files
+*.suo
+*.userosscache
+*.sln.docstates
+
+# NuGet
+*.nupkg
+*.snupkg
+.nuget/
+
+# Logs
+logs/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test Results
+TestResults/
+
+# Local database files
+ptrp.db
+ptrp.db-shm
+ptrp.db-wal
