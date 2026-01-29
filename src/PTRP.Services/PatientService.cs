@@ -1,8 +1,8 @@
-using PTRP.App.Models;
-using PTRP.App.Services.Interfaces;
+using PTRP.Models;
+using PTRP.Services.Interfaces;
 using PTRP.Data.Repositories.Interfaces;
 
-namespace PTRP.App.Services
+namespace PTRP.Services
 {
     /// <summary>
     /// Implementazione del servizio PatientService
@@ -33,7 +33,7 @@ namespace PTRP.App.Services
         /// <summary>
         /// Recupera un paziente per ID
         /// </summary>
-        public async Task<PatientModel> GetByIdAsync(Guid id)
+        public async Task<PatientModel?> GetByIdAsync(Guid id)
         {
             var patient = await _repository.GetByIdAsync(id);
             if (patient == null)
@@ -55,10 +55,10 @@ namespace PTRP.App.Services
             if (string.IsNullOrWhiteSpace(patient.LastName))
                 throw new ArgumentException("Il cognome è obbligatorio", nameof(patient.LastName));
 
-            if (patient.FirstName.Length > 100)
+            if ((patient.FirstName?.Length ?? 0) > 100)
                 throw new ArgumentException("Il nome non può superare i 100 caratteri", nameof(patient.FirstName));
 
-            if (patient.LastName.Length > 100)
+            if ((patient.LastName?.Length ?? 0) > 100)
                 throw new ArgumentException("Il cognome non può superare i 100 caratteri", nameof(patient.LastName));
 
             // Il repository gestirà la generazione dell'ID e CreatedAt
@@ -86,10 +86,10 @@ namespace PTRP.App.Services
             if (string.IsNullOrWhiteSpace(patient.LastName))
                 throw new ArgumentException("Il cognome è obbligatorio", nameof(patient.LastName));
 
-            if (patient.FirstName.Length > 100)
+            if ((patient.FirstName?.Length ?? 0) > 100)
                 throw new ArgumentException("Il nome non può superare i 100 caratteri", nameof(patient.FirstName));
 
-            if (patient.LastName.Length > 100)
+            if ((patient.LastName?.Length ?? 0) > 100)
                 throw new ArgumentException("Il cognome non può superare i 100 caratteri", nameof(patient.LastName));
 
             await _repository.UpdateAsync(patient);

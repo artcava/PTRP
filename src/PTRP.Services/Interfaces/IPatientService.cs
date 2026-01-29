@@ -1,6 +1,6 @@
-using PTRP.App.Models;
+using PTRP.Models;
 
-namespace PTRP.App.Services.Interfaces
+namespace PTRP.Services.Interfaces
 {
     /// <summary>
     /// Interfaccia per il servizio di gestione dei Pazienti
@@ -19,7 +19,7 @@ namespace PTRP.App.Services.Interfaces
         /// </summary>
         /// <param name="id">ID del paziente</param>
         /// <returns>PatientModel se trovato, altrimenti null</returns>
-        Task<PatientModel> GetByIdAsync(Guid id);
+        Task<PatientModel?> GetByIdAsync(Guid id);
 
         /// <summary>
         /// Aggiunge un nuovo paziente
