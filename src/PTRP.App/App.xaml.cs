@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using PTRP.Services;
-using PTRP.Services.Interfaces;
-using PTRP.ViewModels;
+using PTRP.App.Services;
+using PTRP.App.Services.Interfaces;
+using PTRP.App.ViewModels;
 using PTRP.Data;
 using PTRP.Data.Repositories;
 using PTRP.Data.Repositories.Interfaces;

@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace PTRP.Models
+namespace PTRP.App.Models
 {
     /// <summary>
     /// Modello per rappresentare un Educatore Professionale
