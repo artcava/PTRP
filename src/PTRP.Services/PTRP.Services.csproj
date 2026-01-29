@@ -17,6 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\PTRP.Data\PTRP.Data.csproj" />
     <ProjectReference Include="..\PTRP.Models\PTRP.Models.csproj" />
   </ItemGroup>
 

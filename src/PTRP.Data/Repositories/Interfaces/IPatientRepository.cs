@@ -5,10 +5,6 @@ namespace PTRP.Data.Repositories.Interfaces;
 /// <summary>
 /// Interfaccia per il repository dei Pazienti
 /// Definisce le operazioni CRUD e di ricerca per l'entità Patient
-/// 
-/// Nota: Le operazioni di salvataggio sono gestite internamente da ogni metodo CRUD.
-/// Non esponiamo SaveChangesAsync() come metodo pubblico per rispettare il principio
-/// di responsabilità singola: ogni operazione è atomica e auto-contenuta.
 /// </summary>
 public interface IPatientRepository
 {
@@ -41,7 +37,6 @@ public interface IPatientRepository
 
     /// <summary>
     /// Aggiunge un nuovo paziente al database
-    /// Il salvataggio è automatico (SaveChanges internamente)
     /// </summary>
     /// <param name="patient">Paziente da aggiungere</param>
     /// <returns>Task completato</returns>
@@ -49,7 +44,6 @@ public interface IPatientRepository
 
     /// <summary>
     /// Aggiorna un paziente esistente
-    /// Il salvataggio è automatico (SaveChanges internamente)
     /// </summary>
     /// <param name="patient">Paziente con dati aggiornati</param>
     /// <returns>Task completato</returns>
@@ -57,7 +51,6 @@ public interface IPatientRepository
 
     /// <summary>
     /// Elimina un paziente per ID
-    /// Il salvataggio è automatico (SaveChanges internamente)
     /// </summary>
     /// <param name="id">ID del paziente da eliminare</param>
     /// <returns>True se eliminato, False se non trovato</returns>
