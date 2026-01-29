@@ -183,29 +183,18 @@
                   Margin="20"
                   SelectedCellsChanged="PatientsDataGrid_SelectedCellsChanged">
             
-            <!-- Style inline per eliminare il background della riga selezionata -->
-            <DataGrid.RowStyle>
-                <Style TargetType="DataGridRow">
-                    <Setter Property="Background" Value="White"/>
-                    <Setter Property="BorderBrush" Value="Transparent"/>
+            <!-- CellStyle per rimuovere completamente il background della cella selezionata -->
+            <DataGrid.CellStyle>
+                <Style TargetType="{x:Type DataGridCell}">
                     <Style.Triggers>
-                        <!-- Quando la riga è selezionata: NESSUN background azzurro -->
-                        <Trigger Property="IsSelected" Value="True">
-                            <Setter Property="Background" Value="Transparent"/>
+                        <Trigger Property="DataGridCell.IsSelected" Value="True">
                             <Setter Property="BorderBrush" Value="Transparent"/>
-                            <Setter Property="Foreground" Value="Black"/>
-                        </Trigger>
-                        <!-- Hover: sfondo grigio chiaro -->
-                        <Trigger Property="IsMouseOver" Value="True">
-                            <Setter Property="Background" Value="#F5F5F5"/>
-                        </Trigger>
-                        <!-- Focus visivo rimosso -->
-                        <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                            <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}"/>
                             <Setter Property="Background" Value="Transparent"/>
                         </Trigger>
                     </Style.Triggers>
                 </Style>
-            </DataGrid.RowStyle>
+            </DataGrid.CellStyle>
             
             <DataGrid.Columns>
                 <!-- Indicatore Selezione: Freccia verso destra -->
