@@ -55,12 +55,12 @@
             </Setter>
         </Style>
         
-        <!-- Style per riga selezionata: RIMOSSO background azzurro, mantiene solo l'indicatore blu a sinistra -->
+        <!-- Style per riga selezionata con colore più tenue -->
         <Style x:Key="DataGridRowStyle" TargetType="DataGridRow">
             <Setter Property="Background" Value="White"/>
             <Style.Triggers>
                 <Trigger Property="IsSelected" Value="True">
-                    <Setter Property="Background" Value="White"/>
+                    <Setter Property="Background" Value="#E3F2FD"/>
                     <Setter Property="Foreground" Value="Black"/>
                 </Trigger>
                 <Trigger Property="IsMouseOver" Value="True">
@@ -178,6 +178,7 @@
 
         <!-- Lista Pazienti con azioni inline -->
         <DataGrid Grid.Row="1"
+                  x:Name="PatientsDataGrid"
                   ItemsSource="{Binding Patients}"
                   SelectedItem="{Binding SelectedPatient}"
                   AutoGenerateColumns="False"
@@ -195,37 +196,21 @@
                   SelectionMode="Single"
                   SelectionUnit="FullRow"
                   Margin="20"
-                  Name="PatientsDataGrid">
+                  SelectedCellsChanged="PatientsDataGrid_SelectedCellsChanged">
             
             <DataGrid.Columns>
-                <!-- Indicatore Selezione con Freccia (CHEVRON-RIGHT visibile solo quando selezionato) -->
-                <DataGridTemplateColumn Header="" Width="45">
+                <!-- Indicatore Selezione: Freccia verso destra -->
+                <DataGridTemplateColumn Header="" Width="40">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
-                            <StackPanel Orientation="Horizontal" 
-                                        VerticalAlignment="Center"
-                                        HorizontalAlignment="Center"
-                                        Width="30">
-                                <!-- Icona freccia destra: appare quando riga è selezionata -->
-                                <TextBlock Text="›" 
-                                           FontSize="24" 
-                                           Foreground="#007ACC"
-                                           FontWeight="Bold"
-                                           Margin="0,-2,0,0">
-                                    <TextBlock.Style>
-                                        <Style TargetType="TextBlock">
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=DataGridRow}}" Value="False">
-                                                    <Setter Property="Visibility" Value="Collapsed"/>
-                                                </DataTrigger>
-                                                <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=DataGridRow}}" Value="True">
-                                                    <Setter Property="Visibility" Value="Visible"/>
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </TextBlock.Style>
-                                </TextBlock>
-                            </StackPanel>
+                            <TextBlock x:Name="SelectionIndicator"
+                                       Text="›" 
+                                       FontSize="20" 
+                                       Foreground="#007ACC"
+                                       FontWeight="Bold"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
+                                       Visibility="Collapsed"/>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
