@@ -11,7 +11,7 @@ namespace PTRP.App
     /// Gestisce:
     /// 1. Collegamento del ViewModel (binding)
     /// 2. EventHandler per lifecycle (caricamento finestra)
-    /// 3. Logica della visibilità dell'indicatore chevron nella selezione righe
+    /// 3. Logica della visibilita dell'indicatore chevron nella selezione righe
     /// </summary>
     public partial class MainWindow : Window
     {
@@ -23,7 +23,7 @@ namespace PTRP.App
             InitializeComponent();
 
             // Imposta il ViewModel come DataContext
-            // Questo abilita il binding XAML alle proprietà del ViewModel
+            // Questo abilita il binding XAML alle proprieta del ViewModel
             DataContext = viewModel;
         }
 
@@ -43,7 +43,7 @@ namespace PTRP.App
 
         /// <summary>
         /// Event handler per la selezione di celle nel DataGrid
-        /// Gestisce la visibilità dell'indicatore chevron nella prima colonna
+        /// Gestisce la visibilita dell'indicatore chevron nella prima colonna
         /// </summary>
         private void PatientsDataGrid_SelectedCellsChanged(object sender, SelectedCellsChangedEventArgs e)
         {
@@ -82,15 +82,11 @@ namespace PTRP.App
         {
             if (row != null)
             {
-                // Accedi alla cella della prima colonna (indice 0)
-                var cell = row.Cells[0];
-                if (cell != null)
+                // Ricerca il TextBlock nel visual tree della riga
+                var textBlock = FindTextBlockInVisualTree(row);
+                if (textBlock != null)
                 {
-                    var textBlock = FindTextBlockInCell(cell);
-                    if (textBlock != null)
-                    {
-                        textBlock.Visibility = Visibility.Collapsed;
-                    }
+                    textBlock.Visibility = Visibility.Collapsed;
                 }
             }
         }
@@ -103,76 +99,41 @@ namespace PTRP.App
             var row = PatientsDataGrid.ItemContainerGenerator.ContainerFromItem(item) as DataGridRow;
             if (row != null)
             {
-                // Accedi alla cella della prima colonna (indice 0)
-                var cell = row.Cells[0];
-                if (cell != null)
-                {
-                    var textBlock = FindTextBlockInCell(cell);
-                    if (textBlock != null)
-                    {
-                        textBlock.Visibility = Visibility.Visible;
-                    }
-                }
-            }
-        }
-
-        /// <summary>
-        /// Ricerca il TextBlock con x:Name="SelectionIndicator" all'interno di una cella
-        /// </summary>
-        private TextBlock? FindTextBlockInCell(DataGridCell cell)
-        {
-            // Ottieni il ContentPresenter della cella
-            var presenter = GetVisualChild<ContentPresenter>(cell);
-            if (presenter != null)
-            {
-                // Il template della cella contiene lo stack panel con il TextBlock
-                var stackPanel = GetVisualChild<StackPanel>(presenter);
-                if (stackPanel != null)
-                {
-                    return GetVisualChild<TextBlock>(stackPanel);
-                }
-
-                // Alternativa: se il TextBlock è diretto
-                var textBlock = GetVisualChild<TextBlock>(presenter);
+                // Ricerca il TextBlock nel visual tree della riga
+                var textBlock = FindTextBlockInVisualTree(row);
                 if (textBlock != null)
                 {
-                    return textBlock;
+                    textBlock.Visibility = Visibility.Visible;
                 }
             }
-
-            // Fallback: ricerca ricorsiva
-            return GetVisualChild<TextBlock>(cell);
         }
 
         /// <summary>
-        /// Ricerca ricorsiva di un elemento visuale child di un tipo specifico
+        /// Ricerca il primo TextBlock nel visual tree a partire da un elemento
         /// </summary>
-        private T? GetVisualChild<T>(DependencyObject parent) where T : DependencyObject
+        private TextBlock? FindTextBlockInVisualTree(DependencyObject parent)
         {
             if (parent == null)
                 return null;
-
-            T? foundChild = null;
 
             int childrenCount = System.Windows.Media.VisualTreeHelper.GetChildrenCount(parent);
             for (int i = 0; i < childrenCount; i++)
             {
                 var child = System.Windows.Media.VisualTreeHelper.GetChild(parent, i);
 
-                // Se è del tipo cercato, lo ritorna
-                if (child is T typedChild)
+                // Se e un TextBlock, lo ritorna
+                if (child is TextBlock textBlock)
                 {
-                    foundChild = typedChild;
-                    break;
+                    return textBlock;
                 }
 
                 // Ricerca ricorsiva
-                foundChild = GetVisualChild<T>(child);
-                if (foundChild != null)
-                    break;
+                var result = FindTextBlockInVisualTree(child);
+                if (result != null)
+                    return result;
             }
 
-            return foundChild;
+            return null;
         }
     }
 }
