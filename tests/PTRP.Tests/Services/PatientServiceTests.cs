@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
-using PTRP.App.Models;
-using PTRP.App.Services;
-using PTRP.App.Services.Interfaces;
+using PTRP.Models;
+using PTRP.Services;
+using PTRP.Services.Interfaces;
 using PTRP.Data;
 using PTRP.Data.Repositories;
 using PTRP.Data.Repositories.Interfaces;

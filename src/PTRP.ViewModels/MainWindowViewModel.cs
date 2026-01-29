@@ -7,10 +7,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
-using PTRP.App.Models;
-using PTRP.App.Services.Interfaces;
+using PTRP.Models;
+using PTRP.Services.Interfaces;
 
-namespace PTRP.App.ViewModels
+namespace PTRP.ViewModels
 {
     /// <summary>
     /// ViewModel per la finestra principale dell'applicazione
@@ -23,14 +23,14 @@ namespace PTRP.App.ViewModels
         private const int SearchDelayMs = 400;
 
         // Backing fields
-        private ObservableCollection<PatientModel> _patients;
-        private PatientModel _selectedPatient;
-        private string _searchTerm;
-        private string _statusMessage;
+        private ObservableCollection<PatientModel>? _patients;
+        private PatientModel? _selectedPatient;
+        private string? _searchTerm;
+        private string? _statusMessage;
         private bool _isLoading;
         private bool _hasSearchText;
 
-        public event PropertyChangedEventHandler PropertyChanged;
+        public event PropertyChangedEventHandler? PropertyChanged;
 
         /// <summary>
         /// Costruttore
@@ -57,7 +57,7 @@ namespace PTRP.App.ViewModels
         /// <summary>
         /// Collezione di pazienti
         /// </summary>
-        public ObservableCollection<PatientModel> Patients
+        public ObservableCollection<PatientModel>? Patients
         {
             get => _patients;
             set
@@ -70,7 +70,7 @@ namespace PTRP.App.ViewModels
         /// <summary>
         /// Paziente selezionato nella lista
         /// </summary>
-        public PatientModel SelectedPatient
+        public PatientModel? SelectedPatient
         {
             get => _selectedPatient;
             set
@@ -83,7 +83,7 @@ namespace PTRP.App.ViewModels
         /// <summary>
         /// Termine di ricerca con debounce automatico
         /// </summary>
-        public string SearchTerm
+        public string? SearchTerm
         {
             get => _searchTerm;
             set
@@ -111,7 +111,7 @@ namespace PTRP.App.ViewModels
         /// <summary>
         /// Messaggio di stato mostrato nella status bar
         /// </summary>
-        public string StatusMessage
+        public string? StatusMessage
         {
             get => _statusMessage;
             set
@@ -162,13 +162,15 @@ namespace PTRP.App.ViewModels
 
                 var patients = await _patientService.GetAllAsync();
                 
-                Patients.Clear();
-                foreach (var patient in patients)
+                if (Patients != null)
                 {
-                    Patients.Add(patient);
+                    Patients.Clear();
+                    foreach (var patient in patients)
+                    {
+                        Patients.Add(patient);
+                    }
+                    StatusMessage = $"Caricati {Patients.Count} pazienti";
                 }
-
-                StatusMessage = $"Caricati {Patients.Count} pazienti";
             }
             catch (Exception ex)
             {
@@ -221,13 +223,15 @@ namespace PTRP.App.ViewModels
 
                 var patients = await _patientService.SearchAsync(SearchTerm ?? string.Empty);
                 
-                Patients.Clear();
-                foreach (var patient in patients)
+                if (Patients != null)
                 {
-                    Patients.Add(patient);
+                    Patients.Clear();
+                    foreach (var patient in patients)
+                    {
+                        Patients.Add(patient);
+                    }
+                    StatusMessage = $"Trovati {Patients.Count} pazienti";
                 }
-
-                StatusMessage = $"Trovati {Patients.Count} pazienti";
             }
             catch (Exception ex)
             {
@@ -260,14 +264,14 @@ namespace PTRP.App.ViewModels
                 IsNew = true
             };
 
-            Patients.Insert(0, newPatient);
+            Patients?.Insert(0, newPatient);
             StatusMessage = "Inserisci i dati del nuovo paziente e clicca Salva";
         }
 
         /// <summary>
         /// Abilita la modifica per un paziente esistente
         /// </summary>
-        private async Task EditPatientAsync(PatientModel patient)
+        private async Task EditPatientAsync(PatientModel? patient)
         {
             if (patient == null) return;
 
@@ -283,7 +287,7 @@ namespace PTRP.App.ViewModels
         /// <summary>
         /// Elimina un paziente con conferma
         /// </summary>
-        private async Task DeletePatientAsync(PatientModel patient)
+        private async Task DeletePatientAsync(PatientModel? patient)
         {
             if (patient == null) return;
 
@@ -308,7 +312,7 @@ namespace PTRP.App.ViewModels
                 StatusMessage = "Eliminazione paziente...";
 
                 await _patientService.DeleteAsync(patient.Id);
-                Patients.Remove(patient);
+                Patients?.Remove(patient);
 
                 StatusMessage = $"Paziente {patient.FirstName} {patient.LastName} eliminato con successo";
             }
@@ -326,7 +330,7 @@ namespace PTRP.App.ViewModels
         /// <summary>
         /// Salva un paziente (nuovo o modificato)
         /// </summary>
-        private async Task SavePatientAsync(PatientModel patient)
+        private async Task SavePatientAsync(PatientModel? patient)
         {
             if (patient == null) return;
 
@@ -363,14 +367,14 @@ namespace PTRP.App.ViewModels
         /// <summary>
         /// Annulla la modifica di un paziente
         /// </summary>
-        private void CancelEdit(PatientModel patient)
+        private void CancelEdit(PatientModel? patient)
         {
             if (patient == null) return;
 
             if (patient.IsNew)
             {
                 // Se è nuovo, rimuovilo dalla lista
-                Patients.Remove(patient);
+                Patients?.Remove(patient);
                 StatusMessage = "Inserimento annullato";
             }
             else
@@ -387,7 +391,7 @@ namespace PTRP.App.ViewModels
 
         #region INotifyPropertyChanged
 
-        protected void OnPropertyChanged([CallerMemberName] string propertyName = null)
+        protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
@@ -400,7 +404,7 @@ namespace PTRP.App.ViewModels
     /// </summary>
     public interface IAsyncCommand : ICommand
     {
-        Task ExecuteAsync(object parameter);
+        Task ExecuteAsync(object? parameter);
     }
 
     /// <summary>
@@ -408,33 +412,33 @@ namespace PTRP.App.ViewModels
     /// </summary>
     public class AsyncRelayCommand : IAsyncCommand
     {
-        private readonly Func<object, Task> _execute;
-        private readonly Func<object, bool> _canExecute;
+        private readonly Func<object?, Task> _execute;
+        private readonly Func<object?, bool>? _canExecute;
         private bool _isExecuting;
 
-        public event EventHandler CanExecuteChanged
+        public event EventHandler? CanExecuteChanged
         {
             add => CommandManager.RequerySuggested += value;
             remove => CommandManager.RequerySuggested -= value;
         }
 
-        public AsyncRelayCommand(Func<object, Task> execute, Func<object, bool> canExecute = null)
+        public AsyncRelayCommand(Func<object?, Task> execute, Func<object?, bool>? canExecute = null)
         {
             _execute = execute ?? throw new ArgumentNullException(nameof(execute));
             _canExecute = canExecute;
         }
 
-        public bool CanExecute(object parameter)
+        public bool CanExecute(object? parameter)
         {
             return !_isExecuting && (_canExecute == null || _canExecute(parameter));
         }
 
-        public async void Execute(object parameter)
+        public async void Execute(object? parameter)
         {
             await ExecuteAsync(parameter);
         }
 
-        public async Task ExecuteAsync(object parameter)
+        public async Task ExecuteAsync(object? parameter)
         {
             if (!CanExecute(parameter))
                 return;
@@ -458,27 +462,27 @@ namespace PTRP.App.ViewModels
     /// </summary>
     public class RelayCommand : ICommand
     {
-        private readonly Action<object> _execute;
-        private readonly Func<object, bool> _canExecute;
+        private readonly Action<object?> _execute;
+        private readonly Func<object?, bool>? _canExecute;
 
-        public event EventHandler CanExecuteChanged
+        public event EventHandler? CanExecuteChanged
         {
             add => CommandManager.RequerySuggested += value;
             remove => CommandManager.RequerySuggested -= value;
         }
 
-        public RelayCommand(Action<object> execute, Func<object, bool> canExecute = null)
+        public RelayCommand(Action<object?> execute, Func<object?, bool>? canExecute = null)
         {
             _execute = execute ?? throw new ArgumentNullException(nameof(execute));
             _canExecute = canExecute;
         }
 
-        public bool CanExecute(object parameter)
+        public bool CanExecute(object? parameter)
         {
             return _canExecute == null || _canExecute(parameter);
         }
 
-        public void Execute(object parameter)
+        public void Execute(object? parameter)
         {
             _execute(parameter);
         }
