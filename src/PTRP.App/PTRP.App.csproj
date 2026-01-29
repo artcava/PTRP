@@ -20,11 +20,14 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.2" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\PTRP.Data\PTRP.Data.csproj" />
     <ProjectReference Include="..\PTRP.Models\PTRP.Models.csproj" />
+    <ProjectReference Include="..\PTRP.Services\PTRP.Services.csproj" />
     <ProjectReference Include="..\PTRP.ViewModels\PTRP.ViewModels.csproj" />
   </ItemGroup>
 
