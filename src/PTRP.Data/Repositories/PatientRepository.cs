@@ -48,9 +48,7 @@ public class PatientRepository : IPatientRepository
     public async Task<IEnumerable<PatientModel>> SearchAsync(string searchTerm)
     {
         if (string.IsNullOrWhiteSpace(searchTerm))
-        {
-            return await GetAllAsync();
-        }
+            return Enumerable.Empty<PatientModel>();
 
         var normalizedSearchTerm = searchTerm.Trim().ToLower();
 
