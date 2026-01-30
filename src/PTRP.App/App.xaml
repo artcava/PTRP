@@ -1,8 +1,9 @@
-﻿<Application x:Class="PTRP.App.App"
+<Application x:Class="PTRP.App.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:PTRP.App">
     <Application.Resources>
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+        <BitmapImage x:Key="AppIcon" UriSource="/favicon.ico" />
     </Application.Resources>
 </Application>
