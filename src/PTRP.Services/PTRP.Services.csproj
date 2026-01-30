@@ -19,7 +19,6 @@
   <ItemGroup>
     <ProjectReference Include="..\PTRP.Data\PTRP.Data.csproj" />
     <ProjectReference Include="..\PTRP.Models\PTRP.Models.csproj" />
-    <ProjectReference Include="..\PTRP.ViewModels\PTRP.ViewModels.csproj" />
   </ItemGroup>
 
 </Project>
