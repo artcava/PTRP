@@ -1,7 +1,5 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using MaterialDesignThemes.Wpf;
-using System.Windows;
 
 namespace PTRP.ViewModels;
 
@@ -10,7 +8,7 @@ namespace PTRP.ViewModels;
 /// Gestisce:
 /// - Navigazione tra le viste
 /// - Stato utente corrente
-/// - Notifiche (Snackbar)
+/// - Eventi di notifica (delegati alla View)
 /// </summary>
 public partial class MainViewModel : ViewModelBase
 {
@@ -49,9 +47,9 @@ public partial class MainViewModel : ViewModelBase
     private string _userInitials = "CP";
     
     /// <summary>
-    /// MessageQueue per Snackbar notifications
+    /// Evento per notifiche da mostrare nella View
     /// </summary>
-    public SnackbarMessageQueue MessageQueue { get; } = new(TimeSpan.FromSeconds(3));
+    public event EventHandler<NotificationEventArgs>? NotificationRequested;
     
     public MainViewModel(IServiceProvider serviceProvider)
     {
@@ -150,51 +148,75 @@ public partial class MainViewModel : ViewModelBase
     #region Notification Methods
     
     /// <summary>
-    /// Mostra messaggio informativo nel Snackbar
+    /// Mostra messaggio informativo
     /// </summary>
     public void ShowInfo(string message)
     {
-        Application.Current.Dispatcher.Invoke(() =>
+        OnNotificationRequested(new NotificationEventArgs
         {
-            MessageQueue.Enqueue(message);
+            Message = message,
+            Type = NotificationType.Info
         });
     }
     
     /// <summary>
-    /// Mostra messaggio di successo nel Snackbar
+    /// Mostra messaggio di successo
     /// </summary>
     public void ShowSuccess(string message)
     {
-        Application.Current.Dispatcher.Invoke(() =>
+        OnNotificationRequested(new NotificationEventArgs
         {
-            MessageQueue.Enqueue(
-                message,
-                null,
-                null,
-                null,
-                false,
-                false,
-                TimeSpan.FromSeconds(2));
+            Message = message,
+            Type = NotificationType.Success,
+            DurationSeconds = 2
         });
     }
     
     /// <summary>
-    /// Mostra messaggio di errore nel Snackbar
+    /// Mostra messaggio di errore
     /// </summary>
     public void ShowError(string message, int durationSeconds = 5)
     {
-        Application.Current.Dispatcher.Invoke(() =>
+        OnNotificationRequested(new NotificationEventArgs
         {
-            MessageQueue.Enqueue(
-                message,
-                "CHIUDI",
-                () => { },
-                null,
-                false,
-                true,
-                TimeSpan.FromSeconds(durationSeconds));
+            Message = message,
+            Type = NotificationType.Error,
+            DurationSeconds = durationSeconds,
+            ShowActionButton = true,
+            ActionButtonText = "CHIUDI"
         });
     }
     
+    /// <summary>
+    /// Solleva l'evento NotificationRequested
+    /// </summary>
+    protected virtual void OnNotificationRequested(NotificationEventArgs e)
+    {
+        NotificationRequested?.Invoke(this, e);
+    }
+    
     #endregion
+}
+
+/// <summary>
+/// Tipo di notifica
+/// </summary>
+public enum NotificationType
+{
+    Info,
+    Success,
+    Error,
+    Warning
+}
+
+/// <summary>
+/// Argomenti per evento di notifica
+/// </summary>
+public class NotificationEventArgs : EventArgs
+{
+    public string Message { get; set; } = string.Empty;
+    public NotificationType Type { get; set; }
+    public int DurationSeconds { get; set; } = 3;
+    public bool ShowActionButton { get; set; }
+    public string ActionButtonText { get; set; } = string.Empty;
 }
