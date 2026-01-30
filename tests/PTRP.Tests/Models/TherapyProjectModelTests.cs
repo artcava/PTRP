@@ -38,14 +38,15 @@ public class TherapyProjectModelTests
         var project = new TherapyProjectModel
         {
             PatientId = patientId,
-            Title = "Test Project"
+            Title = "Test Project",
+            Status = "In Progress"
         };
 
         // Act
         var result = project.ToString();
 
-        // Assert
-        Assert.Equal($"Test Project (Patient: {patientId})", result);
+        // Assert - Format: "Title (Paziente: ID, Status: Status)"
+        Assert.Equal($"Test Project (Paziente: {patientId}, Status: In Progress)", result);
     }
 
     [Fact]
@@ -58,8 +59,8 @@ public class TherapyProjectModelTests
             Title = "Test"
         };
 
-        // Assert - Check that Status can be set
-        Assert.NotNull(project.Status);
+        // Assert - Default status should be "In Progress"
+        Assert.Equal("In Progress", project.Status);
     }
 
     [Fact]
