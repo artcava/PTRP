@@ -345,10 +345,9 @@
                           Content="{Binding CurrentViewModel}"
                           Margin="0"/>
             
-            <!-- SNACKBAR for notifications -->
+            <!-- SNACKBAR for notifications (MessageQueue set in code-behind) -->
             <materialDesign:Snackbar Grid.Row="1"
                                    x:Name="MainSnackbar"
-                                   MessageQueue="{Binding MessageQueue}"
                                    VerticalAlignment="Bottom"
                                    HorizontalAlignment="Center"
                                    Margin="0,0,0,20"/>
