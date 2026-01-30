@@ -1,4 +1,4 @@
-using PTRP.App.Models;
+using PTRP.Models;
 
 namespace PTRP.Tests.Models
 {

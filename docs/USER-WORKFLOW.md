@@ -10,7 +10,7 @@ L'applicazione supporta **due profili utente** con permessi differenziati:
 
 1. **Coordinatore**
    - Gestione completa anagrafiche pazienti
-   - **Gestione anagrafica educatori professionali**
+   - Gestione anagrafica educatori professionali
    - Creazione e assegnazione progetti terapeutici
    - Assegnazione educatori ai progetti
    - Visualizzazione globale di tutti i dati
@@ -993,16 +993,5 @@ Paziente (1) ←───── (1) Progetto Terapeutico Attivo
 ---
 
 **Documento creato:** 30 Gennaio 2026  
-**Versione:** 3.1 (Versione per Equipe PTRP - Finale)  
+**Versione:** 3.2 (Versione per Equipe PTRP - Solo Flussi Utente)  
 **Autore:** Marco Cavallo (@artcava)  
-**Ultime modifiche:**
-- Aggiunta gestione anagrafica educatori (Coordinatore)
-- Distinzione terminologica: Appuntamenti vs Visite
-- Stato applicato al Progetto Terapeutico (non al Paziente)
-- Calendario con codice colore per stato progetto
-- Vincolo obbligatorio: Visita legata ad Appuntamento (relazione 1:1)
-- Nuovo flusso sincronizzazione bidirezionale (Coordinatore → Educatore)
-- **Sezione riconoscimento profilo utente (Soluzione 2 con admin.ptrp)**
-- **Anonimizzazione completa nomi pazienti ed educatori**
-- **Naming pacchetti con data estesa (YYYYMMDD)**
-- **Campo operators in pacchetti appuntamenti**

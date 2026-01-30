@@ -1,17 +1,39 @@
-using PTRP.App.Models;
-using PTRP.App.Services;
-using PTRP.App.Services.Interfaces;
+using Microsoft.EntityFrameworkCore;
+using PTRP.Models;
+using PTRP.Services;
+using PTRP.Services.Interfaces;
+using PTRP.Data;
+using PTRP.Data.Repositories;
+using PTRP.Data.Repositories.Interfaces;
 
 namespace PTRP.Tests.Services
 {
     /// <summary>
     /// Test per la classe PatientService
+    /// Usa InMemory database provider per i test
     /// </summary>
-    public class PatientServiceTests
+    public class PatientServiceTests : IDisposable
     {
-        private IPatientService CreatePatientService()
+        private readonly PTRPDbContext _context;
+        private readonly IPatientRepository _repository;
+        private readonly IPatientService _service;
+
+        public PatientServiceTests()
         {
-            return new PatientService();
+            // Crea DbContext InMemory con nome univoco per ogni test
+            var options = new DbContextOptionsBuilder<PTRPDbContext>()
+                .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+                .Options;
+
+            _context = new PTRPDbContext(options);
+            _repository = new PatientRepository(_context);
+            _service = new PatientService(_repository);
+        }
+
+        public void Dispose()
+        {
+            _context.Database.EnsureDeleted();
+            _context.Dispose();
         }
 
         /// <summary>
@@ -21,7 +43,6 @@ namespace PTRP.Tests.Services
         public async Task AddAsync_WithValidPatient_SuccessfullyAddsPatient()
         {
             // arrange
-            var service = CreatePatientService();
             var newPatient = new PatientModel
             {
                 FirstName = "Giovanni",
@@ -29,14 +50,14 @@ namespace PTRP.Tests.Services
             };
 
             // act
-            await service.AddAsync(newPatient);
+            await _service.AddAsync(newPatient);
 
             // assert
             Assert.NotEqual(Guid.Empty, newPatient.Id);
             Assert.NotEqual(default, newPatient.CreatedAt);
 
             // Verifica che il paziente sia recuperabile
-            var retrievedPatient = await service.GetByIdAsync(newPatient.Id);
+            var retrievedPatient = await _service.GetByIdAsync(newPatient.Id);
             Assert.NotNull(retrievedPatient);
             Assert.Equal("Giovanni", retrievedPatient.FirstName);
             Assert.Equal("Bianchi", retrievedPatient.LastName);
@@ -49,7 +70,6 @@ namespace PTRP.Tests.Services
         public async Task AddAsync_WithEmptyFirstName_ThrowsArgumentException()
         {
             // arrange
-            var service = CreatePatientService();
             var invalidPatient = new PatientModel
             {
                 FirstName = "",
@@ -58,7 +78,7 @@ namespace PTRP.Tests.Services
 
             // act & assert
             var exception = await Assert.ThrowsAsync<ArgumentException>(
-                () => service.AddAsync(invalidPatient)
+                () => _service.AddAsync(invalidPatient)
             );
             Assert.Contains("nome", exception.Message, StringComparison.OrdinalIgnoreCase);
         }
@@ -70,7 +90,6 @@ namespace PTRP.Tests.Services
         public async Task AddAsync_WithEmptyLastName_ThrowsArgumentException()
         {
             // arrange
-            var service = CreatePatientService();
             var invalidPatient = new PatientModel
             {
                 FirstName = "Marco",
@@ -79,9 +98,29 @@ namespace PTRP.Tests.Services
 
             // act & assert
             var exception = await Assert.ThrowsAsync<ArgumentException>(
-                () => service.AddAsync(invalidPatient)
+                () => _service.AddAsync(invalidPatient)
             );
             Assert.Contains("cognome", exception.Message, StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// Test validazione: FirstName troppo lungo
+        /// </summary>
+        [Fact]
+        public async Task AddAsync_WithTooLongFirstName_ThrowsArgumentException()
+        {
+            // arrange
+            var invalidPatient = new PatientModel
+            {
+                FirstName = new string('A', 101), // 101 caratteri
+                LastName = "Rossi"
+            };
+
+            // act & assert
+            var exception = await Assert.ThrowsAsync<ArgumentException>(
+                () => _service.AddAsync(invalidPatient)
+            );
+            Assert.Contains("100 caratteri", exception.Message);
         }
 
         /// <summary>
@@ -91,22 +130,61 @@ namespace PTRP.Tests.Services
         public async Task GetByIdAsync_WithExistingId_ReturnsPatient()
         {
             // arrange
-            var service = CreatePatientService();
             var newPatient = new PatientModel
             {
                 FirstName = "Lucia",
                 LastName = "Verdi"
             };
-            await service.AddAsync(newPatient);
+            await _service.AddAsync(newPatient);
             var patientId = newPatient.Id;
 
             // act
-            var retrievedPatient = await service.GetByIdAsync(patientId);
+            var retrievedPatient = await _service.GetByIdAsync(patientId);
 
             // assert
             Assert.NotNull(retrievedPatient);
             Assert.Equal(patientId, retrievedPatient.Id);
             Assert.Equal("Lucia", retrievedPatient.FirstName);
+        }
+
+        /// <summary>
+        /// Test di errore: ricerca paziente non esistente
+        /// </summary>
+        [Fact]
+        public async Task GetByIdAsync_WithNonExistentId_ThrowsInvalidOperationException()
+        {
+            // arrange
+            var nonExistentId = Guid.NewGuid();
+
+            // act & assert
+            var exception = await Assert.ThrowsAsync<InvalidOperationException>(
+                () => _service.GetByIdAsync(nonExistentId)
+            );
+            Assert.Contains("non trovato", exception.Message, StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// Test positivo: aggiornamento paziente
+        /// </summary>
+        [Fact]
+        public async Task UpdateAsync_WithValidPatient_SuccessfullyUpdates()
+        {
+            // arrange
+            var patient = new PatientModel
+            {
+                FirstName = "Mario",
+                LastName = "Rossi"
+            };
+            await _service.AddAsync(patient);
+
+            // act
+            patient.FirstName = "Maria";
+            await _service.UpdateAsync(patient);
+
+            // assert
+            var updated = await _service.GetByIdAsync(patient.Id);
+            Assert.Equal("Maria", updated.FirstName);
+            Assert.NotNull(updated.UpdatedAt);
         }
 
         /// <summary>
@@ -116,14 +194,37 @@ namespace PTRP.Tests.Services
         public async Task DeleteAsync_WithNonExistentId_ThrowsInvalidOperationException()
         {
             // arrange
-            var service = CreatePatientService();
             var nonExistentId = Guid.NewGuid();
 
             // act & assert
             var exception = await Assert.ThrowsAsync<InvalidOperationException>(
-                () => service.DeleteAsync(nonExistentId)
+                () => _service.DeleteAsync(nonExistentId)
             );
             Assert.Contains("non trovato", exception.Message, StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// Test positivo: eliminazione paziente esistente
+        /// </summary>
+        [Fact]
+        public async Task DeleteAsync_WithExistingId_SuccessfullyDeletes()
+        {
+            // arrange
+            var patient = new PatientModel
+            {
+                FirstName = "Test",
+                LastName = "Delete"
+            };
+            await _service.AddAsync(patient);
+            var patientId = patient.Id;
+
+            // act
+            await _service.DeleteAsync(patientId);
+
+            // assert
+            await Assert.ThrowsAsync<InvalidOperationException>(
+                () => _service.GetByIdAsync(patientId)
+            );
         }
 
         /// <summary>
@@ -133,20 +234,56 @@ namespace PTRP.Tests.Services
         public async Task SearchAsync_WithValidTerm_ReturnsMatchingPatients()
         {
             // arrange
-            var service = CreatePatientService();
-            var newPatient = new PatientModel
-            {
-                FirstName = "Paolo",
-                LastName = "Gallo"
-            };
-            await service.AddAsync(newPatient);
+            await _service.AddAsync(new PatientModel { FirstName = "Paolo", LastName = "Gallo" });
+            await _service.AddAsync(new PatientModel { FirstName = "Maria", LastName = "Rossi" });
+            await _service.AddAsync(new PatientModel { FirstName = "Giovanni", LastName = "Gallo" });
 
             // act
-            var results = await service.SearchAsync("Gallo");
+            var results = await _service.SearchAsync("Gallo");
 
             // assert
-            Assert.NotEmpty(results);
-            Assert.Contains(results, p => p.LastName == "Gallo");
+            var resultList = results.ToList();
+            Assert.Equal(2, resultList.Count);
+            Assert.All(resultList, p => Assert.Equal("Gallo", p.LastName));
+        }
+
+        /// <summary>
+        /// Test positivo: ricerca case-insensitive
+        /// </summary>
+        [Fact]
+        public async Task SearchAsync_IsCaseInsensitive()
+        {
+            // arrange
+            await _service.AddAsync(new PatientModel { FirstName = "Paolo", LastName = "Gallo" });
+
+            // act
+            var resultsLower = await _service.SearchAsync("gallo");
+            var resultsUpper = await _service.SearchAsync("GALLO");
+
+            // assert
+            Assert.Single(resultsLower);
+            Assert.Single(resultsUpper);
+        }
+
+        /// <summary>
+        /// Test positivo: GetAllAsync ritorna pazienti ordinati
+        /// </summary>
+        [Fact]
+        public async Task GetAllAsync_ReturnsOrderedPatients()
+        {
+            // arrange
+            await _service.AddAsync(new PatientModel { FirstName = "Zara", LastName = "Zeta" });
+            await _service.AddAsync(new PatientModel { FirstName = "Anna", LastName = "Alfa" });
+            await _service.AddAsync(new PatientModel { FirstName = "Mario", LastName = "Beta" });
+
+            // act
+            var patients = (await _service.GetAllAsync()).ToList();
+
+            // assert
+            Assert.Equal(3, patients.Count);
+            Assert.Equal("Alfa", patients[0].LastName);
+            Assert.Equal("Beta", patients[1].LastName);
+            Assert.Equal("Zeta", patients[2].LastName);
         }
     }
 }

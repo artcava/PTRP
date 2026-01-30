@@ -1,7 +1,12 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using PTRP.App.Services;
-using PTRP.App.Services.Interfaces;
-using PTRP.App.ViewModels;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using PTRP.Services;
+using PTRP.Services.Interfaces;
+using PTRP.ViewModels;
+using PTRP.Data;
+using PTRP.Data.Repositories;
+using PTRP.Data.Repositories.Interfaces;
+using System.IO;
 using System.Windows;
 
 namespace PTRP.App
@@ -15,7 +20,7 @@ namespace PTRP.App
         /// <summary>
         /// Service provider per la risoluzione delle dipendenze
         /// </summary>
-        private ServiceProvider _serviceProvider;
+        private ServiceProvider? _serviceProvider;
 
         /// <summary>
         /// Configurazione e costruzione del DI container
@@ -32,6 +37,9 @@ namespace PTRP.App
             // Costruisce il service provider
             _serviceProvider = services.BuildServiceProvider();
 
+            // Assicura che il database sia creato e migrato
+            EnsureDatabaseCreated();
+
             // Risolve MainWindow con il suo ViewModel iniettato
             var mainWindow = _serviceProvider.GetRequiredService<MainWindow>();
             mainWindow.Show();
@@ -47,6 +55,20 @@ namespace PTRP.App
         /// </summary>
         private void ConfigureServices(ServiceCollection services)
         {
+            // Configura il database SQLite
+            var appDataPath = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                "PTRP"
+            );
+            Directory.CreateDirectory(appDataPath);
+            var dbPath = Path.Combine(appDataPath, "ptrp.db");
+
+            services.AddDbContext<PTRPDbContext>(options =>
+                options.UseSqlite($"Data Source={dbPath}"));
+
+            // Registra i Repositories
+            services.AddScoped<IPatientRepository, PatientRepository>();
+
             // Registra i Services
             services.AddScoped<IPatientService, PatientService>();
 
@@ -55,6 +77,20 @@ namespace PTRP.App
 
             // Registra le Views
             services.AddScoped<MainWindow>();
+        }
+
+        /// <summary>
+        /// Assicura che il database sia creato e le migrations applicate
+        /// </summary>
+        private void EnsureDatabaseCreated()
+        {
+            if (_serviceProvider == null) return;
+
+            using var scope = _serviceProvider.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<PTRPDbContext>();
+            
+            // Crea il database se non esiste e applica le migrations
+            context.Database.EnsureCreated();
         }
 
         /// <summary>
