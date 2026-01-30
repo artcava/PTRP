@@ -1,5 +1,8 @@
+using System.Collections.ObjectModel;
+using System.Reflection;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using MaterialDesignThemes.Wpf;
 using PTRP.Services.Interfaces;
 
 namespace PTRP.ViewModels;
@@ -8,6 +11,7 @@ namespace PTRP.ViewModels;
 /// ViewModel principale per MainWindow
 /// Gestisce:
 /// - Navigazione tra le viste (tramite INavigationService)
+/// - Menu dinamico basato su ruolo utente
 /// - Stato utente corrente
 /// - Eventi di notifica (delegati alla View)
 /// </summary>
@@ -48,6 +52,18 @@ public partial class MainViewModel : ViewModelBase
     private string _userInitials = "CP";
     
     /// <summary>
+    /// Elementi del menu di navigazione laterale
+    /// </summary>
+    [ObservableProperty]
+    private ObservableCollection<MenuItemViewModel> _navigationMenuItems = new();
+    
+    /// <summary>
+    /// Menu item attualmente selezionato
+    /// </summary>
+    [ObservableProperty]
+    private MenuItemViewModel? _selectedMenuItem;
+    
+    /// <summary>
     /// Evento per notifiche da mostrare nella View
     /// </summary>
     public event EventHandler<NotificationEventArgs>? NotificationRequested;
@@ -62,9 +78,113 @@ public partial class MainViewModel : ViewModelBase
         // TODO: Load user profile from configuration service (Issue #49)
         LoadUserProfile();
         
+        // Initialize navigation menu based on user role
+        InitializeNavigationMenu();
+        
         // Navigate to Dashboard by default
         // TODO: Check if first run, navigate to FirstRunView if needed (Issue #49)
         NavigateToDashboard();
+    }
+    
+    /// <summary>
+    /// Inizializza il menu di navigazione in base al ruolo utente
+    /// </summary>
+    private void InitializeNavigationMenu()
+    {
+        // TODO: Leggere ruolo da IConfigurationService in Issue #49
+        var userRole = GetCurrentUserRole();
+        
+        NavigationMenuItems = userRole == "Coordinatore" 
+            ? CreateCoordinatorMenu() 
+            : CreateEducatorMenu();
+    }
+    
+    /// <summary>
+    /// Crea il menu per utente Coordinatore
+    /// </summary>
+    private ObservableCollection<MenuItemViewModel> CreateCoordinatorMenu()
+    {
+        return new ObservableCollection<MenuItemViewModel>
+        {
+            new MenuItemViewModel
+            {
+                Title = "Dashboard",
+                IconKind = PackIconKind.ViewDashboard,
+                // ViewModelType = typeof(DashboardViewModel) // TODO: Issue #50
+            },
+            new MenuItemViewModel
+            {
+                Title = "Pazienti",
+                IconKind = PackIconKind.AccountGroup,
+                // ViewModelType = typeof(PatientListViewModel) // TODO: Issue #51
+            },
+            new MenuItemViewModel
+            {
+                Title = "Educatori",
+                IconKind = PackIconKind.AccountTie,
+                // ViewModelType = typeof(OperatorListViewModel) // TODO: FASE 2
+            },
+            new MenuItemViewModel
+            {
+                Title = "Progetti",
+                IconKind = PackIconKind.FolderMultiple,
+                // ViewModelType = typeof(ProjectListViewModel) // TODO: FASE 2
+            },
+            new MenuItemViewModel
+            {
+                Title = "Calendario",
+                IconKind = PackIconKind.Calendar,
+                BadgeCount = 0, // TODO: Aggiornato dinamicamente
+                // ViewModelType = typeof(CalendarViewModel) // TODO: FASE 2
+            },
+            new MenuItemViewModel
+            {
+                Title = "Sincronizzazione",
+                IconKind = PackIconKind.Sync,
+                // ViewModelType = typeof(SyncViewModel) // TODO: Issue #52
+            },
+            new MenuItemViewModel
+            {
+                Title = "Report",
+                IconKind = PackIconKind.ChartBar,
+                // ViewModelType = typeof(ReportViewModel) // TODO: FASE 2
+            }
+        };
+    }
+    
+    /// <summary>
+    /// Crea il menu per utente Educatore
+    /// </summary>
+    private ObservableCollection<MenuItemViewModel> CreateEducatorMenu()
+    {
+        return new ObservableCollection<MenuItemViewModel>
+        {
+            new MenuItemViewModel
+            {
+                Title = "I Miei Appuntamenti",
+                IconKind = PackIconKind.CalendarCheck,
+                BadgeCount = 0, // TODO: Aggiornato dinamicamente
+                // ViewModelType = typeof(MyAppointmentsViewModel) // TODO: FASE 2
+            },
+            new MenuItemViewModel
+            {
+                Title = "I Miei Pazienti",
+                IconKind = PackIconKind.AccountMultiple,
+                // ViewModelType = typeof(MyPatientsViewModel) // TODO: FASE 2
+            },
+            new MenuItemViewModel
+            {
+                Title = "Visite Registrate",
+                IconKind = PackIconKind.FileDocument,
+                // ViewModelType = typeof(MyVisitsViewModel) // TODO: FASE 2
+            },
+            new MenuItemViewModel
+            {
+                Title = "Sincronizzazione",
+                IconKind = PackIconKind.CloudSync,
+                // ViewModelType = typeof(SyncViewModel) // TODO: Issue #52
+            }
+        };
     }
     
     /// <summary>
@@ -78,6 +198,60 @@ public partial class MainViewModel : ViewModelBase
     }
     
     /// <summary>
+    /// Gestisce la selezione di un menu item
+    /// </summary>
+    partial void OnSelectedMenuItemChanged(MenuItemViewModel? value)
+    {
+        if (value?.ViewModelType != null)
+        {
+            // Naviga al ViewModel associato usando reflection per chiamare il metodo generico
+            try
+            {
+                var navigateToMethod = _navigationService.GetType()
+                    .GetMethod(nameof(INavigationService.NavigateTo))
+                    ?.MakeGenericMethod(value.ViewModelType);
+                    
+                navigateToMethod?.Invoke(_navigationService, null);
+            }
+            catch (TargetInvocationException ex)
+            {
+                // Se il ViewModel non è ancora implementato, mostra placeholder
+                ShowInfo($"{value.Title} - In sviluppo");
+                CurrentPageTitle = value.Title;
+            }
+        }
+        else if (value?.CustomCommand != null)
+        {
+            // Esegui comando custom se presente
+            if (value.CustomCommand.CanExecute(null))
+            {
+                value.CustomCommand.Execute(null);
+            }
+        }
+        else if (value != null)
+        {
+            // Menu item senza ViewModelType (ancora da implementare)
+            ShowInfo($"{value.Title} - In sviluppo");
+            CurrentPageTitle = value.Title;
+        }
+    }
+    
+    /// <summary>
+    /// Aggiorna il badge su un menu item specifico
+    /// </summary>
+    /// <param name="title">Titolo del menu item</param>
+    /// <param name="count">Nuovo valore del badge</param>
+    public void UpdateMenuItemBadge(string title, int count)
+    {
+        var menuItem = NavigationMenuItems.FirstOrDefault(x => x.Title == title);
+        if (menuItem != null)
+        {
+            menuItem.BadgeCount = count;
+            menuItem.HasBadge = count > 0;
+        }
+    }
+    
+    /// <summary>
     /// Carica il profilo utente corrente
     /// </summary>
     private void LoadUserProfile()
@@ -87,6 +261,16 @@ public partial class MainViewModel : ViewModelBase
         UserFullName = "Marco Cavallo";
         UserRole = "Coordinatore";
         UserInitials = "MC";
+    }
+    
+    /// <summary>
+    /// Ottiene il ruolo dell'utente corrente
+    /// </summary>
+    private string GetCurrentUserRole()
+    {
+        // TODO: Leggere da IConfigurationService in Issue #49
+        // Per ora ritorna "Coordinatore" come default
+        return "Coordinatore";
     }
     
     #region Navigation Commands
@@ -214,6 +398,28 @@ public partial class MainViewModel : ViewModelBase
     }
     
     #endregion
+}
+
+/// <summary>
+/// Rappresenta un elemento del menu di navigazione
+/// (Definito qui per evitare dipendenze circolari con PTRP.App)
+/// </summary>
+public partial class MenuItemViewModel : ObservableObject
+{
+    [ObservableProperty]
+    private string _title = string.Empty;
+    
+    [ObservableProperty]
+    private PackIconKind _iconKind;
+    
+    [ObservableProperty]
+    private int _badgeCount = 0;
+    
+    [ObservableProperty]
+    private bool _hasBadge = false;
+    
+    public Type? ViewModelType { get; set; }
+    public System.Windows.Input.ICommand? CustomCommand { get; set; }
 }
 
 /// <summary>

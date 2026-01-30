@@ -1,0 +1,108 @@
+<UserControl x:Class="PTRP.App.Views.Shared.SidebarControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:md="http://materialdesigninxaml.net/winfx/xaml/themes"
+             Background="{DynamicResource MaterialDesignPaper}"
+             Width="280">
+    
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/> <!-- Logo -->
+            <RowDefinition Height="*"/>    <!-- Menu -->
+            <RowDefinition Height="Auto"/> <!-- Footer -->
+        </Grid.RowDefinitions>
+        
+        <!-- Logo Section -->
+        <Border Grid.Row="0" 
+                Padding="24,32,24,24"
+                Background="{DynamicResource PrimaryHueLightBrush}">
+            <StackPanel>
+                <TextBlock Text="PTRP"
+                          FontSize="28"
+                          FontWeight="Bold"
+                          Foreground="{DynamicResource PrimaryHueLightForegroundBrush}"
+                          HorizontalAlignment="Left"/>
+                <TextBlock Text="Progetti Terapeutici Riabilitativi"
+                          FontSize="11"
+                          Opacity="0.8"
+                          Foreground="{DynamicResource PrimaryHueLightForegroundBrush}"
+                          TextWrapping="Wrap"
+                          Margin="0,4,0,0"/>
+            </StackPanel>
+        </Border>
+        
+        <!-- Navigation Menu -->
+        <ScrollViewer Grid.Row="1" 
+                     VerticalScrollBarVisibility="Auto"
+                     HorizontalScrollBarVisibility="Disabled">
+            <ListBox Style="{StaticResource MaterialDesignNavigationListBox}"
+                     ItemsSource="{Binding NavigationMenuItems}"
+                     SelectedItem="{Binding SelectedMenuItem}"
+                     Padding="0,8">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <Grid Height="48">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="56"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            
+                            <!-- Icon -->
+                            <md:PackIcon Grid.Column="0"
+                                        Kind="{Binding IconKind}"
+                                        Width="24"
+                                        Height="24"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"/>
+                            
+                            <!-- Title -->
+                            <TextBlock Grid.Column="1"
+                                      Text="{Binding Title}"
+                                      FontSize="14"
+                                      FontWeight="Medium"
+                                      VerticalAlignment="Center"/>
+                            
+                            <!-- Badge -->
+                            <Border Grid.Column="2"
+                                   Visibility="{Binding HasBadge, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                   Background="{DynamicResource SecondaryHueMidBrush}"
+                                   CornerRadius="10"
+                                   Padding="8,4"
+                                   Margin="0,0,16,0"
+                                   VerticalAlignment="Center">
+                                <TextBlock Text="{Binding BadgeCount}"
+                                          FontSize="11"
+                                          FontWeight="Bold"
+                                          Foreground="{DynamicResource SecondaryHueMidForegroundBrush}"/>
+                            </Border>
+                        </Grid>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </ScrollViewer>
+        
+        <!-- Footer Settings Button -->
+        <Border Grid.Row="2" 
+                BorderThickness="0,1,0,0"
+                BorderBrush="{DynamicResource MaterialDesignDivider}"
+                Padding="0,8">
+            <Button Style="{StaticResource MaterialDesignFlatButton}"
+                    Command="{Binding NavigateToSettingsCommand}"
+                    HorizontalContentAlignment="Left"
+                    Height="48"
+                    Padding="16,0">
+                <StackPanel Orientation="Horizontal">
+                    <md:PackIcon Kind="Cog"
+                                Width="24"
+                                Height="24"
+                                Margin="0,0,16,0"
+                                VerticalAlignment="Center"/>
+                    <TextBlock Text="Impostazioni"
+                              FontSize="14"
+                              VerticalAlignment="Center"/>
+                </StackPanel>
+            </Button>
+        </Border>
+    </Grid>
+</UserControl>
