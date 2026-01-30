@@ -71,10 +71,14 @@ namespace PTRP.App
 
             // Registra i Services
             services.AddScoped<IPatientService, PatientService>();
+            services.AddSingleton<INavigationService, NavigationService>();  // Issue #46: Navigation Service
 
             // Registra i ViewModels
-            services.AddScoped<MainViewModel>();  // Nuovo ViewModel principale per Issue #45
-            // services.AddScoped<MainWindowViewModel>(); // TODO: Rimuovere dopo merge (vecchio ViewModel)
+            services.AddScoped<MainViewModel>();
+            // TODO: Registrare qui i ViewModels delle pagine quando verranno creati
+            // services.AddTransient<DashboardViewModel>();  // Issue #50
+            // services.AddTransient<PatientListViewModel>(); // Issue #51
+            // services.AddTransient<SyncViewModel>();        // Issue #52
 
             // Registra le Views
             services.AddScoped<MainWindow>();
