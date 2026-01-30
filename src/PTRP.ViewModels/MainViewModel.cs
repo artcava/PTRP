@@ -1,18 +1,19 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using PTRP.Services.Interfaces;
 
 namespace PTRP.ViewModels;
 
 /// <summary>
 /// ViewModel principale per MainWindow
 /// Gestisce:
-/// - Navigazione tra le viste
+/// - Navigazione tra le viste (tramite INavigationService)
 /// - Stato utente corrente
 /// - Eventi di notifica (delegati alla View)
 /// </summary>
 public partial class MainViewModel : ViewModelBase
 {
-    private readonly IServiceProvider _serviceProvider;
+    private readonly INavigationService _navigationService;
     
     public override string DisplayName => "PTRP";
     
@@ -51,16 +52,29 @@ public partial class MainViewModel : ViewModelBase
     /// </summary>
     public event EventHandler<NotificationEventArgs>? NotificationRequested;
     
-    public MainViewModel(IServiceProvider serviceProvider)
+    public MainViewModel(INavigationService navigationService)
     {
-        _serviceProvider = serviceProvider;
+        _navigationService = navigationService;
         
-        // TODO: Load user profile from configuration service
+        // Subscribe to navigation changes
+        _navigationService.CurrentViewModelChanged += OnCurrentViewModelChanged;
+        
+        // TODO: Load user profile from configuration service (Issue #49)
         LoadUserProfile();
         
         // Navigate to Dashboard by default
-        // TODO: Check if first run, navigate to FirstRunView if needed
+        // TODO: Check if first run, navigate to FirstRunView if needed (Issue #49)
         NavigateToDashboard();
+    }
+    
+    /// <summary>
+    /// Gestisce il cambio di ViewModel corrente dal NavigationService
+    /// </summary>
+    private void OnCurrentViewModelChanged(object? sender, object? viewModel)
+    {
+        // Cast to ViewModelBase (NavigationService returns object? to avoid circular dependency)
+        CurrentViewModel = viewModel as ViewModelBase;
+        CurrentPageTitle = CurrentViewModel?.DisplayName ?? "PTRP";
     }
     
     /// <summary>
@@ -80,67 +94,71 @@ public partial class MainViewModel : ViewModelBase
     [RelayCommand]
     private void NavigateToDashboard()
     {
-        // TODO: Implementare NavigationService in Issue #46
-        // Per ora imposta titolo
+        // TODO: Implementare DashboardViewModel in Issue #50
+        // Per ora mostra messaggio
+        ShowInfo("Dashboard - In sviluppo (Issue #50)");
         CurrentPageTitle = "Dashboard";
         
-        // Placeholder: in Issue #46 sarà:
-        // CurrentViewModel = _navigationService.NavigateTo<DashboardViewModel>();
-        
-        ShowInfo("Dashboard - In sviluppo (Issue #50)");
+        // Quando DashboardViewModel sarà implementato:
+        // _navigationService.NavigateTo<DashboardViewModel>();
     }
     
     [RelayCommand]
     private void NavigateToPatients()
     {
+        // TODO: Implementare PatientListViewModel in Issue #51
+        // Per ora mostra messaggio
+        ShowInfo("Lista Pazienti - In sviluppo (Issue #51)");
         CurrentPageTitle = "Pazienti";
         
-        // TODO: Issue #46 + #51
-        // CurrentViewModel = _navigationService.NavigateTo<PatientListViewModel>();
-        
-        ShowInfo("Lista Pazienti - In sviluppo (Issue #51)");
+        // Quando PatientListViewModel sarà implementato:
+        // _navigationService.NavigateTo<PatientListViewModel>();
     }
     
     [RelayCommand]
     private void NavigateToProjects()
     {
-        CurrentPageTitle = "Progetti";
         ShowInfo("Progetti - In sviluppo (FASE 2)");
+        CurrentPageTitle = "Progetti";
     }
     
     [RelayCommand]
     private void NavigateToEducators()
     {
-        CurrentPageTitle = "Educatori";
         ShowInfo("Educatori - In sviluppo (FASE 2)");
+        CurrentPageTitle = "Educatori";
     }
     
     [RelayCommand]
     private void NavigateToCalendar()
     {
-        CurrentPageTitle = "Calendario";
         ShowInfo("Calendario - In sviluppo (FASE 2)");
+        CurrentPageTitle = "Calendario";
     }
     
     [RelayCommand]
     private void NavigateToSync()
     {
-        CurrentPageTitle = "Sincronizzazione";
+        // TODO: Implementare SyncViewModel in Issue #52
         ShowInfo("Sync - In sviluppo (Issue #52)");
+        CurrentPageTitle = "Sincronizzazione";
+        
+        // Quando SyncViewModel sarà implementato:
+        // _navigationService.NavigateTo<SyncViewModel>();
     }
     
     [RelayCommand]
     private void NavigateToReports()
     {
-        CurrentPageTitle = "Report";
         ShowInfo("Report - In sviluppo (FASE 2)");
+        CurrentPageTitle = "Report";
     }
     
     [RelayCommand]
     private void NavigateToSettings()
     {
-        CurrentPageTitle = "Impostazioni";
         ShowInfo("Impostazioni - In sviluppo (FASE 4)");
+        CurrentPageTitle = "Impostazioni";
     }
     
     #endregion
