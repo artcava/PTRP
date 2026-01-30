@@ -41,25 +41,21 @@ L'applicazione supporta **due profili utente** con permessi differenziati:
 - Contiene profilo master e configurazione iniziale
 
 **Contenuto Pacchetto:**
-```json
-{
-  "package_type": "admin_bootstrap",
-  "version": "1.0",
-  "profile": {
-    "role": "Coordinator",
-    "first_name": "Nome",
-    "last_name": "Coordinatore",
-    "is_master": true
-  },
-  "initial_data": {
-    "operators": [],
-    "patients": [],
-    "projects": []
-  },
-  "signature": "HASH_SICUREZZA",
-  "created_at": "2026-01-30T17:00:00Z"
-}
-```
+
+Il file contiene le seguenti informazioni:
+
+- **Tipo pacchetto**: Configurazione iniziale amministratore
+- **Versione**: Numero versione del formato file
+- **Profilo utente**:
+  - Ruolo: Coordinatore con permessi completi
+  - Nome e cognome del Coordinatore
+  - Flag che identifica questo utente come amministratore principale
+- **Dati iniziali**: Database vuoto pronto per essere popolato con:
+  - Elenco educatori (inizialmente vuoto)
+  - Elenco pazienti (inizialmente vuoto)
+  - Elenco progetti (inizialmente vuoto)
+- **Firma di sicurezza**: Codice che garantisce l'autenticità del file
+- **Data di creazione**: Timestamp di quando è stato generato il pacchetto
 
 **Utilizzo:**
 1. Coordinatore installa l'applicazione
@@ -79,43 +75,37 @@ L'applicazione supporta **due profili utente** con permessi differenziati:
 - **Rationale**: Data estesa permette verifica se pacchetto più recente delle visite registrate
 
 **Contenuto Pacchetto (COMPLETO):**
-```json
-{
-  "package_type": "appointments_sync",
-  "version": "1.0",
-  "export_date": "2026-04-01",
-  "target_operator": {
-    "id": "GUID-EDUCATORE",
-    "first_name": "Mario",
-    "last_name": "Rossi",
-    "role": "Operator"
-  },
-  "appointments": [ /* 12 appuntamenti programmati */ ],
-  "patients": [ /* dati 8 pazienti coinvolti */ ],
-  "projects": [ /* dati progetti associati */ ],
-  "operators": [ /* TUTTI gli educatori dei progetti */ ],
-  "signature": "HASH_SICUREZZA",
-  "created_at": "2026-04-01T12:00:00Z"
-}
-```
 
-**Campo `operators` (IMPORTANTE):**
-- Contiene TUTTI gli educatori assegnati ai progetti nel pacchetto
-- Necessario per consentire spunta durante registrazione visite
-- Esempio:
-  ```json
-  "operators": [
-    {"id": "GUID-1", "first_name": "Mario", "last_name": "Rossi"},
-    {"id": "GUID-2", "first_name": "Luigi", "last_name": "Bianchi"}
-  ]
-  ```
+Il file contiene le seguenti informazioni:
+
+- **Tipo pacchetto**: Sincronizzazione appuntamenti per educatore
+- **Versione**: Numero versione del formato file
+- **Data esportazione**: Data in cui il pacchetto è stato creato (es. 01/04/2026)
+- **Educatore destinatario**:
+  - Identificativo univoco
+  - Nome e cognome (es. Mario Rossi)
+  - Ruolo: Educatore Professionale
+- **Appuntamenti programmati**: Elenco completo degli appuntamenti assegnati all'educatore (es. 12 appuntamenti)
+- **Pazienti coinvolti**: Dati anagrafici dei pazienti relativi agli appuntamenti (es. 8 pazienti)
+- **Progetti terapeutici**: Informazioni sui progetti a cui l'educatore è assegnato
+- **Altri educatori coinvolti**: Elenco completo di tutti gli educatori che lavorano nei progetti (necessario per poter registrare le visite e indicare chi era presente)
+- **Firma di sicurezza**: Codice che garantisce l'autenticità del file
+- **Data di creazione**: Timestamp di quando è stato generato il pacchetto
+
+**Dettaglio "Altri educatori coinvolti" (IMPORTANTE):**
+
+Questa sezione contiene l'elenco di **tutti** gli educatori assegnati ai progetti presenti nel pacchetto. Per ogni educatore sono presenti:
+- Identificativo univoco
+- Nome e cognome
+
+Questi dati sono necessari per consentire all'educatore di spuntare i colleghi presenti durante la registrazione delle visite.
 
 **Utilizzo:**
 1. Educatore installa l'applicazione
 2. Al primo avvio: sistema rileva assenza configurazione
 3. Mostra schermata "Importa Pacchetto dal Coordinatore"
 4. Educatore importa file ricevuto (es. `appointments_rossi_20260401.ptrp`)
-5. Sistema legge `target_operator` → riconosce profilo Rossi
+5. Sistema legge i dati dell'educatore destinatario → riconosce profilo Rossi
 6. Crea profilo Educatore per Rossi nel database locale
 7. Importa appuntamenti, pazienti, progetti, altri educatori
 8. Applicazione configurata con permessi limitati
