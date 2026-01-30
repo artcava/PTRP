@@ -51,7 +51,7 @@ public partial class MainWindow : Window
                 MainSnackbar.MessageQueue.Enqueue(
                     e.Message,
                     e.ActionButtonText,
-                    () => { },
+                    (obj) => { }, // Action button handler (takes object? parameter)
                     null,
                     false,
                     e.Type == NotificationType.Error,
