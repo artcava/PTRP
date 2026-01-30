@@ -30,15 +30,6 @@ jobs:
     
     - name: Build solution
       run: dotnet build src/PTRP.sln --configuration Release --no-restore
-    
-    - name: Upload build artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: build-output
-        path: |
-          src/**/bin/Release/**
-          src/**/obj/Release/**
-        retention-days: 1
 
   test:
     name: Test & Coverage
@@ -56,18 +47,17 @@ jobs:
       with:
         dotnet-version: '10.0.x'
     
-    - name: Download build artifacts
-      uses: actions/download-artifact@v4
-      with:
-        name: build-output
-        path: src/
+    - name: Restore dependencies
+      run: dotnet restore src/PTRP.sln
+    
+    - name: Build solution
+      run: dotnet build src/PTRP.sln --configuration Release --no-restore
     
     - name: Run tests with coverage
       run: |
         dotnet test tests/PTRP.Tests/PTRP.Tests.csproj `
           --configuration Release `
           --no-build `
-          --no-restore `
           --logger "trx;LogFileName=test-results.trx" `
           --logger "console;verbosity=detailed" `
           --collect:"XPlat Code Coverage" `
