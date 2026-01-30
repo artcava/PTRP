@@ -2,7 +2,7 @@
 
 ## 📋 Panoramica
 
-Questo documento descrive il **flusso dei dati dal punto di vista dell'utente applicativo** per il sistema PTRP. L'applicazione gestisce Pazienti, Progetti Terapeutici Riabilitativi Personalizzati, Educatori Professionali e Visite.
+Questo documento descrive il **flusso dei dati dal punto di vista dell'utente applicativo** per il sistema PTRP. L'applicazione gestisce Pazienti, Progetti Terapeutici Riabilitativi Personalizzati, Educatori Professionali, Appuntamenti e Visite.
 
 ### Profili Utente
 
@@ -10,13 +10,17 @@ L'applicazione supporta **due profili utente** con permessi differenziati:
 
 1. **Coordinatore**
    - Gestione completa anagrafiche pazienti
+   - **Gestione anagrafica educatori professionali**
    - Creazione e assegnazione progetti terapeutici
    - Assegnazione educatori ai progetti
    - Visualizzazione globale di tutti i dati
+   - Esportazione appuntamenti per educatori
 
 2. **Educatore Professionale**
    - Visualizzazione pazienti e progetti assegnati
-   - Registrazione visite effettive per i propri progetti
+   - Registrazione visite a partire dagli appuntamenti
+   - Importazione appuntamenti dal Coordinatore
+   - Esportazione visite registrate
    - Accesso limitato ai soli dati di competenza
 
 ---
@@ -27,30 +31,37 @@ L'applicazione supporta **due profili utente** con permessi differenziati:
 
 ```
 Paziente (1) ←───── (1) Progetto Terapeutico Attivo
-                          ↓
+                          ↓ (ha stato: Active/Suspended/Completed)
                           ↓ (N:N)
                           ↓
                     Educatori Professionali
                           ↓
                           ↓ (1:N)
                           ↓
-                    Visite Programmate (4 canoniche)
+                    Appuntamenti (4 canonici)
                           ↓
-                          ↓ (1:1)
+                          ↓ (1:1 vincolo obbligatorio)
                           ↓
                     Visite Effettive
 ```
 
 ### Regole di Business Critiche
 
-1. **Unicità Progetto Attivo**: Un paziente può avere **UN SOLO** progetto terapeutico attivo contemporaneamente
-2. **Assegnazione Educatori**: Gli educatori sono assegnati al **Progetto Terapeutico**, non direttamente al paziente
-3. **Relazione Implicita**: Gli educatori di un paziente si desumono dal progetto attivo
-4. **Visite Canoniche**: Ogni progetto genera automaticamente 4 visite programmate:
+1. **Unicità Progetto Attivo**: Un paziente può avere **UN SOLO** progetto terapeutico con stato "Active" contemporaneamente
+2. **Stato sul Progetto**: Lo stato (Active, Suspended, Completed, Deceased) è applicato al **Progetto Terapeutico**, non al paziente
+3. **Assegnazione Educatori**: Gli educatori sono assegnati al **Progetto Terapeutico**, non direttamente al paziente
+4. **Relazione Implicita**: Gli educatori di un paziente si desumono dal progetto attivo
+5. **Appuntamenti Canonici**: Ogni progetto genera automaticamente 4 appuntamenti programmati:
    - Prima Apertura (INTAKE) - dopo 3 mesi dall'assegnazione
    - Verifica Intermedia - dopo 6 mesi dalla Prima Apertura
    - Verifica Finale - dopo 6 mesi dalla Verifica Intermedia
    - Dimissioni - dopo 1 mese dalla Verifica Finale
+6. **Vincolo Visita-Appuntamento**: Una Visita può essere creata **SOLO** a partire da un Appuntamento esistente (relazione 1:1 obbligatoria)
+
+### Terminologia
+
+- **Appuntamento**: Incontro programmato nel calendario (stato: Scheduled, Completed, Missed, Rescheduled)
+- **Visita**: Registrazione effettiva dell'incontro avvenuto con note cliniche, operatori presenti, esiti (sempre legata a un Appuntamento)
 
 ---
 
@@ -69,21 +80,22 @@ Paziente (1) ←───── (1) Progetto Terapeutico Attivo
 ├────────────────────────────────────────────────────────────┤
 │ [+ Nuovo Paziente]  [🔍 Ricerca: _________]  [⚙️ Filtri]  │
 ├────────────────────────────────────────────────────────────┤
-│ Nome Cognome        │ Stato      │ Educatori Assegnati    │
+│ Nome Cognome        │ Stato Progetto │ Educatori Assegnati    │
 ├────────────────────────────────────────────────────────────┤
-│ CALAMITA Daniele    │ Active     │ Corrias, Gargiulo      │
-│ DISTANTE Andrea     │ Active     │ Lapaglia               │
-│ CORAGLIA Debora     │ Suspended  │ Foschiano, Perziano    │
-│ BETTI Fabrizio      │ Deceased   │ -                      │
-│ BIAGIONE Rosaria    │ Active     │ Foschiano, Perziano    │
+│ CALAMITA Daniele    │ Active         │ Corrias, Gargiulo      │
+│ DISTANTE Andrea     │ Active         │ Lapaglia               │
+│ CORAGLIA Debora     │ Suspended      │ Foschiano, Perziano    │
+│ BETTI Fabrizio      │ Deceased       │ -                      │
+│ BIAGIONE Rosaria    │ Active         │ Foschiano, Perziano    │
 │ ...                                                        │
 └────────────────────────────────────────────────────────────┘
 ```
 
 **Comportamento:**
+- La colonna "Stato Progetto" mostra lo stato del progetto attivo corrente (non del paziente)
 - La colonna "Educatori Assegnati" mostra gli educatori del progetto attivo corrente
-- Se il paziente non ha progetti attivi, la colonna mostra "-" o "Nessun progetto"
-- Stati possibili: `Active`, `Suspended`, `Deceased`
+- Se il paziente non ha progetti attivi, mostra "-"
+- Stati possibili del progetto: `Active`, `Suspended`, `Completed`, `Deceased`
 
 ---
 
@@ -99,7 +111,6 @@ Paziente (1) ←───── (1) Progetto Terapeutico Attivo
 │                                            │
 │ Nome:     [_______________________________] │
 │ Cognome:  [_______________________________] │
-│ Stato:    [▼ Active            ]           │
 │                                            │
 │           [Annulla]  [Salva]               │
 └────────────────────────────────────────────┘
@@ -108,7 +119,6 @@ Paziente (1) ←───── (1) Progetto Terapeutico Attivo
 **Validazioni:**
 - Nome e Cognome obbligatori
 - Avviso se esiste paziente con stesso nome/cognome
-- Stato di default: `Active`
 
 **Risultato:**
 - Paziente creato e visibile nella lista
@@ -123,8 +133,41 @@ Paziente (1) ←───── (1) Progetto Terapeutico Attivo
 
 **Comportamento UI:**
 - Ricerca in tempo reale su Nome e Cognome
-- Filtri per stato paziente
+- Filtri per stato progetto (Active, Suspended, Completed, Deceased)
 - Ricerca case-insensitive
+
+---
+
+## 👥 FLUSSO 1B: Gestione Educatori (Coordinatore)
+
+### Scenario: Inserimento nuovo educatore nell'equipe
+
+#### Step 3B: Lista Educatori
+
+**Azione Utente:** Coordinatore naviga a sezione "Educatori"
+
+**UI Display:**
+```
+┌────────────────────────────────────────────────────────────┐
+│ PTRP - Gestione Educatori                  [Coordinatore] │
+├────────────────────────────────────────────────────────────┤
+│ [+ Nuovo Educatore]  [🔍 Ricerca: _________]             │
+├────────────────────────────────────────────────────────────┤
+│ Nome Cognome        │ Progetti Attivi │ Stato            │
+├────────────────────────────────────────────────────────────┤
+│ CORRIAS             │ 8               │ Attivo           │
+│ GARGIULO            │ 6               │ Attivo           │
+│ LAPAGLIA            │ 5               │ Attivo           │
+│ FOSCHIANO           │ 7               │ Attivo           │
+│ PERZIANO            │ 4               │ Sospeso          │
+│ ...                                                        │
+└────────────────────────────────────────────────────────────┘
+```
+
+**Comportamento:**
+- Mostra tutti gli educatori dell'equipe
+- Conteggio progetti attivi per ciascun educatore
+- Possibilità di aggiungere, modificare, sospendere educatori
 
 ---
 
@@ -148,12 +191,12 @@ Paziente (1) ←───── (1) Progetto Terapeutico Attivo
 │ ✅ Progetto Attivo (1)                                     │
 │ ┌────────────────────────────────────────────────────┐    │
 │ │ PTRP 2025-2027                                     │    │
-│ │ Stato: In Progress                                │    │
+│ │ Stato: Active                                     │    │
 │ │ Periodo: 02/01/2025 - 02/01/2027                  │    │
 │ │ Educatori: Corrias, Gargiulo                      │    │
-│ │ Prossima Visita: 02/04/2025 (Prima Apertura)     │    │
+│ │ Prossimo Appuntamento: 02/04/2025 (Prima Apertura)│    │
 │ │                                                    │    │
-│ │ [Visualizza Dettagli] [Modifica Educatori]       │    │
+│ │ [Visualizza Dettagli] [Modifica Stato]           │    │
 │ └────────────────────────────────────────────────────┘    │
 │                                                            │
 │ 📋 Progetti Completati (0)                                 │
@@ -166,10 +209,10 @@ Paziente (1) ←───── (1) Progetto Terapeutico Attivo
 ```
 
 **Informazioni Visualizzate:**
-- Titolo e stato del progetto
+- Titolo e **stato del progetto** (Active, Suspended, Completed, Deceased)
 - Periodo di validità
 - Educatori assegnati
-- Prossima visita programmata
+- Prossimo appuntamento programmato
 
 ---
 
@@ -178,8 +221,8 @@ Paziente (1) ←───── (1) Progetto Terapeutico Attivo
 **Azione Utente:** Click su `[+ Nuovo Progetto Terapeutico]`
 
 **Validazione Pre-Creazione:**
-- Sistema verifica che NON esista già un progetto attivo per questo paziente
-- Se esiste, mostra messaggio: "Il paziente ha già un progetto attivo. Chiudi o completa il progetto corrente prima di crearne uno nuovo."
+- Sistema verifica che NON esista già un progetto con stato "Active" per questo paziente
+- Se esiste, mostra messaggio: "Il paziente ha già un progetto attivo. Cambia lo stato del progetto corrente prima di crearne uno nuovo."
 
 **UI Dialog:**
 ```
@@ -198,7 +241,8 @@ Paziente (1) ←───── (1) Progetto Terapeutico Attivo
 │ Data Inizio:     [📅 02/01/2025]                          │
 │ Data Fine Prev.: [📅 02/01/2027]  (opzionale)             │
 │                                                            │
-│ Stato:           [▼ In Progress      ]                    │
+│ Stato:           [▼ Active            ]                    │
+│                     (Active, Suspended, Completed, Deceased)│
 │                                                            │
 │ ─────────────────────────────────────────────────────     │
 │ EDUCATORI PROFESSIONALI ASSEGNATI                         │
@@ -215,7 +259,7 @@ Paziente (1) ←───── (1) Progetto Terapeutico Attivo
 │                                                            │
 │ ─────────────────────────────────────────────────────     │
 │                                                            │
-│ [✓] Genera automaticamente visite programmate (4)         │
+│ [✓] Genera automaticamente appuntamenti programmati (4)   │
 │     • Prima Apertura: +3 mesi (02/04/2025)                │
 │     • Verifica Intermedia: +6 mesi (02/10/2025)           │
 │     • Verifica Finale: +6 mesi (02/04/2026)               │
@@ -230,98 +274,98 @@ Paziente (1) ←───── (1) Progetto Terapeutico Attivo
 - Data inizio obbligatoria
 - Data fine ≥ data inizio (se specificata)
 - Almeno 1 educatore assegnato
-- Controllo unicità progetto attivo per paziente
+- Controllo unicità progetto con stato "Active" per paziente
 
 **Operazioni Eseguite dal Sistema:**
 
-1. Crea il progetto terapeutico
+1. Crea il progetto terapeutico con stato selezionato
 2. Assegna gli educatori al progetto
-3. Genera automaticamente 4 visite programmate con le scadenze corrette
+3. Genera automaticamente 4 appuntamenti programmati con le scadenze corrette
 
 **Risultato:**
 - Progetto creato e visibile nella scheda paziente
-- Educatori ora visibili nella lista pazienti (colonna "Educatori Assegnati")
-- 4 visite automaticamente programmate nel calendario
+- Educatori ora visibili nella lista pazienti
+- 4 appuntamenti automaticamente programmati nel calendario
 
 ---
 
-## 📅 FLUSSO 3: Visualizzazione Calendario Visite
+## 📅 FLUSSO 3: Visualizzazione Calendario Appuntamenti
 
-### Scenario: Coordinatore consulta visite programmate
+### Scenario: Coordinatore consulta appuntamenti programmati
 
-#### Step 6: Calendario Visite Mensile
+#### Step 6: Calendario Appuntamenti Mensile
 
 **Azione Utente:** Navigazione a sezione "Calendario"
 
 **UI Display:**
 ```
 ┌────────────────────────────────────────────────────────────┐
-│ Calendario Visite - Aprile 2025                           │
+│ Calendario Appuntamenti - Aprile 2025                     │
 ├────────────────────────────────────────────────────────────┤
 │  L    M    M    G    V    S    D                          │
-│       1    2🔵  3    4    5    6                          │
+│       1    2🟢  3    4    5    6                          │
 │  7    8    9   10   11   12   13                          │
-│ 14   15   16   17🟢 18   19   20                          │
-│ 21   22   23🟠 24   25   26   27                          │
+│ 14   15   16   17🟡 18   19   20                          │
+│ 21   22   23⚫ 24   25   26   27                          │
 │ 28   29   30                                              │
 │                                                            │
-│ Legenda:                                                  │
-│ 🔵 Prima Apertura  🟢 Verifica Int.  🟡 Verifica Finale   │
-│ 🟠 Dimissioni      ⚪ Nessuna visita                       │
+│ Legenda (Stato Progetto):                                 │
+│ 🟢 Active (In corso)   🟡 Suspended (Sospeso)           │
+│ ⚫ Deceased (Deceduto)  ⚪ Completed (Concluso)          │
 │                                                            │
 │ Filtri:                                                   │
 │ [✓] Prima Apertura  [✓] Verifiche  [✓] Dimissioni        │
 │ Educatore: [▼ Tutti               ]                       │
-│ Stato: [▼ Programmate             ]                       │
+│ Stato Progetto: [▼ Tutti          ]                       │
 └────────────────────────────────────────────────────────────┘
 
 ┌────────────────────────────────────────────────────────────┐
-│ Visite del 02 Aprile 2025                                 │
+│ Appuntamenti del 02 Aprile 2025                           │
 ├────────────────────────────────────────────────────────────┤
 │                                                            │
-│ 🔵 Prima Apertura - CALAMITA Daniele                      │
+│ 🟢 Prima Apertura - CALAMITA Daniele                      │
 │    Educatori: Corrias, Gargiulo                           │
-│    Progetto: PTRP 2025-2027                               │
-│    [Registra Visita] [Riprogramma] [Segna Mancata]       │
+│    Progetto: PTRP 2025-2027 (Active)                      │
+│    [Registra Visita] [Riprogramma] [Segna Mancato]       │
 │                                                            │
-│ 🔵 Prima Apertura - DISTANTE Andrea                       │
+│ 🟢 Prima Apertura - DISTANTE Andrea                       │
 │    Educatore: Lapaglia                                    │
-│    Progetto: PTRP 2025-2027                               │
-│    [Registra Visita] [Riprogramma] [Segna Mancata]       │
+│    Progetto: PTRP 2025-2027 (Active)                      │
+│    [Registra Visita] [Riprogramma] [Segna Mancato]       │
 │                                                            │
 └────────────────────────────────────────────────────────────┘
 ```
 
 **Funzionalità:**
-- Visualizzazione calendario mensile con codice colore per tipo visita
-- Lista giornaliera di visite con dettagli
-- Filtri per tipo visita, educatore, stato
-- Azioni rapide: Registra, Riprogramma, Segna Mancata
+- Visualizzazione calendario mensile con **codice colore per stato progetto** (non per tipo appuntamento)
+- Lista giornaliera di appuntamenti con dettagli
+- Filtri per tipo appuntamento, educatore, stato progetto
+- Azioni rapide: Registra Visita, Riprogramma, Segna Mancato
 
 ---
 
-## ✍️ FLUSSO 4: Registrazione Visita Effettiva (Educatore)
+## ✍️ FLUSSO 4: Registrazione Visita (Educatore)
 
 ### Scenario: Educatore registra visita dopo incontro con paziente
 
-#### Step 7: Selezione Visita da Registrare
+#### Step 7: Selezione Appuntamento da Registrare
 
-**Azione Utente:** Educatore Corrias accede alla lista "Mie Visite"
+**Azione Utente:** Educatore Corrias accede alla lista "Miei Appuntamenti"
 
 **UI Display (Vista Educatore):**
 ```
 ┌────────────────────────────────────────────────────────────┐
-│ Le Mie Visite Programmate                   [Educatore]   │
+│ I Miei Appuntamenti                         [Educatore]   │
 ├────────────────────────────────────────────────────────────┤
 │ Oggi: 02/04/2025                                          │
 │                                                            │
-│ 🔵 CALAMITA Daniele - Prima Apertura                      │
+│ 🟢 CALAMITA Daniele - Prima Apertura                      │
 │    Ore: 10:00 (stimato 90 min)                           │
 │    Co-educatore: Gargiulo                                 │
 │    [✓ Registra Visita]                                    │
 │                                                            │
 │ ─────────────────────────────────────────────────────     │
-│ Prossime Visite (7 giorni)                                │
+│ Prossimi Appuntamenti (7 giorni)                          │
 │                                                            │
 │ 05/04/2025 - BIAGIONE Rosaria - Prima Apertura           │
 │ 09/04/2025 - PALIERI Franca - Prima Apertura             │
@@ -330,25 +374,28 @@ Paziente (1) ←───── (1) Progetto Terapeutico Attivo
 ```
 
 **Comportamento:**
-- Educatore vede solo le visite dei propri progetti assegnati
-- Sono mostrate visite di oggi e i prossimi 7 giorni
+- Educatore vede solo gli appuntamenti dei propri progetti assegnati
+- Sono mostrati appuntamenti di oggi e i prossimi 7 giorni
 - Possibilità di aprire il modulo di registrazione visita
 
 ---
 
-#### Step 8: Form Registrazione Visita Effettiva
+#### Step 8: Form Registrazione Visita
 
 **Azione Utente:** Click su `[✓ Registra Visita]`
+
+**⚠️ VINCOLO IMPORTANTE:** La visita può essere creata **SOLO** a partire da un appuntamento esistente.
 
 **UI Dialog:**
 ```
 ┌────────────────────────────────────────────────────────────┐
-│ Registrazione Visita Effettiva                      [X]   │
+│ Registrazione Visita                                [X]   │
 ├────────────────────────────────────────────────────────────┤
 │                                                            │
 │ Paziente: CALAMITA Daniele                                │
-│ Tipo Visita: 🔵 Prima Apertura (INTAKE)                   │
+│ Tipo Appuntamento: 🟢 Prima Apertura (INTAKE)             │
 │ Data Programmata: 02/04/2025                              │
+│ Appuntamento ID: #12345                                   │
 │                                                            │
 │ ─────────────────────────────────────────────────────     │
 │ DATI VISITA EFFETTIVA                                     │
@@ -374,8 +421,7 @@ Paziente (1) ←───── (1) Progetto Terapeutico Attivo
 │ [________________________________________________         │
 │  Il paziente si è presentato puntuale e collaborativo.    │
 │  Durante il colloquio sono stati discussi gli obiettivi   │
-│  del progetto terapeutico. Il paziente ha manifestato...  │
-│  ________________________________________________         │
+│  del progetto terapeutico...                              │
 │  ________________________________________________]        │
 │                                                            │
 │ ─────────────────────────────────────────────────────     │
@@ -383,8 +429,7 @@ Paziente (1) ←───── (1) Progetto Terapeutico Attivo
 │ ─────────────────────────────────────────────────────     │
 │                                                            │
 │ [________________________________________________         │
-│  Obiettivo 1: Migliorare autonomia nelle attività...     │
-│  Obiettivo 2: Rafforzare competenze relazionali...       │
+│  Obiettivo 1: Migliorare autonomia...                    │
 │  ________________________________________________]        │
 │                                                            │
 │ ─────────────────────────────────────────────────────     │
@@ -402,6 +447,7 @@ Paziente (1) ←───── (1) Progetto Terapeutico Attivo
 ```
 
 **Validazioni:**
+- **Vincolo obbligatorio**: La visita deve essere legata a un appuntamento esistente
 - Data effettiva non può essere futura
 - Ora fine deve essere successiva all'ora inizio
 - Almeno un operatore deve essere selezionato
@@ -410,9 +456,9 @@ Paziente (1) ←───── (1) Progetto Terapeutico Attivo
 
 **Operazioni Eseguite dal Sistema:**
 
-1. Crea la registrazione della visita effettiva
+1. Crea la registrazione della visita effettiva legata all'appuntamento (relazione 1:1)
 2. Registra gli operatori presenti
-3. Aggiorna lo stato della visita programmata a "Completata"
+3. Aggiorna lo stato dell'appuntamento a "Completed"
 4. Salva nel database locale
 
 **Risultato UI:**
@@ -420,9 +466,11 @@ Paziente (1) ←───── (1) Progetto Terapeutico Attivo
 ┌────────────────────────────────────────────┐
 │ ✅ Visita Registrata con Successo          │
 │                                            │
-│ La visita è stata salvata nel database    │
-│ locale. Ricorda di sincronizzare i dati   │
-│ con il Coordinatore.                      │
+│ La visita è stata salvata e collegata     │
+│ all'appuntamento #12345.                  │
+│                                            │
+│ Ricorda di sincronizzare i dati con il    │
+│ Coordinatore.                             │
 │                                            │
 │ [OK]  [Vai a Sincronizzazione]           │
 └────────────────────────────────────────────┘
@@ -430,11 +478,11 @@ Paziente (1) ←───── (1) Progetto Terapeutico Attivo
 
 ---
 
-## 🔄 FLUSSO 5: Sincronizzazione Dati (Offline-First)
+## 🔄 FLUSSO 5: Sincronizzazione Dati (Bidirezionale)
 
-### Scenario: Educatore sincronizza visite registrate con Coordinatore
+### Scenario A: Educatore sincronizza visite registrate con Coordinatore
 
-#### Step 9: Esportazione Pacchetto Sync (Educatore)
+#### Step 9: Esportazione Visite (Educatore → Coordinatore)
 
 **Azione Utente:** Navigazione a sezione "Sincronizzazione"
 
@@ -443,10 +491,10 @@ Paziente (1) ←───── (1) Progetto Terapeutico Attivo
 ┌────────────────────────────────────────────────────────────┐
 │ Sincronizzazione Dati                       [Educatore]   │
 ├────────────────────────────────────────────────────────────┤
-│ [Esporta Dati] [Importa Dati] [Storico Sync]             │
+│ [Esporta Visite] [Importa Appuntamenti] [Storico]        │
 ├────────────────────────────────────────────────────────────┤
 │                                                            │
-│ DATI DA SINCRONIZZARE                                     │
+│ VISITE DA SINCRONIZZARE                                   │
 │                                                            │
 │ Ultima sincronizzazione: 28/03/2025 18:30                │
 │                                                            │
@@ -464,99 +512,151 @@ Paziente (1) ←───── (1) Progetto Terapeutico Attivo
 │ Destinatario: [▼ Coordinatore Principale  ]               │
 │ Modalità:     [▼ File Criptato (.ptrp)   ]               │
 │                                                            │
-│ [Crea Pacchetto di Sincronizzazione]                     │
+│ [Esporta Pacchetto Visite]                                │
 │                                                            │
 └────────────────────────────────────────────────────────────┘
 ```
 
-**Comportamento del Sistema:**
-- Raccoglie tutte le visite registrate dall'educatore
-- Cripta e protegge i dati (nessuno può leggerli senza la password corretta)
-- Genera un file da inviare al Coordinatore
-
 **Risultato:**
 ```
 ┌────────────────────────────────────────────────────────────┐
-│ ✅ Pacchetto Creato con Successo                          │
+│ ✅ Pacchetto Visite Creato                                │
 ├────────────────────────────────────────────────────────────┤
-│                                                            │
-│ File: sync_corrias_20250405_183000.ptrp                   │
+│ File: visits_corrias_20250405_183000.ptrp                 │
 │ Dimensione: 287 KB                                        │
-│ Creato: 05/04/2025 18:30:00                               │
+│ Contiene: 5 visite, 12 relazioni operatori                │
 │                                                            │
-│ Il pacchetto contiene:                                    │
-│ • 5 visite effettive                                      │
-│ • 12 relazioni operatori                                  │
-│                                                            │
-│ [💾 Salva su USB]  [📧 Invia Email]  [☁️ Condividi]     │
-│                                                            │
+│ [💾 Salva su USB]  [📧 Invia Email]                       │
 └────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-#### Step 10: Importazione Pacchetto (Coordinatore)
+### Scenario B: Coordinatore esporta appuntamenti per Educatore
 
-**Azione Utente:** Coordinatore riceve file e apre sezione Sincronizzazione
+#### Step 10: Esportazione Appuntamenti (Coordinatore → Educatore)
+
+**🆕 NUOVO FLUSSO**
+
+**Azione Utente:** Coordinatore naviga a sezione "Sincronizzazione"
 
 **UI Display:**
 ```
 ┌────────────────────────────────────────────────────────────┐
-│ Importazione Pacchetto Sincronizzazione  [Coordinatore]  │
+│ Sincronizzazione Dati                     [Coordinatore]  │
+├────────────────────────────────────────────────────────────┤
+│ [Esporta Appuntamenti] [Importa Visite] [Storico]         │
+├────────────────────────────────────────────────────────────┤
+│                                                            │
+│ ESPORTA APPUNTAMENTI PER EDUCATORE                        │
+│                                                            │
+│ Seleziona Educatore:                                      │
+│ [▼ Corrias                    ]                          │
+│                                                            │
+│ Periodo:                                                  │
+│ Dal: [📅 01/04/2025]  Al: [📅 30/04/2025]              │
+│                                                            │
+│ ─────────────────────────────────────────────────────     │
+│ ANTEPRIMA DATI                                            │
+│ ─────────────────────────────────────────────────────     │
+│                                                            │
+│ Appuntamenti di Corrias (01-30 Aprile 2025):             │
+│ • 12 appuntamenti programmati                            │
+│ • 8 pazienti coinvolti                                   │
+│ • 3 co-educatori presenti                                │
+│                                                            │
+│ ⚠️ L'educatore importando questo pacchetto sostituirà   │
+│    TUTTI i suoi appuntamenti con questi nuovi dati.       │
+│                                                            │
+│ [Esporta Pacchetto Appuntamenti]                          │
+│                                                            │
+└────────────────────────────────────────────────────────────┘
+```
+
+**Comportamento:**
+- Il Coordinatore seleziona un educatore specifico
+- Il sistema filtra tutti gli appuntamenti assegnati a quell'educatore
+- Genera un pacchetto contenente SOLO gli appuntamenti di competenza
+
+**Risultato:**
+```
+┌────────────────────────────────────────────────────────────┐
+│ ✅ Pacchetto Appuntamenti Creato                          │
+├────────────────────────────────────────────────────────────┤
+│ File: appointments_corrias_202504.ptrp                     │
+│ Dimensione: 145 KB                                        │
+│ Contiene: 12 appuntamenti per Corrias                     │
+│                                                            │
+│ Consegna questo file a Corrias per l'importazione.        │
+│                                                            │
+│ [💾 Salva su USB]  [📧 Invia Email]                       │
+└────────────────────────────────────────────────────────────┘
+```
+
+---
+
+#### Step 11: Importazione Appuntamenti (Educatore)
+
+**Azione Utente:** Educatore riceve file e apre sezione "Importa Appuntamenti"
+
+**UI Display:**
+```
+┌────────────────────────────────────────────────────────────┐
+│ Importazione Appuntamenti                   [Educatore]   │
 ├────────────────────────────────────────────────────────────┤
 │                                                            │
 │ [📁 Seleziona File .ptrp...]                              │
 │                                                            │
 │ File selezionato:                                         │
-│ sync_corrias_20250405_183000.ptrp (287 KB)               │
+│ appointments_corrias_202504.ptrp (145 KB)                 │
 │                                                            │
 │ ─────────────────────────────────────────────────────     │
 │ VERIFICA PACCHETTO                                        │
 │ ─────────────────────────────────────────────────────     │
 │                                                            │
 │ ✅ Firma verificata (integrità confermata)                 │
-│ ✅ Crittografia verificata (accesso autorizzato)           │
-│ ✅ Schema compatibile (versione v1.0)                      │
-│ ✅ Operatore riconosciuto: Corrias                         │
+│ ✅ Crittografia verificata                                 │
+│ ✅ Schema compatibile                                      │
+│ ✅ Destinatario corretto: Corrias                          │
 │                                                            │
 │ ─────────────────────────────────────────────────────     │
 │ CONTENUTO PACCHETTO                                       │
 │ ─────────────────────────────────────────────────────     │
 │                                                            │
-│ • 5 visite effettive da importare                         │
-│ • 12 relazioni operatori-visite                           │
+│ • 12 appuntamenti per Corrias                            │
+│ • Periodo: 01-30 Aprile 2025                             │
+│ • 8 pazienti                                             │
 │                                                            │
-│ Conflitti rilevati: 0                                     │
+│ ⚠️ ATTENZIONE: L'importazione SOSTITUIRÀ COMPLETAMENTE  │
+│    tutti i tuoi appuntamenti attuali con questi nuovi.    │
 │                                                            │
-│ ⚠️ L'importazione aggiornerà il database locale           │
+│ ⚠️ Le visite già registrate NON saranno modificate.       │
 │                                                            │
-│                    [Annulla]  [Importa Dati]              │
+│                    [Annulla]  [Importa Appuntamenti]      │
 │                                                            │
 └────────────────────────────────────────────────────────────┘
 ```
 
 **Comportamento del Sistema:**
 
-1. Verifica l'integrità del pacchetto
-2. Decripta i dati
-3. Controlla se ci sono conflitti (es. stessa visita modificata in due posti)
-4. In caso di conflitto: priorità a quanto registrato dal Coordinatore
-5. Importa i dati nel database
+1. Verifica l'integrità e destinatario del pacchetto
+2. **SOSTITUISCE COMPLETAMENTE** tutti gli appuntamenti dell'educatore con i nuovi
+3. **Preserva** le visite già registrate (non vengono toccate)
+4. Aggiorna il database locale
 
 **Risultato UI:**
 ```
 ┌────────────────────────────────────────────┐
-│ ✅ Importazione Completata                 │
+│ ✅ Appuntamenti Importati                 │
 │                                            │
 │ Risultati:                                │
-│ • 5 visite registrate importate           │
-│ • 12 relazioni operatori importate        │
-│ • 0 conflitti risolti                     │
-│ • 0 record saltati                        │
+│ • 12 appuntamenti importati              │
+│ • Appuntamenti precedenti sostituiti    │
+│ • Visite registrate preservate          │
 │                                            │
-│ Database aggiornato con successo.         │
+│ Calendario aggiornato con successo.       │
 │                                            │
-│ [Visualizza Report] [Chiudi]             │
+│ [Visualizza Calendario] [Chiudi]         │
 └────────────────────────────────────────────┘
 ```
 
@@ -566,7 +666,7 @@ Paziente (1) ←───── (1) Progetto Terapeutico Attivo
 
 ### Scenario: Educatore tenta operazione non autorizzata
 
-#### Step 11: Verifica Permessi
+#### Step 12: Verifica Permessi
 
 **Azione Utente:** Educatore tenta di modificare dati paziente
 
@@ -596,17 +696,27 @@ Paziente (1) ←───── (1) Progetto Terapeutico Attivo
 | Visualizzare assegnati | ✅ | ✅ |
 | Visualizzare tutti | ❌ | ✅ |
 | Creare/Modificare | ❌ | ✅ |
+| **Educatori** |
+| Visualizzare elenco | ❌ | ✅ |
+| Creare/Modificare | ❌ | ✅ |
 | **Progetti** |
 | Visualizzare assegnati | ✅ | ✅ |
 | Visualizzare tutti | ❌ | ✅ |
 | Creare e assegnare | ❌ | ✅ |
+| Modificare stato | ❌ | ✅ |
+| **Appuntamenti** |
+| Visualizzare i propri | ✅ | ✅ |
+| Visualizzare tutti | ❌ | ✅ |
+| Modificare | ❌ | ✅ |
 | **Visite** |
-| Registrare le proprie | ✅ | ✅ |
-| Registrare altrui | ❌ | ✅ |
+| Registrare da appuntamenti propri | ✅ | ✅ |
+| Registrare da appuntamenti altrui | ❌ | ✅ |
 | Visualizzare tutte | ❌ | ✅ |
 | **Sincronizzazione** |
-| Esportare | ✅ | ✅ |
-| Importare | ❌ | ✅ |
+| Esportare visite | ✅ | ✅ |
+| Importare visite | ❌ | ✅ |
+| Esportare appuntamenti | ❌ | ✅ |
+| Importare appuntamenti | ✅ | ✅ |
 
 ---
 
@@ -614,7 +724,7 @@ Paziente (1) ←───── (1) Progetto Terapeutico Attivo
 
 ### Scenario: Generazione report mensile
 
-#### Step 12: Dashboard Riepilogativa
+#### Step 13: Dashboard Riepilogativa
 
 **Azione Utente:** Coordinatore apre Dashboard
 
@@ -627,17 +737,17 @@ Paziente (1) ←───── (1) Progetto Terapeutico Attivo
 │ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐         │
 │ │   103       │ │     45      │ │     12      │         │
 │ │  Pazienti   │ │  Progetti   │ │  Educatori  │         │
-│ │   Attivi    │ │  In Corso   │ │  Operativi  │         │
+│ │   Totali    │ │   Attivi    │ │  Operativi  │         │
 │ └─────────────┘ └─────────────┘ └─────────────┘         │
 │                                                            │
 │ ─────────────────────────────────────────────────────     │
 │ VISITE MESE CORRENTE                                      │
 │ ─────────────────────────────────────────────────────     │
 │                                                            │
-│ Programmate: 42                                           │
-│ Completate:  32   ████████████████░░░░░  76%             │
-│ Sospese:     7    ████░░░░░░░░░░░░░░░░░  17%             │
-│ Mancate:     3    ██░░░░░░░░░░░░░░░░░░░   7%             │
+│ Appuntamenti Programmati: 42                              │
+│ Visite Completate:        32   ████████████████░░░░░  76%  │
+│ Appuntamenti Sospesi:     7    ████░░░░░░░░░░░░░░░░░  17%  │
+│ Appuntamenti Mancati:     3    ██░░░░░░░░░░░░░░░░░░░   7%  │
 │                                                            │
 │ ─────────────────────────────────────────────────────     │
 │ TOP EDUCATORI (visite registrate)                         │
@@ -657,109 +767,10 @@ Paziente (1) ←───── (1) Progetto Terapeutico Attivo
 ```
 
 **Informazioni Visualizzate:**
-- KPI principali (pazienti, progetti, educatori attivi)
-- Statistiche visite del mese
-- Top educatori per numero visite
+- KPI principali (pazienti, progetti attivi, educatori operativi)
+- Statistiche visite del mese (appuntamenti vs visite completate)
+- Top educatori per numero visite registrate
 - Possibilità di esportare report in PDF
-
----
-
-## 📝 RIEPILOGO VISTE UI DA IMPLEMENTARE
-
-### Priorità Implementazione
-
-#### FASE 1 - MVP (Minimum Viable Product)
-
-1. **MainWindow** ✅
-   - Menu navigazione
-   - Header con ruolo utente
-   - Area contenuto dinamica
-
-2. **PatientListView + PatientDetailView** 🚧
-   - Lista pazienti con ricerca
-   - Form CRUD paziente
-   - Tab progetti associati
-   - Educatori mostrati via progetto attivo
-
-3. **ProjectDetailView** 🚧
-   - Form creazione progetto
-   - Assegnazione educatori
-   - Generazione automatica 4 visite
-   - Validazione unicità progetto attivo
-
-4. **CalendarView** 🔲
-   - Calendario mensile visite
-   - Lista giornaliera visite
-   - Filtri per tipo visita ed educatore
-
-5. **VisitRegistrationView** 🔲
-   - Form registrazione visita
-   - Selezione operatori presenti
-   - Note cliniche obbligatorie
-
-#### FASE 2 - Core Functionality
-
-6. **SyncView** 🔲
-   - Tab Esporta pacchetto
-   - Tab Importa pacchetto
-   - Visualizzazione conflitti
-   - Log sincronizzazioni
-
-7. **AuthorizationLayer** 🔲
-   - Implementazione permessi utente
-   - Controlli accesso su tutte le view
-   - Messaggi errore user-friendly
-
-8. **OperatorManagementView** 🔲
-   - Lista educatori
-   - Form CRUD educatore
-   - Progetti assegnati
-
-#### FASE 3 - Advanced Features
-
-9. **DashboardView** 🔲
-   - KPI principali
-   - Grafici trend mensili
-   - Top educatori
-
-10. **ReportingModule** 🔲
-    - Report personalizzabili
-    - Export Excel/PDF
-    - Grafici interattivi
-
----
-
-## 🎯 PUNTI CHIAVE DEL MODELLO
-
-### 1. Relazione Paziente-Educatore
-
-**Importante:** Non esiste una tabella diretta "Paziente ↔ Educatore"
-
-**Come funziona:**
-- Gli educatori sono assegnati al **Progetto Terapeutico**
-- Non al paziente direttamente
-- Gli educatori di un paziente si ottengono guardando il suo progetto attivo
-
-### 2. Unicità Progetto Attivo
-
-**Un paziente può avere UN SOLO progetto attivo contemporaneamente**
-- Se provi a crearne uno nuovo mentre ce n'è uno attivo, il sistema ti avvisa
-- Devi completare o sospendere il progetto precedente prima
-
-### 3. Visite Canoniche Automatiche
-
-**Quando crei un progetto, il sistema automaticamente genera 4 visite:**
-- Prima Apertura: 3 mesi dopo l'inizio
-- Verifica Intermedia: 6 mesi dopo la Prima Apertura
-- Verifica Finale: 6 mesi dopo la Verifica Intermedia
-- Dimissioni: 1 mese dopo la Verifica Finale
-
-### 4. Fonte Dati per Audit
-
-**Ogni visita traccia chi l'ha registrata:**
-- Se registrata da un Educatore → "EducatorImport"
-- Se registrata dal Coordinatore → "CoordinatorDirect"
-- Questo serve per tracciabilità e risoluzione conflitti
 
 ---
 
@@ -773,5 +784,12 @@ Paziente (1) ←───── (1) Progetto Terapeutico Attivo
 ---
 
 **Documento creato:** 30 Gennaio 2026  
-**Versione:** 2.0 (Versione per Equipe PTRP)  
-**Autore:** Marco Cavallo (@artcava)
+**Versione:** 3.0 (Versione per Equipe PTRP - Aggiornata)  
+**Autore:** Marco Cavallo (@artcava)  
+**Ultime modifiche:**
+- Aggiunta gestione anagrafica educatori (Coordinatore)
+- Distinzione terminologica: Appuntamenti vs Visite
+- Stato applicato al Progetto Terapeutico (non al Paziente)
+- Calendario con codice colore per stato progetto
+- Vincolo obbligatorio: Visita legata ad Appuntamento (relazione 1:1)
+- Nuovo flusso sincronizzazione bidirezionale (Coordinatore → Educatore)
