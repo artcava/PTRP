@@ -34,7 +34,11 @@ public class TherapyProjectRepositoryTests : IDisposable
         {
             Id = Guid.NewGuid(),
             FirstName = "Luca",
-            LastName = "Bianchi"
+            LastName = "Bianchi",
+            Email = "luca.bianchi@example.com",
+            PhoneNumber = "+39 333 1234567",
+            LicenseNumber = "EP12345",
+            Specialization = "Riabilitazione Psicosociale"
         };
 
         _context.Patients.Add(_testPatient);
