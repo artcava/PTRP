@@ -73,7 +73,8 @@ namespace PTRP.App
             services.AddScoped<IPatientService, PatientService>();
 
             // Registra i ViewModels
-            services.AddScoped<MainWindowViewModel>();
+            services.AddScoped<MainViewModel>();  // Nuovo ViewModel principale per Issue #45
+            // services.AddScoped<MainWindowViewModel>(); // TODO: Rimuovere dopo merge (vecchio ViewModel)
 
             // Registra le Views
             services.AddScoped<MainWindow>();
