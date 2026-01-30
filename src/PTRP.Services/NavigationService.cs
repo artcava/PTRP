@@ -1,6 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
 using PTRP.Services.Interfaces;
-using PTRP.ViewModels;
 
 namespace PTRP.Services;
 
@@ -11,15 +10,15 @@ namespace PTRP.Services;
 public class NavigationService : INavigationService
 {
     private readonly IServiceProvider _serviceProvider;
-    private readonly Stack<ViewModelBase> _navigationHistory = new();
+    private readonly Stack<object> _navigationHistory = new();
     private readonly object _lock = new();
     
-    private ViewModelBase? _currentViewModel;
+    private object? _currentViewModel;
     
     /// <summary>
     /// ViewModel corrente visualizzato
     /// </summary>
-    public ViewModelBase? CurrentViewModel
+    public object? CurrentViewModel
     {
         get => _currentViewModel;
         private set
@@ -49,7 +48,7 @@ public class NavigationService : INavigationService
     /// <summary>
     /// Evento sollevato quando il ViewModel corrente cambia
     /// </summary>
-    public event EventHandler<ViewModelBase?>? CurrentViewModelChanged;
+    public event EventHandler<object?>? CurrentViewModelChanged;
     
     public NavigationService(IServiceProvider serviceProvider)
     {
@@ -60,7 +59,7 @@ public class NavigationService : INavigationService
     /// Naviga a un ViewModel specifico
     /// Risolve il ViewModel tramite DI e lo imposta come corrente
     /// </summary>
-    public TViewModel NavigateTo<TViewModel>() where TViewModel : ViewModelBase
+    public TViewModel NavigateTo<TViewModel>() where TViewModel : class
     {
         lock (_lock)
         {
