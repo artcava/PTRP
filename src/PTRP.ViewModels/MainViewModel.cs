@@ -70,10 +70,11 @@ public partial class MainViewModel : ViewModelBase
     /// <summary>
     /// Gestisce il cambio di ViewModel corrente dal NavigationService
     /// </summary>
-    private void OnCurrentViewModelChanged(object? sender, ViewModelBase? viewModel)
+    private void OnCurrentViewModelChanged(object? sender, object? viewModel)
     {
-        CurrentViewModel = viewModel;
-        CurrentPageTitle = viewModel?.DisplayName ?? "PTRP";
+        // Cast to ViewModelBase (NavigationService returns object? to avoid circular dependency)
+        CurrentViewModel = viewModel as ViewModelBase;
+        CurrentPageTitle = CurrentViewModel?.DisplayName ?? "PTRP";
     }
     
     /// <summary>
