@@ -1,8 +1,6 @@
-name: Tests
+name: CI
 
 on:
-  push:
-    branches: [main, develop]
   pull_request:
     branches: [main, develop]
 
@@ -12,11 +10,35 @@ permissions:
   pull-requests: write
 
 jobs:
-  test:
+  build:
+    name: Build
     runs-on: windows-latest
     
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # For proper versioning
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '10.0.x'
+    
+    - name: Restore dependencies
+      run: dotnet restore src/PTRP.sln
+    
+    - name: Build solution
+      run: dotnet build src/PTRP.sln --configuration Release --no-restore
+
+  test:
+    name: Test & Coverage
+    needs: build
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
       with:
         fetch-depth: 0
     
@@ -28,7 +50,7 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore src/PTRP.sln
     
-    - name: Build
+    - name: Build solution
       run: dotnet build src/PTRP.sln --configuration Release --no-restore
     
     - name: Run tests with coverage
