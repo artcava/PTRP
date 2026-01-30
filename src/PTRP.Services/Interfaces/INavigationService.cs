@@ -1,5 +1,3 @@
-using PTRP.ViewModels;
-
 namespace PTRP.Services.Interfaces;
 
 /// <summary>
@@ -14,7 +12,7 @@ public interface INavigationService
     /// <summary>
     /// ViewModel corrente visualizzato
     /// </summary>
-    ViewModelBase? CurrentViewModel { get; }
+    object? CurrentViewModel { get; }
     
     /// <summary>
     /// Indica se è possibile navigare indietro
@@ -24,14 +22,14 @@ public interface INavigationService
     /// <summary>
     /// Evento sollevato quando il ViewModel corrente cambia
     /// </summary>
-    event EventHandler<ViewModelBase?>? CurrentViewModelChanged;
+    event EventHandler<object?>? CurrentViewModelChanged;
     
     /// <summary>
     /// Naviga a un ViewModel specifico
     /// </summary>
     /// <typeparam name="TViewModel">Tipo del ViewModel di destinazione</typeparam>
     /// <returns>Il ViewModel creato</returns>
-    TViewModel NavigateTo<TViewModel>() where TViewModel : ViewModelBase;
+    TViewModel NavigateTo<TViewModel>() where TViewModel : class;
     
     /// <summary>
     /// Naviga al ViewModel precedente nella history
