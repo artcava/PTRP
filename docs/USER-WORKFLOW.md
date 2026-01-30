@@ -25,6 +25,206 @@ L'applicazione supporta **due profili utente** con permessi differenziati:
 
 ---
 
+## 🔐 RICONOSCIMENTO PROFILO UTENTE
+
+### Soluzione: Profilo Derivato dall'Importazione Pacchetti
+
+**Principio:** Il profilo utente viene configurato automaticamente al primo avvio dell'applicazione attraverso l'importazione di un pacchetto di configurazione specifico.
+
+#### 📦 Due Tipi di Pacchetti
+
+##### 1️⃣ admin.ptrp - Configurazione Coordinatore
+
+**Creazione e Distribuzione:**
+- File speciale fornito durante il deployment al Coordinatore
+- Generato dallo sviluppatore del sistema
+- Contiene profilo master e configurazione iniziale
+
+**Contenuto Pacchetto:**
+```json
+{
+  "package_type": "admin_bootstrap",
+  "version": "1.0",
+  "profile": {
+    "role": "Coordinator",
+    "first_name": "Nome",
+    "last_name": "Coordinatore",
+    "is_master": true
+  },
+  "initial_data": {
+    "operators": [],
+    "patients": [],
+    "projects": []
+  },
+  "signature": "HASH_SICUREZZA",
+  "created_at": "2026-01-30T17:00:00Z"
+}
+```
+
+**Utilizzo:**
+1. Coordinatore installa l'applicazione
+2. Al primo avvio: sistema rileva assenza configurazione
+3. Mostra schermata "Importa Configurazione Iniziale"
+4. Coordinatore importa `admin.ptrp`
+5. Sistema crea profilo Coordinatore e database vuoto
+6. Applicazione pronta per l'uso con permessi completi
+
+---
+
+##### 2️⃣ appointments_{educatore}_{YYYYMMDD}.ptrp - Configurazione Educatore
+
+**Naming Convention con Data Estesa:**
+- Formato: `appointments_{cognome}_{data_esportazione}.ptrp`
+- Esempio: `appointments_rossi_20260401.ptrp`
+- **Rationale**: Data estesa permette verifica se pacchetto più recente delle visite registrate
+
+**Contenuto Pacchetto (COMPLETO):**
+```json
+{
+  "package_type": "appointments_sync",
+  "version": "1.0",
+  "export_date": "2026-04-01",
+  "target_operator": {
+    "id": "GUID-EDUCATORE",
+    "first_name": "Mario",
+    "last_name": "Rossi",
+    "role": "Operator"
+  },
+  "appointments": [ /* 12 appuntamenti programmati */ ],
+  "patients": [ /* dati 8 pazienti coinvolti */ ],
+  "projects": [ /* dati progetti associati */ ],
+  "operators": [ /* TUTTI gli educatori dei progetti */ ],
+  "signature": "HASH_SICUREZZA",
+  "created_at": "2026-04-01T12:00:00Z"
+}
+```
+
+**Campo `operators` (IMPORTANTE):**
+- Contiene TUTTI gli educatori assegnati ai progetti nel pacchetto
+- Necessario per consentire spunta durante registrazione visite
+- Esempio:
+  ```json
+  "operators": [
+    {"id": "GUID-1", "first_name": "Mario", "last_name": "Rossi"},
+    {"id": "GUID-2", "first_name": "Luigi", "last_name": "Bianchi"}
+  ]
+  ```
+
+**Utilizzo:**
+1. Educatore installa l'applicazione
+2. Al primo avvio: sistema rileva assenza configurazione
+3. Mostra schermata "Importa Pacchetto dal Coordinatore"
+4. Educatore importa file ricevuto (es. `appointments_rossi_20260401.ptrp`)
+5. Sistema legge `target_operator` → riconosce profilo Rossi
+6. Crea profilo Educatore per Rossi nel database locale
+7. Importa appuntamenti, pazienti, progetti, altri educatori
+8. Applicazione configurata con permessi limitati
+
+---
+
+#### 🔄 Flusso Completo Setup
+
+**Scenario A: Setup Coordinatore**
+```
+[Sviluppatore] Genera admin.ptrp
+      ↓
+[Coordinatore] Installa app su PC
+      ↓
+Primo avvio → "Importa admin.ptrp"
+      ↓
+Sistema crea profilo Coordinatore
+      ↓
+Coordinatore accede con permessi completi
+```
+
+**Scenario B: Setup Educatore**
+```
+[Coordinatore] Crea educatore "Rossi" in anagrafica
+      ↓
+[Coordinatore] Assegna Rossi a 3 progetti
+      ↓
+Sistema genera 12 appuntamenti per Rossi
+      ↓
+[Coordinatore] Esporta appuntamenti per Rossi
+      ↓
+Genera "appointments_rossi_20260401.ptrp"
+      ↓
+[Coordinatore] Consegna file a Rossi (USB/Email)
+      ↓
+[Rossi] Installa app su suo PC
+      ↓
+Primo avvio → "Importa pacchetto"
+      ↓
+Sistema legge target_operator: "Rossi"
+      ↓
+Crea profilo Educatore per Rossi
+      ↓
+Importa 12 appuntamenti + dati pazienti/progetti/educatori
+      ↓
+Rossi accede con permessi educatore
+```
+
+---
+
+#### ⚠️ Verifica Data Pacchetto
+
+**Problema:** Educatore potrebbe importare pacchetto obsoleto
+
+**Soluzione:** Sistema controlla data nel nome file vs ultime visite registrate
+
+**UI Warning:**
+```
+┌────────────────────────────────────────────┐
+│ ⚠️  Attenzione: Pacchetto Obsoleto         │
+├────────────────────────────────────────────┤
+│ Il pacchetto è datato 01/04/2026 ma hai   │
+│ visite registrate fino al 05/04/2026.     │
+│                                            │
+│ Continuare con l'importazione             │
+│ sostituirà gli appuntamenti con dati      │
+│ potenzialmente obsoleti.                  │
+│                                            │
+│ [Annulla] [Importa Comunque]             │
+└────────────────────────────────────────────┘
+```
+
+---
+
+#### ✅ Vantaggi Soluzione
+
+1. **Coerenza Architetturale**: Stesso meccanismo import/export per tutto
+2. **Zero Configurazione Manuale**: Importa file e sistema si auto-configura
+3. **Sicurezza Intrinseca**: Firma criptografica impedisce manomissioni
+4. **Controllo Centralizzato**: Coordinatore decide chi ha quale ruolo
+5. **Verifica Automatica**: Sistema riconosce ruolo dal pacchetto
+6. **Prevenzione Errori**: Educatore non può fingere di essere coordinatore
+
+---
+
+#### 🎨 UI Primo Avvio (Generico)
+
+```
+┌────────────────────────────────────────────────┐
+│ PTRP - Configurazione Iniziale                 │
+├────────────────────────────────────────────────┤
+│                                                │
+│  🔧 Questa istanza non è ancora configurata.   │
+│                                                │
+│  Importa un pacchetto di configurazione:      │
+│                                                │
+│  • admin.ptrp → per Coordinatore               │
+│  • appointments_*.ptrp → per Educatore         │
+│                                                │
+│  [📁 Importa Pacchetto di Configurazione...]   │
+│                                                │
+│  ℹ️  Il file ti sarà fornito dal Coordinatore  │
+│     o dall'amministratore di sistema.          │
+│                                                │
+└────────────────────────────────────────────────┘
+```
+
+---
+
 ## 🏗️ Modello Dati Semplificato
 
 ### Relazioni Fondamentali
@@ -82,11 +282,11 @@ Paziente (1) ←───── (1) Progetto Terapeutico Attivo
 ├────────────────────────────────────────────────────────────┤
 │ Nome Cognome        │ Stato Progetto │ Educatori Assegnati    │
 ├────────────────────────────────────────────────────────────┤
-│ CALAMITA Daniele    │ Active         │ Corrias, Gargiulo      │
-│ DISTANTE Andrea     │ Active         │ Lapaglia               │
-│ CORAGLIA Debora     │ Suspended      │ Foschiano, Perziano    │
-│ BETTI Fabrizio      │ Deceased       │ -                      │
-│ BIAGIONE Rosaria    │ Active         │ Foschiano, Perziano    │
+│ ROSSI Mario         │ Active         │ Bianchi, Verdi         │
+│ FERRARI Laura       │ Active         │ Neri                   │
+│ COLOMBO Andrea      │ Suspended      │ Gialli, Viola          │
+│ RUSSO Giovanni      │ Deceased       │ -                      │
+│ ESPOSITO Maria      │ Active         │ Gialli, Viola          │
 │ ...                                                        │
 └────────────────────────────────────────────────────────────┘
 ```
@@ -155,11 +355,11 @@ Paziente (1) ←───── (1) Progetto Terapeutico Attivo
 ├────────────────────────────────────────────────────────────┤
 │ Nome Cognome        │ Progetti Attivi │ Stato            │
 ├────────────────────────────────────────────────────────────┤
-│ CORRIAS             │ 8               │ Attivo           │
-│ GARGIULO            │ 6               │ Attivo           │
-│ LAPAGLIA            │ 5               │ Attivo           │
-│ FOSCHIANO           │ 7               │ Attivo           │
-│ PERZIANO            │ 4               │ Sospeso          │
+│ BIANCHI Marco       │ 8               │ Attivo           │
+│ VERDI Luca          │ 6               │ Attivo           │
+│ NERI Sara           │ 5               │ Attivo           │
+│ GIALLI Paolo        │ 7               │ Attivo           │
+│ VIOLA Anna          │ 4               │ Sospeso          │
 │ ...                                                        │
 └────────────────────────────────────────────────────────────┘
 ```
@@ -182,7 +382,7 @@ Paziente (1) ←───── (1) Progetto Terapeutico Attivo
 **UI Display:**
 ```
 ┌────────────────────────────────────────────────────────────┐
-│ Paziente: CALAMITA Daniele                    [Modifica]   │
+│ Paziente: ROSSI Mario                         [Modifica]   │
 ├────────────────────────────────────────────────────────────┤
 │ [Anagrafica] [Progetti] [Storico Visite]                  │
 ├────────────────────────────────────────────────────────────┤
@@ -193,7 +393,7 @@ Paziente (1) ←───── (1) Progetto Terapeutico Attivo
 │ │ PTRP 2025-2027                                     │    │
 │ │ Stato: Active                                     │    │
 │ │ Periodo: 02/01/2025 - 02/01/2027                  │    │
-│ │ Educatori: Corrias, Gargiulo                      │    │
+│ │ Educatori: Bianchi, Verdi                         │    │
 │ │ Prossimo Appuntamento: 02/04/2025 (Prima Apertura)│    │
 │ │                                                    │    │
 │ │ [Visualizza Dettagli] [Modifica Stato]           │    │
@@ -227,7 +427,7 @@ Paziente (1) ←───── (1) Progetto Terapeutico Attivo
 **UI Dialog:**
 ```
 ┌────────────────────────────────────────────────────────────┐
-│ Nuovo Progetto Terapeutico - CALAMITA Daniele      [X]    │
+│ Nuovo Progetto Terapeutico - ROSSI Mario           [X]    │
 ├────────────────────────────────────────────────────────────┤
 │                                                            │
 │ Titolo Progetto:                                          │
@@ -251,8 +451,8 @@ Paziente (1) ←───── (1) Progetto Terapeutico Attivo
 │ [+ Aggiungi Educatore]                                    │
 │                                                            │
 │ ┌────────────────────────────────────────────────────┐    │
-│ │ Corrias        [Rimuovi]                          │    │
-│ │ Gargiulo       [Rimuovi]                          │    │
+│ │ Bianchi        [Rimuovi]                          │    │
+│ │ Verdi          [Rimuovi]                          │    │
 │ └────────────────────────────────────────────────────┘    │
 │                                                            │
 │ ⚠️ Almeno un educatore deve essere assegnato              │
@@ -323,13 +523,13 @@ Paziente (1) ←───── (1) Progetto Terapeutico Attivo
 │ Appuntamenti del 02 Aprile 2025                           │
 ├────────────────────────────────────────────────────────────┤
 │                                                            │
-│ 🟢 Prima Apertura - CALAMITA Daniele                      │
-│    Educatori: Corrias, Gargiulo                           │
+│ 🟢 Prima Apertura - ROSSI Mario                           │
+│    Educatori: Bianchi, Verdi                              │
 │    Progetto: PTRP 2025-2027 (Active)                      │
 │    [Registra Visita] [Riprogramma] [Segna Mancato]       │
 │                                                            │
-│ 🟢 Prima Apertura - DISTANTE Andrea                       │
-│    Educatore: Lapaglia                                    │
+│ 🟢 Prima Apertura - FERRARI Laura                         │
+│    Educatore: Neri                                        │
 │    Progetto: PTRP 2025-2027 (Active)                      │
 │    [Registra Visita] [Riprogramma] [Segna Mancato]       │
 │                                                            │
@@ -350,7 +550,7 @@ Paziente (1) ←───── (1) Progetto Terapeutico Attivo
 
 #### Step 7: Selezione Appuntamento da Registrare
 
-**Azione Utente:** Educatore Corrias accede alla lista "Miei Appuntamenti"
+**Azione Utente:** Educatore Bianchi accede alla lista "Miei Appuntamenti"
 
 **UI Display (Vista Educatore):**
 ```
@@ -359,16 +559,16 @@ Paziente (1) ←───── (1) Progetto Terapeutico Attivo
 ├────────────────────────────────────────────────────────────┤
 │ Oggi: 02/04/2025                                          │
 │                                                            │
-│ 🟢 CALAMITA Daniele - Prima Apertura                      │
+│ 🟢 ROSSI Mario - Prima Apertura                           │
 │    Ore: 10:00 (stimato 90 min)                           │
-│    Co-educatore: Gargiulo                                 │
+│    Co-educatore: Verdi                                    │
 │    [✓ Registra Visita]                                    │
 │                                                            │
 │ ─────────────────────────────────────────────────────     │
 │ Prossimi Appuntamenti (7 giorni)                          │
 │                                                            │
-│ 05/04/2025 - BIAGIONE Rosaria - Prima Apertura           │
-│ 09/04/2025 - PALIERI Franca - Prima Apertura             │
+│ 05/04/2025 - ESPOSITO Maria - Prima Apertura             │
+│ 09/04/2025 - BRUNO Francesco - Prima Apertura            │
 │ ...                                                        │
 └────────────────────────────────────────────────────────────┘
 ```
@@ -392,7 +592,7 @@ Paziente (1) ←───── (1) Progetto Terapeutico Attivo
 │ Registrazione Visita                                [X]   │
 ├────────────────────────────────────────────────────────────┤
 │                                                            │
-│ Paziente: CALAMITA Daniele                                │
+│ Paziente: ROSSI Mario                                     │
 │ Tipo Appuntamento: 🟢 Prima Apertura (INTAKE)             │
 │ Data Programmata: 02/04/2025                              │
 │ Appuntamento ID: #12345                                   │
@@ -409,8 +609,8 @@ Paziente (1) ←───── (1) Progetto Terapeutico Attivo
 │ OPERATORI PRESENTI                                        │
 │ ─────────────────────────────────────────────────────     │
 │                                                            │
-│ [✓] Corrias (io)                                          │
-│ [✓] Gargiulo                                              │
+│ [✓] Bianchi (io)                                          │
+│ [✓] Verdi                                                 │
 │                                                            │
 │ ⚠️ Almeno un operatore deve essere selezionato            │
 │                                                            │
@@ -499,11 +699,11 @@ Paziente (1) ←───── (1) Progetto Terapeutico Attivo
 │ Ultima sincronizzazione: 28/03/2025 18:30                │
 │                                                            │
 │ [✓] 5 Visite effettive registrate                         │
-│     • CALAMITA Daniele - Prima Apertura (02/04)          │
-│     • DISTANTE Andrea - Prima Apertura (02/04)           │
-│     • BIAGIONE Rosaria - Prima Apertura (05/04)          │
-│     • PALIERI Franca - Prima Apertura (09/04)            │
-│     • COTTONE Valeria - Verifica Intermedia (08/04)      │
+│     • ROSSI Mario - Prima Apertura (02/04)                │
+│     • FERRARI Laura - Prima Apertura (02/04)              │
+│     • ESPOSITO Maria - Prima Apertura (05/04)             │
+│     • BRUNO Francesco - Prima Apertura (09/04)            │
+│     • MARINO Elena - Verifica Intermedia (08/04)          │
 │                                                            │
 │ [✓] 12 Relazioni operatori-visite                         │
 │                                                            │
@@ -522,7 +722,7 @@ Paziente (1) ←───── (1) Progetto Terapeutico Attivo
 ┌────────────────────────────────────────────────────────────┐
 │ ✅ Pacchetto Visite Creato                                │
 ├────────────────────────────────────────────────────────────┤
-│ File: visits_corrias_20250405_183000.ptrp                 │
+│ File: visits_bianchi_20250405_183000.ptrp                 │
 │ Dimensione: 287 KB                                        │
 │ Contiene: 5 visite, 12 relazioni operatori                │
 │                                                            │
@@ -551,7 +751,7 @@ Paziente (1) ←───── (1) Progetto Terapeutico Attivo
 │ ESPORTA APPUNTAMENTI PER EDUCATORE                        │
 │                                                            │
 │ Seleziona Educatore:                                      │
-│ [▼ Corrias                    ]                          │
+│ [▼ Bianchi Marco              ]                          │
 │                                                            │
 │ Periodo:                                                  │
 │ Dal: [📅 01/04/2025]  Al: [📅 30/04/2025]              │
@@ -560,10 +760,10 @@ Paziente (1) ←───── (1) Progetto Terapeutico Attivo
 │ ANTEPRIMA DATI                                            │
 │ ─────────────────────────────────────────────────────     │
 │                                                            │
-│ Appuntamenti di Corrias (01-30 Aprile 2025):             │
+│ Appuntamenti di Bianchi (01-30 Aprile 2025):             │
 │ • 12 appuntamenti programmati                            │
 │ • 8 pazienti coinvolti                                   │
-│ • 3 co-educatori presenti                                │
+│ • 3 co-educatori presenti nei progetti                   │
 │                                                            │
 │ ⚠️ L'educatore importando questo pacchetto sostituirà   │
 │    TUTTI i suoi appuntamenti con questi nuovi dati.       │
@@ -576,18 +776,22 @@ Paziente (1) ←───── (1) Progetto Terapeutico Attivo
 **Comportamento:**
 - Il Coordinatore seleziona un educatore specifico
 - Il sistema filtra tutti gli appuntamenti assegnati a quell'educatore
-- Genera un pacchetto contenente SOLO gli appuntamenti di competenza
+- Include TUTTI gli educatori associati ai progetti per consentire spunta durante registrazione visite
+- Genera un pacchetto con naming `appointments_{cognome}_{YYYYMMDD}.ptrp`
 
 **Risultato:**
 ```
 ┌────────────────────────────────────────────────────────────┐
 │ ✅ Pacchetto Appuntamenti Creato                          │
 ├────────────────────────────────────────────────────────────┤
-│ File: appointments_corrias_202504.ptrp                     │
+│ File: appointments_bianchi_20260401.ptrp                   │
 │ Dimensione: 145 KB                                        │
-│ Contiene: 12 appuntamenti per Corrias                     │
+│ Contiene:                                                 │
+│ • 12 appuntamenti per Bianchi                            │
+│ • 8 pazienti                                             │
+│ • 3 educatori associati ai progetti                      │
 │                                                            │
-│ Consegna questo file a Corrias per l'importazione.        │
+│ Consegna questo file a Bianchi per l'importazione.        │
 │                                                            │
 │ [💾 Salva su USB]  [📧 Invia Email]                       │
 └────────────────────────────────────────────────────────────┘
@@ -608,7 +812,7 @@ Paziente (1) ←───── (1) Progetto Terapeutico Attivo
 │ [📁 Seleziona File .ptrp...]                              │
 │                                                            │
 │ File selezionato:                                         │
-│ appointments_corrias_202504.ptrp (145 KB)                 │
+│ appointments_bianchi_20260401.ptrp (145 KB)               │
 │                                                            │
 │ ─────────────────────────────────────────────────────     │
 │ VERIFICA PACCHETTO                                        │
@@ -617,15 +821,17 @@ Paziente (1) ←───── (1) Progetto Terapeutico Attivo
 │ ✅ Firma verificata (integrità confermata)                 │
 │ ✅ Crittografia verificata                                 │
 │ ✅ Schema compatibile                                      │
-│ ✅ Destinatario corretto: Corrias                          │
+│ ✅ Destinatario corretto: Bianchi                          │
+│ ✅ Data pacchetto: 01/04/2026                              │
 │                                                            │
 │ ─────────────────────────────────────────────────────     │
 │ CONTENUTO PACCHETTO                                       │
 │ ─────────────────────────────────────────────────────     │
 │                                                            │
-│ • 12 appuntamenti per Corrias                            │
-│ • Periodo: 01-30 Aprile 2025                             │
+│ • 12 appuntamenti per Bianchi                            │
+│ • Periodo: 01-30 Aprile 2026                             │
 │ • 8 pazienti                                             │
+│ • 3 educatori associati (per spunta visite)              │
 │                                                            │
 │ ⚠️ ATTENZIONE: L'importazione SOSTITUIRÀ COMPLETAMENTE  │
 │    tutti i tuoi appuntamenti attuali con questi nuovi.    │
@@ -640,9 +846,11 @@ Paziente (1) ←───── (1) Progetto Terapeutico Attivo
 **Comportamento del Sistema:**
 
 1. Verifica l'integrità e destinatario del pacchetto
-2. **SOSTITUISCE COMPLETAMENTE** tutti gli appuntamenti dell'educatore con i nuovi
-3. **Preserva** le visite già registrate (non vengono toccate)
-4. Aggiorna il database locale
+2. Controlla data pacchetto vs ultime visite registrate (warning se obsoleto)
+3. **SOSTITUISCE COMPLETAMENTE** tutti gli appuntamenti dell'educatore con i nuovi
+4. Importa anche gli educatori associati ai progetti (necessari per spunta visite)
+5. **Preserva** le visite già registrate (non vengono toccate)
+6. Aggiorna il database locale
 
 **Risultato UI:**
 ```
@@ -651,6 +859,7 @@ Paziente (1) ←───── (1) Progetto Terapeutico Attivo
 │                                            │
 │ Risultati:                                │
 │ • 12 appuntamenti importati              │
+│ • 3 educatori associati importati        │
 │ • Appuntamenti precedenti sostituiti    │
 │ • Visite registrate preservate          │
 │                                            │
@@ -753,11 +962,11 @@ Paziente (1) ←───── (1) Progetto Terapeutico Attivo
 │ TOP EDUCATORI (visite registrate)                         │
 │ ─────────────────────────────────────────────────────     │
 │                                                            │
-│ 1. 👤 Fatiga      28 visite  ████████████████████         │
-│ 2. 👤 Lapaglia    24 visite  ████████████████░░░░         │
-│ 3. 👤 Corrias     19 visite  ████████████░░░░░░░░         │
-│ 4. 👤 Foschiano   17 visite  ███████████░░░░░░░░░         │
-│ 5. 👤 Gargiulo    15 visite  █████████░░░░░░░░░░░         │
+│ 1. 👤 Bianchi     28 visite  ████████████████████         │
+│ 2. 👤 Neri        24 visite  ████████████████░░░░         │
+│ 3. 👤 Verdi       19 visite  ████████████░░░░░░░░         │
+│ 4. 👤 Gialli      17 visite  ███████████░░░░░░░░░         │
+│ 5. 👤 Viola       15 visite  █████████░░░░░░░░░░░         │
 │                                                            │
 │ ─────────────────────────────────────────────────────     │
 │                                                            │
@@ -784,7 +993,7 @@ Paziente (1) ←───── (1) Progetto Terapeutico Attivo
 ---
 
 **Documento creato:** 30 Gennaio 2026  
-**Versione:** 3.0 (Versione per Equipe PTRP - Aggiornata)  
+**Versione:** 3.1 (Versione per Equipe PTRP - Finale)  
 **Autore:** Marco Cavallo (@artcava)  
 **Ultime modifiche:**
 - Aggiunta gestione anagrafica educatori (Coordinatore)
@@ -793,3 +1002,7 @@ Paziente (1) ←───── (1) Progetto Terapeutico Attivo
 - Calendario con codice colore per stato progetto
 - Vincolo obbligatorio: Visita legata ad Appuntamento (relazione 1:1)
 - Nuovo flusso sincronizzazione bidirezionale (Coordinatore → Educatore)
+- **Sezione riconoscimento profilo utente (Soluzione 2 con admin.ptrp)**
+- **Anonimizzazione completa nomi pazienti ed educatori**
+- **Naming pacchetti con data estesa (YYYYMMDD)**
+- **Campo operators in pacchetti appuntamenti**
