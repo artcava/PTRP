@@ -1,5 +1,8 @@
 using System.Collections.ObjectModel;
 using System.Reflection;
+using System.Windows;
+using System.Windows.Media;
+using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MaterialDesignThemes.Wpf;
@@ -14,12 +17,15 @@ namespace PTRP.ViewModels;
 /// - Menu dinamico basato su ruolo utente
 /// - Stato utente corrente
 /// - Eventi di notifica (delegati alla View)
+/// - StatusBar (messaggi, loading, database status, sync time)
 /// </summary>
 public partial class MainViewModel : ViewModelBase
 {
     private readonly INavigationService _navigationService;
     
     public override string DisplayName => "PTRP";
+    
+    #region Current Page Properties
     
     /// <summary>
     /// ViewModel corrente visualizzato nell'area contenuto
@@ -32,6 +38,10 @@ public partial class MainViewModel : ViewModelBase
     /// </summary>
     [ObservableProperty]
     private string _currentPageTitle = "Dashboard";
+    
+    #endregion
+    
+    #region User Properties
     
     /// <summary>
     /// Nome completo utente corrente
@@ -51,6 +61,10 @@ public partial class MainViewModel : ViewModelBase
     [ObservableProperty]
     private string _userInitials = "CP";
     
+    #endregion
+    
+    #region Navigation Menu Properties
+    
     /// <summary>
     /// Elementi del menu di navigazione laterale
     /// </summary>
@@ -62,6 +76,66 @@ public partial class MainViewModel : ViewModelBase
     /// </summary>
     [ObservableProperty]
     private MenuItemViewModel? _selectedMenuItem;
+    
+    #endregion
+    
+    #region StatusBar Properties
+    
+    /// <summary>
+    /// Messaggio di stato temporaneo (success/error/info)
+    /// </summary>
+    [ObservableProperty]
+    private string _statusMessage = "Pronto";
+    
+    /// <summary>
+    /// Indica se il messaggio di stato è visibile
+    /// </summary>
+    [ObservableProperty]
+    private bool _hasStatusMessage = false;
+    
+    /// <summary>
+    /// Icona del messaggio di stato
+    /// </summary>
+    [ObservableProperty]
+    private PackIconKind _statusIcon = PackIconKind.Information;
+    
+    /// <summary>
+    /// Colore dell'icona di stato
+    /// </summary>
+    [ObservableProperty]
+    private Brush _statusIconColor = Brushes.Gray;
+    
+    /// <summary>
+    /// Indica se è in corso un'operazione (mostra progress bar)
+    /// </summary>
+    [ObservableProperty]
+    private bool _isLoading = false;
+    
+    /// <summary>
+    /// Stato connessione database
+    /// </summary>
+    [ObservableProperty]
+    private string _databaseStatus = "Connesso";
+    
+    /// <summary>
+    /// Tooltip per database status
+    /// </summary>
+    [ObservableProperty]
+    private string _databaseStatusTooltip = "Database SQLite locale - Crittografato";
+    
+    /// <summary>
+    /// Colore indicatore database
+    /// </summary>
+    [ObservableProperty]
+    private Brush _databaseStatusColor = Brushes.Green;
+    
+    /// <summary>
+    /// Display ultima sincronizzazione (formato relativo)
+    /// </summary>
+    [ObservableProperty]
+    private string _lastSyncTimeDisplay = "Mai sincronizzato";
+    
+    #endregion
     
     /// <summary>
     /// Evento per notifiche da mostrare nella View
@@ -81,10 +155,18 @@ public partial class MainViewModel : ViewModelBase
         // Initialize navigation menu based on user role
         InitializeNavigationMenu();
         
+        // Initialize database status (placeholder)
+        UpdateDatabaseStatus(true, 2_097_152); // 2 MB placeholder
+        
+        // Initialize last sync (placeholder)
+        UpdateLastSyncTime(null);
+        
         // Navigate to Dashboard by default
         // TODO: Check if first run, navigate to FirstRunView if needed (Issue #49)
         NavigateToDashboard();
     }
+    
+    #region Navigation Menu Methods
     
     /// <summary>
     /// Inizializza il menu di navigazione in base al ruolo utente
@@ -213,10 +295,10 @@ public partial class MainViewModel : ViewModelBase
                     
                 navigateToMethod?.Invoke(_navigationService, null);
             }
-            catch (TargetInvocationException ex)
+            catch (TargetInvocationException)
             {
                 // Se il ViewModel non è ancora implementato, mostra placeholder
-                ShowInfo($"{value.Title} - In sviluppo");
+                ShowInfoMessage($"{value.Title} - In sviluppo");
                 CurrentPageTitle = value.Title;
             }
         }
@@ -231,7 +313,7 @@ public partial class MainViewModel : ViewModelBase
         else if (value != null)
         {
             // Menu item senza ViewModelType (ancora da implementare)
-            ShowInfo($"{value.Title} - In sviluppo");
+            ShowInfoMessage($"{value.Title} - In sviluppo");
             CurrentPageTitle = value.Title;
         }
     }
@@ -250,6 +332,10 @@ public partial class MainViewModel : ViewModelBase
             menuItem.HasBadge = count > 0;
         }
     }
+    
+    #endregion
+    
+    #region User Profile Methods
     
     /// <summary>
     /// Carica il profilo utente corrente
@@ -272,6 +358,116 @@ public partial class MainViewModel : ViewModelBase
         // Per ora ritorna "Coordinatore" come default
         return "Coordinatore";
     }
+    
+    #endregion
+    
+    #region StatusBar Methods
+    
+    /// <summary>
+    /// Mostra messaggio di successo nella status bar con auto-hide
+    /// </summary>
+    public void ShowSuccessMessage(string message, int durationMs = 3000)
+    {
+        StatusMessage = message;
+        StatusIcon = PackIconKind.CheckCircle;
+        StatusIconColor = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#28A745")!);
+        HasStatusMessage = true;
+        
+        // Auto-hide dopo durata specificata
+        Task.Delay(durationMs).ContinueWith(_ => 
+        {
+            Application.Current.Dispatcher.Invoke(() => 
+            {
+                HasStatusMessage = false;
+                StatusMessage = "Pronto";
+            });
+        });
+    }
+    
+    /// <summary>
+    /// Mostra messaggio di errore nella status bar con auto-hide
+    /// </summary>
+    public void ShowErrorMessage(string message, int durationMs = 5000)
+    {
+        StatusMessage = message;
+        StatusIcon = PackIconKind.AlertCircle;
+        StatusIconColor = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#DC3545")!);
+        HasStatusMessage = true;
+        
+        Task.Delay(durationMs).ContinueWith(_ => 
+        {
+            Application.Current.Dispatcher.Invoke(() => 
+            {
+                HasStatusMessage = false;
+                StatusMessage = "Pronto";
+            });
+        });
+    }
+    
+    /// <summary>
+    /// Mostra messaggio informativo nella status bar con auto-hide
+    /// </summary>
+    public void ShowInfoMessage(string message, int durationMs = 3000)
+    {
+        StatusMessage = message;
+        StatusIcon = PackIconKind.Information;
+        StatusIconColor = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#007ACC")!);
+        HasStatusMessage = true;
+        
+        Task.Delay(durationMs).ContinueWith(_ => 
+        {
+            Application.Current.Dispatcher.Invoke(() => 
+            {
+                HasStatusMessage = false;
+                StatusMessage = "Pronto";
+            });
+        });
+    }
+    
+    /// <summary>
+    /// Aggiorna lo stato della connessione al database
+    /// </summary>
+    public void UpdateDatabaseStatus(bool isConnected, long sizeBytes)
+    {
+        if (isConnected)
+        {
+            var sizeMb = sizeBytes / (1024.0 * 1024.0);
+            DatabaseStatus = $"Connesso ({sizeMb:F2} MB)";
+            DatabaseStatusColor = Brushes.Green;
+            DatabaseStatusTooltip = $"Database SQLite locale - Crittografato - Dimensione: {sizeMb:F2} MB";
+        }
+        else
+        {
+            DatabaseStatus = "Disconnesso";
+            DatabaseStatusColor = Brushes.Red;
+            DatabaseStatusTooltip = "Database non disponibile";
+        }
+    }
+    
+    /// <summary>
+    /// Aggiorna il display del timestamp dell'ultima sincronizzazione
+    /// </summary>
+    public void UpdateLastSyncTime(DateTime? lastSyncTime)
+    {
+        if (lastSyncTime.HasValue)
+        {
+            var elapsed = DateTime.Now - lastSyncTime.Value;
+            
+            LastSyncTimeDisplay = elapsed.TotalMinutes < 1 
+                ? "Pochi secondi fa"
+                : elapsed.TotalHours < 1 
+                    ? $"{(int)elapsed.TotalMinutes} minuti fa"
+                    : elapsed.TotalDays < 1 
+                        ? $"{(int)elapsed.TotalHours} ore fa"
+                        : $"{lastSyncTime.Value:dd/MM/yyyy HH:mm}";
+        }
+        else
+        {
+            LastSyncTimeDisplay = "Mai sincronizzato";
+        }
+    }
+    
+    #endregion
     
     #region Navigation Commands
     
@@ -347,10 +543,10 @@ public partial class MainViewModel : ViewModelBase
     
     #endregion
     
-    #region Notification Methods
+    #region Notification Methods (Snackbar - mantenuto per compatibilità)
     
     /// <summary>
-    /// Mostra messaggio informativo
+    /// Mostra messaggio informativo tramite Snackbar
     /// </summary>
     public void ShowInfo(string message)
     {
@@ -362,7 +558,7 @@ public partial class MainViewModel : ViewModelBase
     }
     
     /// <summary>
-    /// Mostra messaggio di successo
+    /// Mostra messaggio di successo tramite Snackbar
     /// </summary>
     public void ShowSuccess(string message)
     {
@@ -375,7 +571,7 @@ public partial class MainViewModel : ViewModelBase
     }
     
     /// <summary>
-    /// Mostra messaggio di errore
+    /// Mostra messaggio di errore tramite Snackbar
     /// </summary>
     public void ShowError(string message, int durationSeconds = 5)
     {
