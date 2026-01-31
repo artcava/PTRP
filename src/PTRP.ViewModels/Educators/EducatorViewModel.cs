@@ -25,7 +25,7 @@ public class EducatorViewModel
     public string LastName { get; set; } = string.Empty;
 
     /// <summary>
-    /// Nome completo (Cognome + Nome).
+    /// Nome completo (Nome + Cognome).
     /// </summary>
     public string FullName => $"{FirstName} {LastName}";
 
@@ -33,23 +33,6 @@ public class EducatorViewModel
     /// Iniziali dell'educatore (es: "MB" per Mario Bianchi).
     /// </summary>
     public string Initials { get; set; } = string.Empty;
-
-    /// <summary>
-    /// Ruolo dell'educatore (Coordinatore, Educatore, Tirocinante).
-    /// </summary>
-    public string Role { get; set; } = string.Empty;
-
-    /// <summary>
-    /// Ruolo formattato per visualizzazione nel badge.
-    /// </summary>
-    public string RoleDisplay => Role switch
-    {
-        "Coordinatore" => "Coordinatore",
-        "Educatore" => "Educatore",
-        "Tirocinante" => "Tirocinante",
-        "Inattivo" => "Inattivo",
-        _ => "Non specificato"
-    };
 
     /// <summary>
     /// Email di contatto.
