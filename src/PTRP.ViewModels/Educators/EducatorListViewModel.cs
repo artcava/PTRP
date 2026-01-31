@@ -17,19 +17,6 @@ public partial class EducatorListViewModel : ViewModelBase
     private string _searchTerm = string.Empty;
 
     [ObservableProperty]
-    private string _selectedRoleFilter = "Tutti";
-
-    [ObservableProperty]
-    private ObservableCollection<string> _roleFilters = new()
-    {
-        "Tutti",
-        "Coordinatore",
-        "Educatore",
-        "Tirocinante",
-        "Inattivo"
-    };
-
-    [ObservableProperty]
     private ObservableCollection<EducatorViewModel> _educators = new();
 
     private List<EducatorViewModel> _allEducators = new();
@@ -62,7 +49,7 @@ public partial class EducatorListViewModel : ViewModelBase
     }
 
     /// <summary>
-    /// Applica i filtri di ricerca e ruolo alla lista educatori.
+    /// Applica il filtro di ricerca alla lista educatori.
     /// </summary>
     private void ApplyFilters()
     {
@@ -74,12 +61,6 @@ public partial class EducatorListViewModel : ViewModelBase
             query = query.Where(e =>
                 e.FirstName.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase) ||
                 e.LastName.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase));
-        }
-
-        // Filtro ruolo
-        if (SelectedRoleFilter != "Tutti")
-        {
-            query = query.Where(e => e.Role == SelectedRoleFilter);
         }
 
         Educators = new ObservableCollection<EducatorViewModel>(query);
@@ -98,7 +79,6 @@ public partial class EducatorListViewModel : ViewModelBase
                 FirstName = "Mario",
                 LastName = "Bianchi",
                 Initials = "MB",
-                Role = "Coordinatore",
                 Email = "mario.bianchi@ptrp.it",
                 Phone = "+39 011 123 4567",
                 HireDate = new DateTime(2018, 3, 15),
@@ -140,7 +120,6 @@ public partial class EducatorListViewModel : ViewModelBase
                 FirstName = "Laura",
                 LastName = "Verdi",
                 Initials = "LV",
-                Role = "Educatore",
                 Email = "laura.verdi@ptrp.it",
                 Phone = "+39 011 234 5678",
                 HireDate = new DateTime(2019, 9, 1),
@@ -174,7 +153,6 @@ public partial class EducatorListViewModel : ViewModelBase
                 FirstName = "Giovanni",
                 LastName = "Rossi",
                 Initials = "GR",
-                Role = "Educatore",
                 Email = "giovanni.rossi@ptrp.it",
                 Phone = "+39 011 345 6789",
                 HireDate = new DateTime(2020, 1, 10),
@@ -200,7 +178,6 @@ public partial class EducatorListViewModel : ViewModelBase
                 FirstName = "Sara",
                 LastName = "Neri",
                 Initials = "SN",
-                Role = "Tirocinante",
                 Email = "sara.neri@ptrp.it",
                 Phone = "+39 011 456 7890",
                 HireDate = new DateTime(2024, 10, 1),
@@ -226,7 +203,6 @@ public partial class EducatorListViewModel : ViewModelBase
                 FirstName = "Paolo",
                 LastName = "Gialli",
                 Initials = "PG",
-                Role = "Inattivo",
                 Email = "paolo.gialli@ptrp.it",
                 Phone = "+39 011 567 8901",
                 HireDate = new DateTime(2017, 5, 20),
@@ -239,13 +215,8 @@ public partial class EducatorListViewModel : ViewModelBase
         };
     }
 
-    // Property changed handlers per aggiornamento automatico filtri
+    // Property changed handler per aggiornamento automatico filtri
     partial void OnSearchTermChanged(string value)
-    {
-        ApplyFilters();
-    }
-
-    partial void OnSelectedRoleFilterChanged(string value)
     {
         ApplyFilters();
     }
