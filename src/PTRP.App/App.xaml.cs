@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using PTRP.Services;
 using PTRP.Services.Interfaces;
 using PTRP.ViewModels;
+using PTRP.ViewModels.Educators;
 using PTRP.Data;
 using PTRP.Data.Repositories;
 using PTRP.Data.Repositories.Interfaces;
