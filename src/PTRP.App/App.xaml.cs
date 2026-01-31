@@ -26,7 +26,7 @@ namespace PTRP.App
         /// Configurazione e costruzione del DI container
         /// Viene eseguito prima del caricamento della finestra principale
         /// </summary>
-        protected override void OnStartup(StartupEventArgs e)
+        protected override async void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
 
@@ -37,11 +37,32 @@ namespace PTRP.App
             // Costruisce il service provider
             _serviceProvider = services.BuildServiceProvider();
 
-            // Assicura che il database sia creato e migrato
+            // Assicura che il database sia creato (senza dati se primo avvio)
             EnsureDatabaseCreated();
 
-            // Risolve MainWindow con il suo ViewModel iniettato
+            // Risolve MainWindow e MainViewModel
             var mainWindow = _serviceProvider.GetRequiredService<MainWindow>();
+            var mainViewModel = _serviceProvider.GetRequiredService<MainViewModel>();
+            mainWindow.DataContext = mainViewModel;
+
+            // Controlla se è primo avvio (Issue #49: First Run Detection)
+            var configService = _serviceProvider.GetRequiredService<IConfigurationService>();
+            var isConfigured = await configService.IsConfiguredAsync();
+
+            if (!isConfigured)
+            {
+                // Mostra schermata primo avvio
+                var firstRunViewModel = _serviceProvider.GetRequiredService<FirstRunViewModel>();
+                mainViewModel.CurrentViewModel = firstRunViewModel;
+                mainViewModel.ShowInfoMessage("Importa un pacchetto di configurazione per iniziare");
+            }
+            else
+            {
+                // Applicazione già configurata - carica dashboard normale
+                // TODO: Navigare a DashboardViewModel quando sarà implementato (Issue #50)
+                mainViewModel.ShowInfoMessage("Benvenuto! Dashboard in sviluppo (Issue #50)");
+            }
+
             mainWindow.Show();
         }
 
@@ -57,7 +78,7 @@ namespace PTRP.App
         {
             // Configura il database SQLite
             var appDataPath = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                 "PTRP"
             );
             Directory.CreateDirectory(appDataPath);
@@ -72,9 +93,11 @@ namespace PTRP.App
             // Registra i Services
             services.AddScoped<IPatientService, PatientService>();
             services.AddSingleton<INavigationService, NavigationService>();  // Issue #46: Navigation Service
+            services.AddScoped<IConfigurationService, ConfigurationService>(); // Issue #49: Configuration Service
 
             // Registra i ViewModels
-            services.AddScoped<MainViewModel>();
+            services.AddSingleton<MainViewModel>();  // Singleton per condividere stato app
+            services.AddTransient<FirstRunViewModel>();  // Issue #49: First Run ViewModel
             // TODO: Registrare qui i ViewModels delle pagine quando verranno creati
             // services.AddTransient<DashboardViewModel>();  // Issue #50
             // services.AddTransient<PatientListViewModel>(); // Issue #51
@@ -85,7 +108,8 @@ namespace PTRP.App
         }
 
         /// <summary>
-        /// Assicura che il database sia creato e le migrations applicate
+        /// Assicura che il database sia creato
+        /// Le migrations verranno applicate durante ConfigurationService.InitializeDatabaseAsync
         /// </summary>
         private void EnsureDatabaseCreated()
         {
@@ -94,7 +118,8 @@ namespace PTRP.App
             using var scope = _serviceProvider.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<PTRPDbContext>();
             
-            // Crea il database se non esiste e applica le migrations
+            // Crea il database se non esiste (senza dati)
+            // I dati verranno popolati dal pacchetto di configurazione
             context.Database.EnsureCreated();
         }
 

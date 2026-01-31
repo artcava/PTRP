@@ -61,6 +61,19 @@ namespace PTRP.Models
         public string Status { get; set; } = "Active";
 
         /// <summary>
+        /// Ruolo operativo ("Coordinatore" o "Educatore")
+        /// Determina i permessi e le funzionalità disponibili
+        /// </summary>
+        public string Role { get; set; } = "Educatore";
+
+        /// <summary>
+        /// Flag per identificare il profilo dell'utente locale
+        /// Solo un educatore per istanza può avere questo flag a true
+        /// Usato per first-run detection e caricamento profilo
+        /// </summary>
+        public bool IsCurrentUser { get; set; } = false;
+
+        /// <summary>
         /// Data di creazione del record
         /// </summary>
         public DateTime CreatedAt { get; set; } = DateTime.Now;

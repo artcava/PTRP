@@ -160,6 +160,16 @@ public class PTRPDbContext : DbContext
                 .HasMaxLength(50)
                 .HasDefaultValue("Active");
 
+            // Issue #49: First-run configuration support
+            entity.Property(e => e.Role)
+                .IsRequired()
+                .HasMaxLength(50)
+                .HasDefaultValue("Educatore");
+
+            entity.Property(e => e.IsCurrentUser)
+                .IsRequired()
+                .HasDefaultValue(false);
+
             entity.Property(e => e.CreatedAt)
                 .IsRequired();
 
@@ -179,6 +189,14 @@ public class PTRPDbContext : DbContext
             // Indice per ricerca per status
             entity.HasIndex(e => e.Status)
                 .HasDatabaseName("IX_ProfessionalEducators_Status");
+
+            // Issue #49: Indice per first-run detection e caricamento profilo locale
+            entity.HasIndex(e => e.IsCurrentUser)
+                .HasDatabaseName("IX_ProfessionalEducators_IsCurrentUser");
+
+            // Issue #49: Indice per ricerca per ruolo
+            entity.HasIndex(e => e.Role)
+                .HasDatabaseName("IX_ProfessionalEducators_Role");
         });
     }
 }
