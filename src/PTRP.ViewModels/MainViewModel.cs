@@ -38,7 +38,7 @@ public partial class MainViewModel : ViewModelBase
     /// Titolo della pagina corrente (per TopBar)
     /// </summary>
     [ObservableProperty]
-    private string _currentPageTitle = "Dashboard";
+    private string _currentPageTitle = "Pazienti";
     
     #endregion
     
@@ -165,9 +165,10 @@ public partial class MainViewModel : ViewModelBase
         // Initialize last sync (placeholder)
         UpdateLastSyncTime(null);
         
-        // Navigate to Dashboard by default
+        // Navigate to PatientListView by default (Dashboard not yet implemented)
         // NOTE: First-run detection is handled in App.xaml.cs OnStartup
-        NavigateToDashboard();
+        // TODO: Restore NavigateToDashboard() when Issue #50 is implemented
+        NavigateToPatients();
     }
     
     #region Navigation Menu Methods
@@ -195,7 +196,8 @@ public partial class MainViewModel : ViewModelBase
             {
                 Title = "Dashboard",
                 IconKind = PackIconKind.ViewDashboard,
-                ViewModelType = typeof(DashboardViewModel) // Issue #50: IMPLEMENTED
+                // TODO: Issue #50 - Uncomment when DashboardViewModel is implemented
+                // ViewModelType = typeof(DashboardViewModel)
             },
             new MenuItemViewModel
             {
@@ -286,11 +288,11 @@ public partial class MainViewModel : ViewModelBase
         {
             await patientListViewModel.LoadPatientsAsync();
         }
-        // Issue #50: Load dashboard data when navigating to Dashboard
-        else if (viewModel is DashboardViewModel dashboardViewModel)
-        {
-            await dashboardViewModel.LoadDataAsync();
-        }
+        // TODO: Issue #50 - Uncomment when DashboardViewModel is implemented
+        // else if (viewModel is DashboardViewModel dashboardViewModel)
+        // {
+        //     await dashboardViewModel.LoadDataAsync();
+        // }
     }
     
     /// <summary>
@@ -544,8 +546,12 @@ public partial class MainViewModel : ViewModelBase
     [RelayCommand]
     private void NavigateToDashboard()
     {
-        // Issue #50: Dashboard implementata
-        _navigationService.NavigateTo<DashboardViewModel>();
+        // TODO: Issue #50 - Uncomment when DashboardViewModel is implemented
+        // _navigationService.NavigateTo<DashboardViewModel>();
+        
+        // Temporary: Show placeholder message
+        ShowInfoMessage("Dashboard - In sviluppo (Issue #50)");
+        CurrentPageTitle = "Dashboard";
     }
     
     [RelayCommand]
