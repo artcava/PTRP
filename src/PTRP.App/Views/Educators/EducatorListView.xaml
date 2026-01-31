@@ -30,11 +30,6 @@
                              Text="{Binding SearchTerm, UpdateSourceTrigger=PropertyChanged}"
                              Style="{StaticResource MaterialDesignOutlinedTextBox}"
                              Margin="0,0,0,8" />
-                    <ComboBox materialDesign:HintAssist.Hint="Filtra per ruolo"
-                              ItemsSource="{Binding RoleFilters}"
-                              SelectedItem="{Binding SelectedRoleFilter}"
-                              Style="{StaticResource MaterialDesignOutlinedComboBox}"
-                              Margin="0,0,0,8"/>
                 </StackPanel>
 
                 <DataGrid Grid.Row="2"
@@ -52,15 +47,7 @@
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="Cognome" Binding="{Binding LastName}" Width="*"/>
                         <DataGridTextColumn Header="Nome" Binding="{Binding FirstName}" Width="*"/>
-                        <DataGridTemplateColumn Header="Ruolo" Width="Auto">
-                            <DataGridTemplateColumn.CellTemplate>
-                                <DataTemplate>
-                                    <Border Background="{Binding Role, Converter={StaticResource EducatorRoleToColorConverter}}" CornerRadius="12" Padding="8,4" HorizontalAlignment="Center">
-                                        <TextBlock Text="{Binding RoleDisplay}" Foreground="White" FontSize="11" FontWeight="SemiBold"/>
-                                    </Border>
-                                </DataTemplate>
-                            </DataGridTemplateColumn.CellTemplate>
-                        </DataGridTemplateColumn>
+                        <DataGridTextColumn Header="Email" Binding="{Binding Email}" Width="2*"/>
                         <DataGridTextColumn Header="Pazienti" Binding="{Binding AssignedPatientsCount}" Width="Auto"/>
                     </DataGrid.Columns>
                 </DataGrid>
@@ -89,10 +76,6 @@
                     <TextBlock Text="Anagrafica" Style="{StaticResource MaterialDesignSubtitle1TextBlock}" Margin="0,0,0,8"/>
                     <Border Background="{DynamicResource MaterialDesignDivider}" CornerRadius="4" Padding="12" Margin="0,0,0,16">
                         <StackPanel>
-                            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                                <TextBlock Text="Ruolo: " FontWeight="SemiBold"/>
-                                <TextBlock Text="{Binding SelectedEducator.Role}"/>
-                            </StackPanel>
                             <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
                                 <TextBlock Text="Email: " FontWeight="SemiBold"/>
                                 <TextBlock Text="{Binding SelectedEducator.Email}"/>
