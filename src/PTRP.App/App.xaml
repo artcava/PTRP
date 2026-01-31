@@ -20,6 +20,8 @@
             <!-- Application Resources -->
             <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
             <converters:InverseBooleanConverter x:Key="InverseBooleanConverter" />
+            <converters:ProjectStateToColorConverter x:Key="ProjectStateToColorConverter" />
+            <converters:NullToVisibilityConverter x:Key="NullToVisibilityConverter" />
             <BitmapImage x:Key="AppIcon" UriSource="/favicon.ico" />
             
             <!-- ViewModel to View DataTemplates -->
