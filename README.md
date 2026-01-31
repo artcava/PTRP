@@ -46,71 +46,134 @@ L'applicazione opera con **paradigma offline-first**: ogni nodo (Coordinatore e 
 ```
 PTRP/
 ├── src/
-│   ├── PTRP.Models/              # Entità dati e DTOs
-│   │   ├── Patient.cs            # Anagrafica paziente
-│   │   ├── TherapeuticProject.cs # Progetto terapeutico con PTRP
-│   │   ├── ScheduledVisit.cs     # Visita programmata
-│   │   ├── ActualVisit.cs        # Visita registrata con VisitSource
-│   │   ├── Operator.cs           # Educatore/Coordinatore
-│   │   └── SyncPacket.cs         # Pacchetto di scambio crittografato
-│   ├── PTRP.ViewModels/          # ViewModel - Logica presentazione
-│   │   ├── PatientListViewModel.cs
-│   │   ├── ProjectDetailViewModel.cs
-│   │   └── SyncViewModel.cs      # Gestione sincronizzazione
-│   ├── PTRP.Views/               # Viste XAML (UserControls)
-│   │   ├── PatientListView.xaml
-│   │   ├── ProjectDetailView.xaml
-│   │   └── SyncStatusView.xaml
-│   ├── PTRP.Services/            # Servizi di business logic
-│   │   ├── Database/
-│   │   │   ├── PtrpDbContext.cs  # SQLite DbContext con crittografia
-│   │   │   ├── DbContextSeeder.cs # Data seeding da registro pazienti
-│   │   │   └── Migrations/       # Schema migrations
-│   │   ├── Repositories/         # Data Access Pattern
+│   ├── PTRP.Core/                        # Libreria Core - Entità e Logica Business
+│   │   ├── Models/                       # Entità di dominio
+│   │   │   ├── Entities/                 # Entità base del dominio
+│   │   │   │   ├── Patient.cs            # Anagrafica paziente
+│   │   │   │   ├── TherapeuticProject.cs # Progetto terapeutico con PTRP
+│   │   │   │   ├── ScheduledVisit.cs     # Visita programmata
+│   │   │   │   ├── ActualVisit.cs        # Visita registrata con VisitSource
+│   │   │   │   ├── Operator.cs           # Educatore/Coordinatore
+│   │   │   │   └── ProjectPhase.cs       # Fase progetto (Apertura, Verifica, etc.)
+│   │   │   ├── Enums/                    # Enumerazioni
+│   │   │   │   ├── PatientStatus.cs      # Active, Suspended, Deceased
+│   │   │   │   ├── ProjectStatus.cs      # InProgress, Suspended, Concluded
+│   │   │   │   ├── VisitSource.cs        # EducatorImport, CoordinatorDirect
+│   │   │   │   └── PhaseType.cs          # Opening, MidReview, FinalReview, etc.
+│   │   │   └── DTOs/                     # Data Transfer Objects
+│   │   │       ├── PatientDto.cs
+│   │   │       ├── ProjectDto.cs
+│   │   │       └── SyncPacketDto.cs      # Pacchetto di scambio crittografato
+│   │   ├── Interfaces/                   # Contratti servizi
+│   │   │   ├── IPatientService.cs
+│   │   │   ├── IProjectService.cs
+│   │   │   ├── IVisitService.cs
+│   │   │   ├── ISyncService.cs
+│   │   │   └── IEncryptionService.cs
+│   │   └── Exceptions/                   # Eccezioni custom
+│   │       ├── PatientNotFoundException.cs
+│   │       ├── SyncConflictException.cs
+│   │       └── ValidationException.cs
+│   │
+│   ├── PTRP.Infrastructure/              # Data Access e Servizi Esterni
+│   │   ├── Data/
+│   │   │   ├── PtrpDbContext.cs          # SQLite DbContext con crittografia
+│   │   │   ├── Configurations/           # Entity configurations (Fluent API)
+│   │   │   │   ├── PatientConfiguration.cs
+│   │   │   │   ├── ProjectConfiguration.cs
+│   │   │   │   └── VisitConfiguration.cs
+│   │   │   └── Migrations/               # Schema migrations
+│   │   ├── Repositories/                 # Data Access Pattern
 │   │   │   ├── PatientRepository.cs
 │   │   │   ├── ProjectRepository.cs
-│   │   │   └── VisitRepository.cs
-│   │   ├── Business/
+│   │   │   ├── VisitRepository.cs
+│   │   │   └── OperatorRepository.cs
+│   │   ├── Services/                     # Implementazioni servizi
 │   │   │   ├── PatientService.cs
 │   │   │   ├── ProjectService.cs
 │   │   │   ├── VisitService.cs
-│   │   │   └── ConflictResolutionService.cs  # Master-Slave sync logic
-│   │   ├── Sync/
-│   │   │   ├── SyncPacketService.cs         # Crittografia + HMAC
-│   │   │   ├── DataMergeService.cs          # UPSERT logic
-│   │   │   └── SchemaVersioningService.cs   # Migration handling
-│   │   └── Security/
-│   │       ├── EncryptionService.cs         # AES database
-│   │       └── HmacSigningService.cs        # Firma pacchetti
-│   └── PTRP.App/                 # Applicazione principale WPF
-│       ├── App.xaml / App.xaml.cs
+│   │   │   ├── ConflictResolutionService.cs  # Master-Slave sync logic
+│   │   │   ├── SyncPacketService.cs          # Crittografia + HMAC
+│   │   │   ├── DataMergeService.cs           # UPSERT logic
+│   │   │   └── SchemaVersioningService.cs    # Migration handling
+│   │   ├── Security/
+│   │   │   ├── EncryptionService.cs          # AES database
+│   │   │   └── HmacSigningService.cs         # Firma pacchetti
+│   │   └── Seeding/
+│   │       └── DbContextSeeder.cs            # Data seeding da registro pazienti
+│   │
+│   ├── PTRP.Application/                 # Application Layer - ViewModels
+│   │   ├── ViewModels/                   # ViewModel - Logica presentazione
+│   │   │   ├── MainViewModel.cs
+│   │   │   ├── PatientListViewModel.cs
+│   │   │   ├── PatientDetailViewModel.cs
+│   │   │   ├── ProjectListViewModel.cs
+│   │   │   ├── ProjectDetailViewModel.cs
+│   │   │   ├── VisitListViewModel.cs
+│   │   │   └── SyncViewModel.cs              # Gestione sincronizzazione
+│   │   ├── Commands/                     # RelayCommand implementations
+│   │   ├── Converters/                   # Value Converters per XAML
+│   │   │   ├── StatusToColorConverter.cs
+│   │   │   ├── VisitSourceToBadgeConverter.cs
+│   │   │   └── DateTimeToStringConverter.cs
+│   │   └── Validators/                   # Validazione input
+│   │       ├── PatientValidator.cs
+│   │       └── ProjectValidator.cs
+│   │
+│   └── PTRP.Presentation/                # Presentation Layer - WPF UI
+│       ├── Views/                        # Viste XAML (UserControls)
+│       │   ├── PatientListView.xaml
+│       │   ├── PatientDetailView.xaml
+│       │   ├── ProjectListView.xaml
+│       │   ├── ProjectDetailView.xaml
+│       │   ├── VisitListView.xaml
+│       │   └── SyncStatusView.xaml
+│       ├── Themes/                       # Material Design resources
+│       │   ├── Generic.xaml
+│       │   └── Colors.xaml
+│       ├── App.xaml / App.xaml.cs        # Application entry point
 │       ├── MainWindow.xaml / MainWindow.xaml.cs
-│       └── Bootstrapper.cs       # DI configuration
+│       └── DependencyInjection.cs        # DI configuration
+│
 ├── tests/
-│   ├── PTRP.Tests/
-│   │   ├── ViewModels/
-│   │   ├── Services/
-│   │   ├── Sync/                 # Test sincronizzazione e conflict resolution
-│   │   └── Utilities/
-│   └── PTRP.Integration.Tests/   # Test offline scenarios
+│   ├── PTRP.UnitTests/                   # Unit tests
+│   │   ├── Core/
+│   │   │   ├── Models/
+│   │   │   └── Validators/
+│   │   ├── Infrastructure/
+│   │   │   ├── Services/
+│   │   │   └── Repositories/
+│   │   └── Application/
+│   │       └── ViewModels/
+│   └── PTRP.IntegrationTests/            # Integration tests
+│       ├── Database/
+│       ├── Sync/                         # Test sincronizzazione e conflict resolution
+│       └── Security/                     # Test crittografia e HMAC
+│
 ├── docs/
-│   ├── ARCHITECTURE.md           # Pattern MVVM e offline-first
-│   ├── SETUP-GUIDE.md            # Setup Visual Studio
-│   ├── DATABASE.md               # Schema SQLite, crittografia, ER diagram
-│   ├── SYNC-PROTOCOL.md          # Protocollo sincronizzazione
-│   ├── SECURITY.md               # Crittografia, HMAC, key management
-│   ├── API.md                    # Services API
-│   ├── WORKFLOW.md               # Workflow applicativo
-│   ├── DEPLOYMENT.md             # Velopack, distribution, updates
-│   ├── DEVELOPMENT.md            # Guida sviluppatori, Git workflow
-│   ├── PROGETTO_PTRP_SYNC.md     # Analisi tecnica architettura
-│   └── SEED.md                   # Data seeding strategy
+│   ├── ARCHITECTURE.md                   # Pattern MVVM e offline-first
+│   ├── SETUP-GUIDE.md                    # Setup Visual Studio
+│   ├── DATABASE.md                       # Schema SQLite, crittografia, ER diagram
+│   ├── SYNC-PROTOCOL.md                  # Protocollo sincronizzazione
+│   ├── SECURITY.md                       # Crittografia, HMAC, key management
+│   ├── API.md                            # Services API
+│   ├── WORKFLOW.md                       # Workflow applicativo
+│   ├── DEPLOYMENT.md                     # Velopack, distribution, updates
+│   ├── DEVELOPMENT.md                    # Guida sviluppatori, Git workflow
+│   ├── PROGETTO_PTRP_SYNC.md             # Analisi tecnica architettura
+│   └── SEED.md                           # Data seeding strategy
+│
 ├── .github/
 │   └── workflows/
-│       ├── validate.yml          # Unit tests, SAST scan
-│       ├── security.yml          # Security checks (chiavi, credenziali)
-│       └── deploy-velopack.yml   # Compile + Velopack release
+│       ├── validate.yml                  # Unit tests, SAST scan
+│       ├── security.yml                  # Security checks (chiavi, credenziali)
+│       └── deploy-velopack.yml           # Compile + Velopack release
+│
 └── [config files]
+    ├── .gitignore
+    ├── .editorconfig
+    ├── PTRP.sln
+    └── Directory.Build.props
 ```
 
 ---
@@ -153,7 +216,7 @@ PTRP/
 5. **Build & Run**
    ```bash
    dotnet build
-   dotnet run --project src/PTRP.App
+   dotnet run --project src/PTRP.Presentation
    ```
 
 ---
@@ -190,7 +253,7 @@ Visualizzazione UI con badge/colori differenti per auditabilità.
 
 - 📖 [Setup Guide](docs/SETUP-GUIDE.md) - Setup Visual Studio e primo avvio
 - 🏗️ [Architecture](docs/ARCHITECTURE.md) - Pattern MVVM, offline-first spiegato
-- 💾 [Database](docs/DATABASE.md) - **Schema SQLite, crittografia AES, ER diagram, query comuni**
+- 💾 [Database](docs/DATABASE.md) - Schema SQLite, crittografia AES, ER diagram, query comuni
 - 🔄 [Sync Protocol](docs/SYNC-PROTOCOL.md) - Algoritmo sincronizzazione, conflict resolution
 - 🔐 [Security](docs/SECURITY.md) - Crittografia, HMAC, key management
 - 🌱 [Seeding](docs/SEED.md) - Strategia data initialization, DbContextSeeder
@@ -222,12 +285,6 @@ Dettagli: vedi [docs/SECURITY.md](docs/SECURITY.md)
 
 ---
 
-## 👥 Contributors
-
-- **Marco Cavallo** (@artcava) - Lead Developer & Architect
-
----
-
 ## 📄 License
 
 MIT License - See [LICENSE](LICENSE) file for details
@@ -243,5 +300,5 @@ Per domande, bug o feature requests:
 
 ---
 
-**Last Updated**: January 29, 2026
+**Last Updated**: January 31, 2026
 **Architecture Version**: PTRP-Sync v1.0 (Offline-First) - WPF Desktop
