@@ -406,7 +406,8 @@ public partial class SyncViewModel : ViewModelBase
     {
         try
         {
-            var educators = await _educatorService.GetAllEducatorsAsync();
+            // FIX: Cambiato da GetAllEducatorsAsync() a GetAllAsync()
+            var educators = await _educatorService.GetAllAsync();
             AvailableEducators = new ObservableCollection<EducatorItemViewModel>(
                 educators.Select(e => new EducatorItemViewModel
                 {
