@@ -1,0 +1,550 @@
+<UserControl x:Class="PTRP.App.Views.Sync.SyncView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+             xmlns:viewmodels="clr-namespace:PTRP.ViewModels;assembly=PTRP.ViewModels"
+             d:DataContext="{d:DesignInstance Type=viewmodels:SyncViewModel}"
+             mc:Ignorable="d"
+             d:DesignHeight="800" d:DesignWidth="1200"
+             Background="{DynamicResource MaterialDesignPaper}">
+
+    <UserControl.Resources>
+        <!-- Converter per visibilità based on bool -->
+        <BooleanToVisibilityConverter x:Key="BoolToVisibility"/>
+    </UserControl.Resources>
+
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,24">
+            <TextBlock Text="Sincronizzazione Dati"
+                     Style="{StaticResource MaterialDesignHeadline4TextBlock}"
+                     Margin="0,0,0,8"/>
+            <TextBlock Text="Gestione import/export pacchetti .ptrp per sincronizzazione offline"
+                     Style="{StaticResource MaterialDesignBody2TextBlock}"
+                     Foreground="{DynamicResource MaterialDesignBodyLight}"/>
+        </StackPanel>
+
+        <!-- TabControl -->
+        <TabControl Grid.Row="1"
+                    SelectedIndex="{Binding SelectedTabIndex}"
+                    Style="{StaticResource MaterialDesignNavigationRailTabControl}">
+
+            <!-- TAB 1: ESPORTA APPUNTAMENTI -->
+            <TabItem Header="Esporta">
+                <TabItem.HeaderTemplate>
+                    <DataTemplate>
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="Export"
+                                                   Width="24"
+                                                   Height="24"
+                                                   Margin="0,0,8,0"/>
+                            <TextBlock Text="Esporta"
+                                     VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </DataTemplate>
+                </TabItem.HeaderTemplate>
+
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="32">
+                        <!-- Description -->
+                        <materialDesign:Card UniformCornerRadius="8"
+                                           Margin="0,0,0,24"
+                                           Background="{DynamicResource PrimaryHueLightBrush}">
+                            <StackPanel Margin="20">
+                                <StackPanel Orientation="Horizontal"
+                                          Margin="0,0,0,8">
+                                    <materialDesign:PackIcon Kind="InformationOutline"
+                                                           Width="24"
+                                                           Height="24"
+                                                           Foreground="{DynamicResource PrimaryHueDarkBrush}"
+                                                           Margin="0,0,8,0"/>
+                                    <TextBlock Text="Come Funziona l'Esportazione"
+                                             Style="{StaticResource MaterialDesignSubtitle1TextBlock}"
+                                             Foreground="{DynamicResource PrimaryHueDarkBrush}"/>
+                                </StackPanel>
+                                <TextBlock TextWrapping="Wrap"
+                                         Foreground="{DynamicResource PrimaryHueDarkBrush}"
+                                         Opacity="0.8">
+                                    Seleziona un educatore e un periodo per generare un pacchetto .ptrp contenente gli appuntamenti programmati. 
+                                    Il file generato può essere trasferito tramite email, USB o cloud e importato dall'app Educatore.
+                                </TextBlock>
+                            </StackPanel>
+                        </materialDesign:Card>
+
+                        <!-- Selection Form -->
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="24"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <!-- Left Column: Selection -->
+                            <StackPanel Grid.Column="0">
+                                <!-- Educatore Selection -->
+                                <TextBlock Text="Seleziona Educatore"
+                                         Style="{StaticResource MaterialDesignBody1TextBlock}"
+                                         Margin="0,0,0,8"/>
+                                <ComboBox ItemsSource="{Binding AvailableEducators}"
+                                        SelectedItem="{Binding SelectedEducator}"
+                                        DisplayMemberPath="FullName"
+                                        Style="{StaticResource MaterialDesignOutlinedComboBox}"
+                                        materialDesign:HintAssist.Hint="Scegli educatore"
+                                        Margin="0,0,0,24"/>
+
+                                <!-- Date Range -->
+                                <TextBlock Text="Periodo Appuntamenti"
+                                         Style="{StaticResource MaterialDesignBody1TextBlock}"
+                                         Margin="0,0,0,8"/>
+                                <Grid Margin="0,0,0,24">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="16"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <DatePicker Grid.Column="0"
+                                              SelectedDate="{Binding ExportStartDate}"
+                                              Style="{StaticResource MaterialDesignOutlinedDatePicker}"
+                                              materialDesign:HintAssist.Hint="Data Inizio"/>
+
+                                    <DatePicker Grid.Column="2"
+                                              SelectedDate="{Binding ExportEndDate}"
+                                              Style="{StaticResource MaterialDesignOutlinedDatePicker}"
+                                              materialDesign:HintAssist.Hint="Data Fine"/>
+                                </Grid>
+
+                                <!-- Load Preview Button -->
+                                <Button Content="Carica Anteprima"
+                                      Command="{Binding LoadExportPreviewCommand}"
+                                      Style="{StaticResource MaterialDesignOutlinedButton}"
+                                      Margin="0,0,0,16"/>
+
+                                <!-- Export Button -->
+                                <Button Content="Esporta Pacchetto"
+                                      Command="{Binding ExportPackageCommand}"
+                                      Style="{StaticResource MaterialDesignRaisedButton}"
+                                      Height="48">
+                                    <Button.Style>
+                                        <Style TargetType="Button" BasedOn="{StaticResource MaterialDesignRaisedButton}">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsExporting}" Value="True">
+                                                    <Setter Property="IsEnabled" Value="False"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Button.Style>
+                                </Button>
+
+                                <!-- Status Message -->
+                                <TextBlock Text="{Binding ExportStatusMessage}"
+                                         Style="{StaticResource MaterialDesignBody2TextBlock}"
+                                         Foreground="{DynamicResource SecondaryHueMidBrush}"
+                                         TextWrapping="Wrap"
+                                         Margin="0,16,0,0"
+                                         Visibility="{Binding ExportStatusMessage, Converter={StaticResource BoolToVisibility}}"/>
+
+                                <!-- Progress Indicator -->
+                                <ProgressBar IsIndeterminate="True"
+                                           Margin="0,16,0,0"
+                                           Visibility="{Binding IsExporting, Converter={StaticResource BoolToVisibility}}"/>
+                            </StackPanel>
+
+                            <!-- Right Column: Preview -->
+                            <materialDesign:Card Grid.Column="2"
+                                               UniformCornerRadius="8">
+                                <StackPanel Margin="20">
+                                    <TextBlock Text="Anteprima Dati"
+                                             Style="{StaticResource MaterialDesignSubtitle1TextBlock}"
+                                             Margin="0,0,0,16"/>
+
+                                    <!-- Count Badge -->
+                                    <Border Background="{DynamicResource SecondaryHueMidBrush}"
+                                          CornerRadius="8"
+                                          Padding="12,8"
+                                          Margin="0,0,0,16"
+                                          HorizontalAlignment="Left">
+                                        <StackPanel Orientation="Horizontal">
+                                            <materialDesign:PackIcon Kind="CalendarMultiple"
+                                                                   Width="24"
+                                                                   Height="24"
+                                                                   Foreground="White"
+                                                                   Margin="0,0,8,0"/>
+                                            <TextBlock Text="{Binding AppointmentsToExportCount}"
+                                                     Style="{StaticResource MaterialDesignHeadline5TextBlock}"
+                                                     Foreground="White"
+                                                     VerticalAlignment="Center"
+                                                     Margin="0,0,4,0"/>
+                                            <TextBlock Text="appuntamenti"
+                                                     Style="{StaticResource MaterialDesignBody2TextBlock}"
+                                                     Foreground="White"
+                                                     VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <!-- Preview Text -->
+                                    <TextBlock Text="{Binding ExportPreview}"
+                                             Style="{StaticResource MaterialDesignBody2TextBlock}"
+                                             Foreground="{DynamicResource MaterialDesignBody}"
+                                             TextWrapping="Wrap"/>
+                                </StackPanel>
+                            </materialDesign:Card>
+                        </Grid>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- TAB 2: IMPORTA VISITE -->
+            <TabItem Header="Importa">
+                <TabItem.HeaderTemplate>
+                    <DataTemplate>
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="Import"
+                                                   Width="24"
+                                                   Height="24"
+                                                   Margin="0,0,8,0"/>
+                            <TextBlock Text="Importa"
+                                     VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </DataTemplate>
+                </TabItem.HeaderTemplate>
+
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="32">
+                        <!-- Description -->
+                        <materialDesign:Card UniformCornerRadius="8"
+                                           Margin="0,0,0,24"
+                                           Background="{DynamicResource SecondaryHueLightBrush}">
+                            <StackPanel Margin="20">
+                                <StackPanel Orientation="Horizontal"
+                                          Margin="0,0,0,8">
+                                    <materialDesign:PackIcon Kind="InformationOutline"
+                                                           Width="24"
+                                                           Height="24"
+                                                           Foreground="{DynamicResource SecondaryHueDarkBrush}"
+                                                           Margin="0,0,8,0"/>
+                                    <TextBlock Text="Come Funziona l'Importazione"
+                                             Style="{StaticResource MaterialDesignSubtitle1TextBlock}"
+                                             Foreground="{DynamicResource SecondaryHueDarkBrush}"/>
+                                </StackPanel>
+                                <TextBlock TextWrapping="Wrap"
+                                         Foreground="{DynamicResource SecondaryHueDarkBrush}"
+                                         Opacity="0.8">
+                                    Seleziona un file .ptrp ricevuto da un educatore contenente le visite registrate. 
+                                    Il sistema verificherà la firma HMAC, la compatibilità dello schema e importerebbe i dati nel database locale.
+                                </TextBlock>
+                            </StackPanel>
+                        </materialDesign:Card>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="24"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <!-- Left Column: File Selection & Validation -->
+                            <StackPanel Grid.Column="0">
+                                <!-- File Selection -->
+                                <TextBlock Text="Seleziona File Pacchetto"
+                                         Style="{StaticResource MaterialDesignBody1TextBlock}"
+                                         Margin="0,0,0,8"/>
+                                <Grid Margin="0,0,0,24">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="12"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <TextBox Grid.Column="0"
+                                           Text="{Binding SelectedImportFilePath}"
+                                           IsReadOnly="True"
+                                           Style="{StaticResource MaterialDesignOutlinedTextBox}"
+                                           materialDesign:HintAssist.Hint="Nessun file selezionato"/>
+
+                                    <Button Grid.Column="2"
+                                          Content="Sfoglia"
+                                          Command="{Binding SelectImportFileCommand}"
+                                          Style="{StaticResource MaterialDesignOutlinedButton}"/>
+                                </Grid>
+
+                                <!-- Validation Results -->
+                                <TextBlock Text="Risultati Validazione"
+                                         Style="{StaticResource MaterialDesignBody1TextBlock}"
+                                         Margin="0,0,0,8"/>
+                                <ItemsControl ItemsSource="{Binding ValidationMessages}"
+                                            Margin="0,0,0,24">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal"
+                                                      Margin="0,4">
+                                                <materialDesign:PackIcon Width="20"
+                                                                       Height="20"
+                                                                       Margin="0,0,8,0">
+                                                    <materialDesign:PackIcon.Style>
+                                                        <Style TargetType="materialDesign:PackIcon">
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsValid}" Value="True">
+                                                                    <Setter Property="Kind" Value="CheckCircle"/>
+                                                                    <Setter Property="Foreground" Value="#4CAF50"/>
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding IsValid}" Value="False">
+                                                                    <Setter Property="Kind" Value="CloseCircle"/>
+                                                                    <Setter Property="Foreground" Value="#F44336"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </materialDesign:PackIcon.Style>
+                                                </materialDesign:PackIcon>
+                                                <TextBlock Text="{Binding Message}"
+                                                         Style="{StaticResource MaterialDesignBody2TextBlock}"
+                                                         VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+
+                                <!-- Import Button -->
+                                <Button Content="Importa Dati"
+                                      Command="{Binding ImportPackageCommand}"
+                                      Style="{StaticResource MaterialDesignRaisedButton}"
+                                      Height="48">
+                                    <Button.Style>
+                                        <Style TargetType="Button" BasedOn="{StaticResource MaterialDesignRaisedButton}">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsImporting}" Value="True">
+                                                    <Setter Property="IsEnabled" Value="False"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Button.Style>
+                                </Button>
+
+                                <!-- Status Message -->
+                                <TextBlock Text="{Binding ImportStatusMessage}"
+                                         Style="{StaticResource MaterialDesignBody2TextBlock}"
+                                         Foreground="{DynamicResource SecondaryHueMidBrush}"
+                                         TextWrapping="Wrap"
+                                         Margin="0,16,0,0"
+                                         Visibility="{Binding ImportStatusMessage, Converter={StaticResource BoolToVisibility}}"/>
+
+                                <!-- Progress Indicator -->
+                                <ProgressBar IsIndeterminate="True"
+                                           Margin="0,16,0,0"
+                                           Visibility="{Binding IsImporting, Converter={StaticResource BoolToVisibility}}"/>
+                            </StackPanel>
+
+                            <!-- Right Column: Preview -->
+                            <materialDesign:Card Grid.Column="2"
+                                               UniformCornerRadius="8">
+                                <StackPanel Margin="20">
+                                    <TextBlock Text="Contenuto Pacchetto"
+                                             Style="{StaticResource MaterialDesignSubtitle1TextBlock}"
+                                             Margin="0,0,0,16"/>
+
+                                    <!-- Record Count Badge -->
+                                    <Border Background="{DynamicResource PrimaryHueMidBrush}"
+                                          CornerRadius="8"
+                                          Padding="12,8"
+                                          Margin="0,0,0,16"
+                                          HorizontalAlignment="Left"
+                                          Visibility="{Binding IsFileValidated, Converter={StaticResource BoolToVisibility}}">
+                                        <StackPanel Orientation="Horizontal">
+                                            <materialDesign:PackIcon Kind="FileDocument"
+                                                                   Width="24"
+                                                                   Height="24"
+                                                                   Foreground="White"
+                                                                   Margin="0,0,8,0"/>
+                                            <TextBlock Text="{Binding PackageRecordsCount}"
+                                                     Style="{StaticResource MaterialDesignHeadline5TextBlock}"
+                                                     Foreground="White"
+                                                     VerticalAlignment="Center"
+                                                     Margin="0,0,4,0"/>
+                                            <TextBlock Text="record"
+                                                     Style="{StaticResource MaterialDesignBody2TextBlock}"
+                                                     Foreground="White"
+                                                     VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <!-- Preview Text -->
+                                    <TextBlock Text="{Binding ImportPreview}"
+                                             Style="{StaticResource MaterialDesignBody2TextBlock}"
+                                             Foreground="{DynamicResource MaterialDesignBody}"
+                                             TextWrapping="Wrap"/>
+
+                                    <!-- Obsolete Warning -->
+                                    <materialDesign:Card Margin="0,16,0,0"
+                                                       Background="#FFF3E0"
+                                                       Visibility="{Binding IsPackageDateObsolete, Converter={StaticResource BoolToVisibility}}">
+                                        <StackPanel Margin="16"
+                                                  Orientation="Horizontal">
+                                            <materialDesign:PackIcon Kind="AlertCircle"
+                                                                   Width="24"
+                                                                   Height="24"
+                                                                   Foreground="#FF9800"
+                                                                   Margin="0,0,8,0"/>
+                                            <TextBlock Text="Attenzione: data pacchetto potrebbe essere obsoleta"
+                                                     Style="{StaticResource MaterialDesignBody2TextBlock}"
+                                                     Foreground="#FF9800"
+                                                     TextWrapping="Wrap"/>
+                                        </StackPanel>
+                                    </materialDesign:Card>
+                                </StackPanel>
+                            </materialDesign:Card>
+                        </Grid>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- TAB 3: STORICO -->
+            <TabItem Header="Storico">
+                <TabItem.HeaderTemplate>
+                    <DataTemplate>
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="History"
+                                                   Width="24"
+                                                   Height="24"
+                                                   Margin="0,0,8,0"/>
+                            <TextBlock Text="Storico"
+                                     VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </DataTemplate>
+                </TabItem.HeaderTemplate>
+
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="32">
+                        <TextBlock Text="Storico Sincronizzazioni"
+                                 Style="{StaticResource MaterialDesignHeadline5TextBlock}"
+                                 Margin="0,0,0,24"/>
+
+                        <!-- History List -->
+                        <ItemsControl ItemsSource="{Binding SyncHistory}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <materialDesign:Card UniformCornerRadius="8"
+                                                       Margin="0,0,0,12">
+                                        <Grid Margin="20">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="16"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+
+                                            <!-- Status Icon -->
+                                            <Border Grid.Column="0"
+                                                  Background="{Binding StatusColor}"
+                                                  Width="48"
+                                                  Height="48"
+                                                  CornerRadius="24">
+                                                <TextBlock Text="{Binding StatusIcon}"
+                                                         Style="{StaticResource MaterialDesignHeadline5TextBlock}"
+                                                         Foreground="White"
+                                                         HorizontalAlignment="Center"
+                                                         VerticalAlignment="Center"/>
+                                            </Border>
+
+                                            <!-- Info -->
+                                            <StackPanel Grid.Column="2">
+                                                <TextBlock Text="{Binding FileName}"
+                                                         Style="{StaticResource MaterialDesignSubtitle1TextBlock}"
+                                                         Margin="0,0,0,4"/>
+                                                <StackPanel Orientation="Horizontal">
+                                                    <materialDesign:PackIcon Kind="CalendarClock"
+                                                                           Width="16"
+                                                                           Height="16"
+                                                                           Foreground="{DynamicResource MaterialDesignBodyLight}"
+                                                                           Margin="0,0,4,0"/>
+                                                    <TextBlock Text="{Binding Date, StringFormat='dd/MM/yyyy HH:mm'}"
+                                                             Style="{StaticResource MaterialDesignCaptionTextBlock}"
+                                                             Foreground="{DynamicResource MaterialDesignBodyLight}"
+                                                             VerticalAlignment="Center"
+                                                             Margin="0,0,16,0"/>
+
+                                                    <materialDesign:PackIcon Kind="FileDocument"
+                                                                           Width="16"
+                                                                           Height="16"
+                                                                           Foreground="{DynamicResource MaterialDesignBodyLight}"
+                                                                           Margin="0,0,4,0"/>
+                                                    <TextBlock Style="{StaticResource MaterialDesignCaptionTextBlock}"
+                                                             Foreground="{DynamicResource MaterialDesignBodyLight}"
+                                                             VerticalAlignment="Center">
+                                                        <Run Text="{Binding RecordsCount}"/>
+                                                        <Run Text="record"/>
+                                                    </TextBlock>
+                                                </StackPanel>
+                                            </StackPanel>
+
+                                            <!-- Type Badge -->
+                                            <Border Grid.Column="3"
+                                                  CornerRadius="4"
+                                                  Padding="8,4"
+                                                  VerticalAlignment="Center">
+                                                <Border.Style>
+                                                    <Style TargetType="Border">
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding Type}" Value="Export">
+                                                                <Setter Property="Background" Value="#E3F2FD"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding Type}" Value="Import">
+                                                                <Setter Property="Background" Value="#FFF3E0"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Border.Style>
+                                                <TextBlock Text="{Binding Type}"
+                                                         Style="{StaticResource MaterialDesignCaptionTextBlock}"
+                                                         FontWeight="SemiBold">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock" BasedOn="{StaticResource MaterialDesignCaptionTextBlock}">
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding Type}" Value="Export">
+                                                                    <Setter Property="Foreground" Value="#1976D2"/>
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding Type}" Value="Import">
+                                                                    <Setter Property="Foreground" Value="#F57C00"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                            </Border>
+                                        </Grid>
+                                    </materialDesign:Card>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <!-- Empty State -->
+                        <Border Height="200"
+                              Background="{DynamicResource MaterialDesignDivider}"
+                              CornerRadius="8"
+                              Visibility="{Binding SyncHistory.Count, Converter={StaticResource BoolToVisibility}}">
+                            <StackPanel HorizontalAlignment="Center"
+                                      VerticalAlignment="Center">
+                                <materialDesign:PackIcon Kind="History"
+                                                       Width="64"
+                                                       Height="64"
+                                                       Foreground="{DynamicResource MaterialDesignBodyLight}"
+                                                       HorizontalAlignment="Center"
+                                                       Margin="0,0,0,16"/>
+                                <TextBlock Text="Nessuna sincronizzazione effettuata"
+                                         Style="{StaticResource MaterialDesignBody1TextBlock}"
+                                         Foreground="{DynamicResource MaterialDesignBodyLight}"
+                                         HorizontalAlignment="Center"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+        </TabControl>
+    </Grid>
+</UserControl>
