@@ -46,71 +46,104 @@ L'applicazione opera con **paradigma offline-first**: ogni nodo (Coordinatore e 
 ```
 PTRP/
 ├── src/
-│   ├── PTRP.Models/              # Entità dati e DTOs
-│   │   ├── Patient.cs            # Anagrafica paziente
-│   │   ├── TherapeuticProject.cs # Progetto terapeutico con PTRP
-│   │   ├── ScheduledVisit.cs     # Visita programmata
-│   │   ├── ActualVisit.cs        # Visita registrata con VisitSource
-│   │   ├── Operator.cs           # Educatore/Coordinatore
-│   │   └── SyncPacket.cs         # Pacchetto di scambio crittografato
-│   ├── PTRP.ViewModels/          # ViewModel - Logica presentazione
-│   │   ├── PatientListViewModel.cs
-│   │   ├── ProjectDetailViewModel.cs
-│   │   └── SyncViewModel.cs      # Gestione sincronizzazione
-│   ├── PTRP.Views/               # Viste XAML (UserControls)
-│   │   ├── PatientListView.xaml
-│   │   ├── ProjectDetailView.xaml
-│   │   └── SyncStatusView.xaml
-│   ├── PTRP.Services/            # Servizi di business logic
-│   │   ├── Database/
-│   │   │   ├── PtrpDbContext.cs  # SQLite DbContext con crittografia
-│   │   │   ├── DbContextSeeder.cs # Data seeding da registro pazienti
-│   │   │   └── Migrations/       # Schema migrations
-│   │   ├── Repositories/         # Data Access Pattern
-│   │   │   ├── PatientRepository.cs
-│   │   │   ├── ProjectRepository.cs
-│   │   │   └── VisitRepository.cs
-│   │   ├── Business/
-│   │   │   ├── PatientService.cs
-│   │   │   ├── ProjectService.cs
-│   │   │   ├── VisitService.cs
-│   │   │   └── ConflictResolutionService.cs  # Master-Slave sync logic
-│   │   ├── Sync/
-│   │   │   ├── SyncPacketService.cs         # Crittografia + HMAC
-│   │   │   ├── DataMergeService.cs          # UPSERT logic
-│   │   │   └── SchemaVersioningService.cs   # Migration handling
-│   │   └── Security/
-│   │       ├── EncryptionService.cs         # AES database
-│   │       └── HmacSigningService.cs        # Firma pacchetti
-│   └── PTRP.App/                 # Applicazione principale WPF
-│       ├── App.xaml / App.xaml.cs
+│   ├── PTRP.Models/                  # Modelli di Dominio
+│   │   ├── PatientModel.cs           # Anagrafica paziente
+│   │   ├── TherapyProjectModel.cs    # Progetto terapeutico con PTRP
+│   │   └── ProfessionalEducatorModel.cs  # Educatore/Coordinatore
+│   │
+│   ├── PTRP.Data/                    # Data Access Layer
+│   │   ├── PTRPDbContext.cs          # SQLite DbContext con crittografia
+│   │   └── Repositories/             # Repository Pattern
+│   │       ├── PatientRepository.cs
+│   │       ├── TherapyProjectRepository.cs
+│   │       └── EducatorRepository.cs
+│   │
+│   ├── PTRP.Services/                # Business Logic Layer
+│   │   ├── PatientService.cs         # Gestione pazienti
+│   │   ├── TherapyProjectService.cs  # Gestione progetti terapeutici
+│   │   ├── EducatorService.cs        # Gestione educatori
+│   │   ├── NavigationService.cs      # Navigazione tra viste
+│   │   ├── ConfigurationService.cs   # Configurazione applicazione
+│   │   └── Interfaces/               # Contratti servizi
+│   │       ├── IPatientService.cs
+│   │       ├── ITherapyProjectService.cs
+│   │       ├── IEducatorService.cs
+│   │       ├── INavigationService.cs
+│   │       └── IConfigurationService.cs
+│   │
+│   ├── PTRP.ViewModels/              # Presentation Logic (MVVM)
+│   │   ├── MainViewModel.cs          # ViewModel principale
+│   │   ├── MainWindowViewModel.cs    # ViewModel finestra principale
+│   │   ├── DashboardViewModel.cs     # Dashboard overview
+│   │   ├── FirstRunViewModel.cs      # Configurazione primo avvio
+│   │   ├── ViewModelBase.cs          # Base class per ViewModels
+│   │   ├── Patients/                 # ViewModels pazienti
+│   │   │   ├── PatientListViewModel.cs
+│   │   │   └── PatientDetailViewModel.cs
+│   │   ├── Projects/                 # ViewModels progetti
+│   │   │   ├── ProjectListViewModel.cs
+│   │   │   └── ProjectDetailViewModel.cs
+│   │   └── Educators/                # ViewModels educatori
+│   │       ├── EducatorListViewModel.cs
+│   │       └── EducatorDetailViewModel.cs
+│   │
+│   └── PTRP.App/                     # WPF Application Layer
+│       ├── App.xaml / App.xaml.cs    # Application entry point
 │       ├── MainWindow.xaml / MainWindow.xaml.cs
-│       └── Bootstrapper.cs       # DI configuration
+│       ├── Views/                    # Viste XAML (UserControls)
+│       │   ├── DashboardView.xaml
+│       │   ├── FirstRunView.xaml
+│       │   ├── Patients/
+│       │   │   ├── PatientListView.xaml
+│       │   │   └── PatientDetailView.xaml
+│       │   ├── Projects/
+│       │   │   ├── ProjectListView.xaml
+│       │   │   └── ProjectDetailView.xaml
+│       │   └── Educators/
+│       │       ├── EducatorListView.xaml
+│       │       └── EducatorDetailView.xaml
+│       ├── Converters/               # Value Converters per XAML
+│       │   ├── BoolToVisibilityConverter.cs
+│       │   ├── StatusToColorConverter.cs
+│       │   └── DateTimeConverter.cs
+│       └── Models/                   # UI-specific models (es. NavigationItem)
+│
 ├── tests/
-│   ├── PTRP.Tests/
-│   │   ├── ViewModels/
+│   ├── PTRP.UnitTests/               # Unit tests
+│   │   ├── Models/
 │   │   ├── Services/
-│   │   ├── Sync/                 # Test sincronizzazione e conflict resolution
-│   │   └── Utilities/
-│   └── PTRP.Integration.Tests/   # Test offline scenarios
+│   │   ├── ViewModels/
+│   │   └── Repositories/
+│   └── PTRP.IntegrationTests/        # Integration tests
+│       ├── Database/
+│       ├── Services/
+│       └── Security/
+│
 ├── docs/
-│   ├── ARCHITECTURE.md           # Pattern MVVM e offline-first
-│   ├── SETUP-GUIDE.md            # Setup Visual Studio
-│   ├── DATABASE.md               # Schema SQLite, crittografia, ER diagram
-│   ├── SYNC-PROTOCOL.md          # Protocollo sincronizzazione
-│   ├── SECURITY.md               # Crittografia, HMAC, key management
-│   ├── API.md                    # Services API
-│   ├── WORKFLOW.md               # Workflow applicativo
-│   ├── DEPLOYMENT.md             # Velopack, distribution, updates
-│   ├── DEVELOPMENT.md            # Guida sviluppatori, Git workflow
-│   ├── PROGETTO_PTRP_SYNC.md     # Analisi tecnica architettura
-│   └── SEED.md                   # Data seeding strategy
+│   ├── ARCHITECTURE.md               # Pattern MVVM e offline-first
+│   ├── SETUP-GUIDE.md                # Setup Visual Studio
+│   ├── DATABASE.md                   # Schema SQLite, crittografia, ER diagram
+│   ├── SYNC-PROTOCOL.md              # Protocollo sincronizzazione
+│   ├── SECURITY.md                   # Crittografia, HMAC, key management
+│   ├── API.md                        # Services API
+│   ├── WORKFLOW.md                   # Workflow applicativo
+│   ├── DEPLOYMENT.md                 # Velopack, distribution, updates
+│   ├── DEVELOPMENT.md                # Guida sviluppatori, Git workflow
+│   ├── PROGETTO_PTRP_SYNC.md         # Analisi tecnica architettura
+│   └── SEED.md                       # Data seeding strategy
+│
 ├── .github/
 │   └── workflows/
-│       ├── validate.yml          # Unit tests, SAST scan
-│       ├── security.yml          # Security checks (chiavi, credenziali)
-│       └── deploy-velopack.yml   # Compile + Velopack release
+│       ├── validate.yml              # Unit tests, SAST scan
+│       ├── security.yml              # Security checks (chiavi, credenziali)
+│       └── deploy-velopack.yml       # Compile + Velopack release
+│
 └── [config files]
+    ├── .gitignore
+    ├── .editorconfig
+    ├── PTRP.sln                  # Solution file (in src/)
+    ├── velopack.json
+    └── LICENSE
 ```
 
 ---
@@ -132,12 +165,12 @@ PTRP/
 
 2. **Apri solution in Visual Studio**
    ```bash
-   start PTRP.sln
+   start src/PTRP.sln
    ```
 
 3. **Restore NuGet packages**
    - Visual Studio lo farà automaticamente
-   - Oppure: `dotnet restore`
+   - Oppure: `dotnet restore src/PTRP.sln`
 
 4. **Database Setup** (Automatic Migrations + Data Seeding)
    - Alla prima esecuzione, EF Core crea SQLite locale criptato
@@ -152,7 +185,7 @@ PTRP/
 
 5. **Build & Run**
    ```bash
-   dotnet build
+   dotnet build src/PTRP.sln
    dotnet run --project src/PTRP.App
    ```
 
@@ -190,11 +223,11 @@ Visualizzazione UI con badge/colori differenti per auditabilità.
 
 - 📖 [Setup Guide](docs/SETUP-GUIDE.md) - Setup Visual Studio e primo avvio
 - 🏗️ [Architecture](docs/ARCHITECTURE.md) - Pattern MVVM, offline-first spiegato
-- 💾 [Database](docs/DATABASE.md) - **Schema SQLite, crittografia AES, ER diagram, query comuni**
+- 💾 [Database](docs/DATABASE.md) - Schema SQLite, crittografia AES, ER diagram, query comuni
 - 🔄 [Sync Protocol](docs/SYNC-PROTOCOL.md) - Algoritmo sincronizzazione, conflict resolution
 - 🔐 [Security](docs/SECURITY.md) - Crittografia, HMAC, key management
 - 🌱 [Seeding](docs/SEED.md) - Strategia data initialization, DbContextSeeder
-- 🛠️ [Development](docs/DEVELOPMENT.md) - Guida per sviluppatori, Git workflow
+- 🛠️ [Development](docs/DEVELOPMENT.md) - Guida sviluppatori, Git workflow
 - 🚀 [Deployment](docs/DEPLOYMENT.md) - Velopack, zero-click updates
 - 📄 [Technical Analysis](docs/PROGETTO_PTRP_SYNC.md) - Analisi tecnica completa (architetto)
 
@@ -222,12 +255,6 @@ Dettagli: vedi [docs/SECURITY.md](docs/SECURITY.md)
 
 ---
 
-## 👥 Contributors
-
-- **Marco Cavallo** (@artcava) - Lead Developer & Architect
-
----
-
 ## 📄 License
 
 MIT License - See [LICENSE](LICENSE) file for details
@@ -236,12 +263,12 @@ MIT License - See [LICENSE](LICENSE) file for details
 
 ## 📞 Support
 
-Per domande, bug o feature requests:
-- 🐛 Issues: [GitHub Issues](https://github.com/artcava/PTRP/issues)
-- 📧 Email: cavallo.marco@gmail.com
-- 💬 Discussions: [GitHub Discussions](https://github.com/artcava/PTRP/discussions)
+Per bug report, feature requests o domande sull'utilizzo:
+- 🐛 **Issues**: [GitHub Issues](https://github.com/artcava/PTRP/issues)
+- 💬 **Discussions**: [GitHub Discussions](https://github.com/artcava/PTRP/discussions)
+- 📧 **Email**: cavallo.marco@gmail.com
 
 ---
 
-**Last Updated**: January 29, 2026
+**Last Updated**: January 31, 2026
 **Architecture Version**: PTRP-Sync v1.0 (Offline-First) - WPF Desktop
