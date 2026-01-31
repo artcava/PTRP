@@ -201,7 +201,7 @@ public partial class MainViewModel : ViewModelBase
             {
                 Title = "Pazienti",
                 IconKind = PackIconKind.AccountGroup,
-                // ViewModelType = typeof(PatientListViewModel) // TODO: Issue #51
+                ViewModelType = typeof(PatientListViewModel) // Issue #51: IMPLEMENTED
             },
             new MenuItemViewModel
             {
@@ -275,11 +275,22 @@ public partial class MainViewModel : ViewModelBase
     /// <summary>
     /// Gestisce il cambio di ViewModel corrente dal NavigationService
     /// </summary>
-    private void OnCurrentViewModelChanged(object? sender, object? viewModel)
+    private async void OnCurrentViewModelChanged(object? sender, object? viewModel)
     {
         // Cast to ViewModelBase (NavigationService returns object? to avoid circular dependency)
         CurrentViewModel = viewModel as ViewModelBase;
         CurrentPageTitle = CurrentViewModel?.DisplayName ?? "PTRP";
+        
+        // Issue #51: Load patients when navigating to PatientListView
+        if (viewModel is PatientListViewModel patientListViewModel)
+        {
+            await patientListViewModel.LoadPatientsAsync();
+        }
+        // Issue #50: Load dashboard data when navigating to Dashboard
+        else if (viewModel is DashboardViewModel dashboardViewModel)
+        {
+            await dashboardViewModel.LoadDataAsync();
+        }
     }
     
     /// <summary>
@@ -540,13 +551,8 @@ public partial class MainViewModel : ViewModelBase
     [RelayCommand]
     private void NavigateToPatients()
     {
-        // TODO: Implementare PatientListViewModel in Issue #51
-        // Per ora mostra messaggio
-        ShowInfo("Lista Pazienti - In sviluppo (Issue #51)");
-        CurrentPageTitle = "Pazienti";
-        
-        // Quando PatientListViewModel sarà implementato:
-        // _navigationService.NavigateTo<PatientListViewModel>();
+        // Issue #51: PatientListViewModel implementato
+        _navigationService.NavigateTo<PatientListViewModel>();
     }
     
     [RelayCommand]
