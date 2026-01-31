@@ -5,8 +5,10 @@
              xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
              xmlns:viewmodels="clr-namespace:PTRP.ViewModels;assembly=PTRP.ViewModels"
              xmlns:educatorViewModels="clr-namespace:PTRP.ViewModels.Educators;assembly=PTRP.ViewModels"
+             xmlns:projectViewModels="clr-namespace:PTRP.ViewModels.Projects;assembly=PTRP.ViewModels"
              xmlns:patientViews="clr-namespace:PTRP.App.Views.Patients"
              xmlns:educatorViews="clr-namespace:PTRP.App.Views.Educators"
+             xmlns:projectViews="clr-namespace:PTRP.App.Views.Projects"
              xmlns:converters="clr-namespace:PTRP.App.Converters">
     <Application.Resources>
         <ResourceDictionary>
@@ -37,6 +39,11 @@
             <!-- Issue #63: Educator List View -->
             <DataTemplate DataType="{x:Type educatorViewModels:EducatorListViewModel}">
                 <educatorViews:EducatorListView />
+            </DataTemplate>
+            
+            <!-- Issue #64: Project List View -->
+            <DataTemplate DataType="{x:Type projectViewModels:ProjectListViewModel}">
+                <projectViews:ProjectListView />
             </DataTemplate>
             
             <!-- Future DataTemplates will be added here as other issues are implemented -->
