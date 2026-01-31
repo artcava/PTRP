@@ -7,6 +7,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MaterialDesignThemes.Wpf;
 using PTRP.Services.Interfaces;
+using PTRP.ViewModels.Educators;
 
 namespace PTRP.ViewModels;
 
@@ -209,7 +210,7 @@ public partial class MainViewModel : ViewModelBase
             {
                 Title = "Educatori",
                 IconKind = PackIconKind.AccountTie,
-                // ViewModelType = typeof(OperatorListViewModel) // TODO: FASE 2
+                ViewModelType = typeof(EducatorListViewModel) // Issue #63: IMPLEMENTED
             },
             new MenuItemViewModel
             {
@@ -287,6 +288,11 @@ public partial class MainViewModel : ViewModelBase
         if (viewModel is PatientListViewModel patientListViewModel)
         {
             await patientListViewModel.LoadPatientsAsync();
+        }
+        // Issue #63: Load educators when navigating to EducatorListView
+        else if (viewModel is EducatorListViewModel educatorListViewModel)
+        {
+            await educatorListViewModel.LoadEducatorsAsync();
         }
         // TODO: Issue #50 - Uncomment when DashboardViewModel is implemented
         // else if (viewModel is DashboardViewModel dashboardViewModel)
@@ -571,8 +577,8 @@ public partial class MainViewModel : ViewModelBase
     [RelayCommand]
     private void NavigateToEducators()
     {
-        ShowInfo("Educatori - In sviluppo (FASE 2)");
-        CurrentPageTitle = "Educatori";
+        // Issue #63: EducatorListViewModel implementato
+        _navigationService.NavigateTo<EducatorListViewModel>();
     }
     
     [RelayCommand]
