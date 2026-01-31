@@ -5,6 +5,7 @@
              xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
              xmlns:viewmodels="clr-namespace:PTRP.ViewModels;assembly=PTRP.ViewModels"
              xmlns:patientViews="clr-namespace:PTRP.App.Views.Patients"
+             xmlns:educatorViews="clr-namespace:PTRP.App.Views.Educators"
              xmlns:converters="clr-namespace:PTRP.App.Converters">
     <Application.Resources>
         <ResourceDictionary>
@@ -23,6 +24,9 @@
             <converters:ProjectStateToColorConverter x:Key="ProjectStateToColorConverter" />
             <converters:NullToVisibilityConverter x:Key="NullToVisibilityConverter" />
             
+            <!-- Issue #63: Educator List Converters -->
+            <converters:EducatorRoleToColorConverter x:Key="EducatorRoleToColorConverter" />
+            
             <BitmapImage x:Key="AppIcon" UriSource="/favicon.ico" />
             
             <!-- ViewModel to View DataTemplates -->
@@ -30,6 +34,11 @@
             <!-- Issue #51: Patient List View -->
             <DataTemplate DataType="{x:Type viewmodels:PatientListViewModel}">
                 <patientViews:PatientListView />
+            </DataTemplate>
+            
+            <!-- Issue #63: Educator List View -->
+            <DataTemplate DataType="{x:Type viewmodels:EducatorListViewModel}">
+                <educatorViews:EducatorListView />
             </DataTemplate>
             
             <!-- Future DataTemplates will be added here as other issues are implemented -->
