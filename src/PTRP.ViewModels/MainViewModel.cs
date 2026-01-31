@@ -195,7 +195,7 @@ public partial class MainViewModel : ViewModelBase
             {
                 Title = "Dashboard",
                 IconKind = PackIconKind.ViewDashboard,
-                // ViewModelType = typeof(DashboardViewModel) // TODO: Issue #50
+                ViewModelType = typeof(DashboardViewModel) // Issue #50: IMPLEMENTED
             },
             new MenuItemViewModel
             {
@@ -533,13 +533,8 @@ public partial class MainViewModel : ViewModelBase
     [RelayCommand]
     private void NavigateToDashboard()
     {
-        // TODO: Implementare DashboardViewModel in Issue #50
-        // Per ora mostra messaggio
-        ShowInfo("Dashboard - In sviluppo (Issue #50)");
-        CurrentPageTitle = "Dashboard";
-        
-        // Quando DashboardViewModel sarà implementato:
-        // _navigationService.NavigateTo<DashboardViewModel>();
+        // Issue #50: Dashboard implementata
+        _navigationService.NavigateTo<DashboardViewModel>();
     }
     
     [RelayCommand]
