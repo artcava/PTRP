@@ -32,17 +32,19 @@
                 </Border>
 
                 <!-- Search & Filters -->
-                <StackPanel Grid.Row="1" Margin="16" Spacing="8">
+                <StackPanel Grid.Row="1" Margin="16">
                     <!-- Search Box -->
                     <TextBox materialDesign:HintAssist.Hint="🔍 Cerca per nome o cognome"
                              Text="{Binding SearchTerm, UpdateSourceTrigger=PropertyChanged}"
-                             Style="{StaticResource MaterialDesignOutlinedTextBox}"/>
+                             Style="{StaticResource MaterialDesignOutlinedTextBox}"
+                             Margin="0,0,0,8" />
 
                     <!-- Filtro Ruolo -->
                     <ComboBox materialDesign:HintAssist.Hint="Filtra per ruolo"
                               ItemsSource="{Binding RoleFilters}"
                               SelectedItem="{Binding SelectedRoleFilter}"
-                              Style="{StaticResource MaterialDesignOutlinedComboBox}"/>
+                              Style="{StaticResource MaterialDesignOutlinedComboBox}"
+                              Margin="0,0,0,8"/>
                 </StackPanel>
 
                 <!-- DataGrid Educatori -->
@@ -112,13 +114,15 @@
                                    Style="{StaticResource MaterialDesignHeadline5TextBlock}"
                                    TextWrapping="Wrap"/>
 
-                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
+                        <StackPanel Grid.Column="1" Orientation="Horizontal">
                             <Button ToolTip="Modifica educatore"
-                                    Style="{StaticResource MaterialDesignIconButton}">
+                                    Style="{StaticResource MaterialDesignIconButton}"
+                                    Margin="0,0,0,4">
                                 <materialDesign:PackIcon Kind="Pencil" Width="20" Height="20"/>
                             </Button>
                             <Button ToolTip="Disattiva educatore"
-                                    Style="{StaticResource MaterialDesignIconButton}">
+                                    Style="{StaticResource MaterialDesignIconButton}"
+                                    Margin="0,0,0,4">
                                 <materialDesign:PackIcon Kind="AccountOff" Width="20" Height="20"/>
                             </Button>
                         </StackPanel>
@@ -132,20 +136,20 @@
                             CornerRadius="4" 
                             Padding="12"
                             Margin="0,0,0,16">
-                        <StackPanel Spacing="6">
-                            <StackPanel Orientation="Horizontal">
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
                                 <TextBlock Text="Ruolo: " FontWeight="SemiBold"/>
                                 <TextBlock Text="{Binding SelectedEducator.Role}"/>
                             </StackPanel>
-                            <StackPanel Orientation="Horizontal">
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
                                 <TextBlock Text="Email: " FontWeight="SemiBold"/>
                                 <TextBlock Text="{Binding SelectedEducator.Email}"/>
                             </StackPanel>
-                            <StackPanel Orientation="Horizontal">
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
                                 <TextBlock Text="Telefono: " FontWeight="SemiBold"/>
                                 <TextBlock Text="{Binding SelectedEducator.Phone}"/>
                             </StackPanel>
-                            <StackPanel Orientation="Horizontal">
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
                                 <TextBlock Text="Data assunzione: " FontWeight="SemiBold"/>
                                 <TextBlock Text="{Binding SelectedEducator.HireDate, StringFormat=dd/MM/yyyy}"/>
                             </StackPanel>
@@ -160,8 +164,8 @@
                             CornerRadius="4" 
                             Padding="12"
                             Margin="0,0,0,16">
-                        <StackPanel Spacing="6">
-                            <StackPanel Orientation="Horizontal">
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
                                 <materialDesign:PackIcon Kind="FileDocument" 
                                                        Width="16" 
                                                        Height="16" 
@@ -170,7 +174,7 @@
                                 <TextBlock Text="Visite registrate: " FontWeight="SemiBold"/>
                                 <TextBlock Text="{Binding SelectedEducator.TotalVisitsThisMonth}"/>
                             </StackPanel>
-                            <StackPanel Orientation="Horizontal">
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
                                 <materialDesign:PackIcon Kind="CalendarClock" 
                                                        Width="16" 
                                                        Height="16" 
@@ -227,10 +231,11 @@
                     </ItemsControl>
 
                     <!-- Azioni Rapide -->
-                    <StackPanel Spacing="8">
+                    <StackPanel>
                         <Button Content="Visualizza Calendario"
                                 Style="{StaticResource MaterialDesignRaisedButton}"
-                                HorizontalAlignment="Stretch">
+                                HorizontalAlignment="Stretch"
+                                 Margin="0,0,0,8">
                             <Button.Content>
                                 <StackPanel Orientation="Horizontal">
                                     <materialDesign:PackIcon Kind="Calendar" 
@@ -243,7 +248,8 @@
                         </Button>
                         <Button Content="Assegna Paziente"
                                 Style="{StaticResource MaterialDesignOutlinedButton}"
-                                HorizontalAlignment="Stretch">
+                                HorizontalAlignment="Stretch"
+                                 Margin="0,0,0,8">
                             <Button.Content>
                                 <StackPanel Orientation="Horizontal">
                                     <materialDesign:PackIcon Kind="AccountPlus" 
