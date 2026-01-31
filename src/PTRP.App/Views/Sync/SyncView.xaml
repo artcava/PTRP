@@ -127,13 +127,12 @@
                                       Style="{StaticResource MaterialDesignOutlinedButton}"
                                       Margin="0,0,0,16"/>
 
-                                <!-- Export Button -->
+                                <!-- Export Button - FIX: Rimosso Style inline -->
                                 <Button Content="Esporta Pacchetto"
-                                      Command="{Binding ExportPackageCommand}"
-                                      Style="{StaticResource MaterialDesignRaisedButton}"
-                                      Height="48">
+                                      Command="{Binding ExportPackageCommand}">
                                     <Button.Style>
                                         <Style TargetType="Button" BasedOn="{StaticResource MaterialDesignRaisedButton}">
+                                            <Setter Property="Height" Value="48"/>
                                             <Style.Triggers>
                                                 <DataTrigger Binding="{Binding IsExporting}" Value="True">
                                                     <Setter Property="IsEnabled" Value="False"/>
@@ -311,13 +310,12 @@
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
 
-                                <!-- Import Button -->
+                                <!-- Import Button - FIX: Rimosso Style inline -->
                                 <Button Content="Importa Dati"
-                                      Command="{Binding ImportPackageCommand}"
-                                      Style="{StaticResource MaterialDesignRaisedButton}"
-                                      Height="48">
+                                      Command="{Binding ImportPackageCommand}">
                                     <Button.Style>
                                         <Style TargetType="Button" BasedOn="{StaticResource MaterialDesignRaisedButton}">
+                                            <Setter Property="Height" Value="48"/>
                                             <Style.Triggers>
                                                 <DataTrigger Binding="{Binding IsImporting}" Value="True">
                                                     <Setter Property="IsEnabled" Value="False"/>
