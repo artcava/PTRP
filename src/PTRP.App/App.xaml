@@ -4,6 +4,7 @@
              xmlns:local="clr-namespace:PTRP.App"
              xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
              xmlns:viewmodels="clr-namespace:PTRP.ViewModels;assembly=PTRP.ViewModels"
+             xmlns:educatorViewModels="clr-namespace:PTRP.ViewModels.Educators;assembly=PTRP.ViewModels"
              xmlns:patientViews="clr-namespace:PTRP.App.Views.Patients"
              xmlns:educatorViews="clr-namespace:PTRP.App.Views.Educators"
              xmlns:converters="clr-namespace:PTRP.App.Converters">
@@ -37,7 +38,7 @@
             </DataTemplate>
             
             <!-- Issue #63: Educator List View -->
-            <DataTemplate DataType="{x:Type viewmodels:EducatorListViewModel}">
+            <DataTemplate DataType="{x:Type educatorViewModels:EducatorListViewModel}">
                 <educatorViews:EducatorListView />
             </DataTemplate>
             
