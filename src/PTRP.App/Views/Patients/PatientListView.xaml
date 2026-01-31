@@ -257,30 +257,24 @@
                     <!-- Action Buttons -->
                     <StackPanel>
                         <Button Style="{StaticResource MaterialDesignRaisedButton}"
-                              Content="Nuovo Progetto Terapeutico"
                               Margin="0,0,0,8">
-                            <Button.Content>
-                                <StackPanel Orientation="Horizontal">
-                                    <materialDesign:PackIcon Kind="FilePlus"
-                                                           Width="20"
-                                                           Height="20"
-                                                           Margin="0,0,8,0"/>
-                                    <TextBlock Text="Nuovo Progetto"/>
-                                </StackPanel>
-                            </Button.Content>
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Kind="FilePlus"
+                                                       Width="20"
+                                                       Height="20"
+                                                       Margin="0,0,8,0"/>
+                                <TextBlock Text="Nuovo Progetto"/>
+                            </StackPanel>
                         </Button>
                         
-                        <Button Style="{StaticResource MaterialDesignOutlinedButton}"
-                              Content="Storico Visite">
-                            <Button.Content>
-                                <StackPanel Orientation="Horizontal">
-                                    <materialDesign:PackIcon Kind="History"
-                                                           Width="20"
-                                                           Height="20"
-                                                           Margin="0,0,8,0"/>
-                                    <TextBlock Text="Storico Visite"/>
-                                </StackPanel>
-                            </Button.Content>
+                        <Button Style="{StaticResource MaterialDesignOutlinedButton}">
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Kind="History"
+                                                       Width="20"
+                                                       Height="20"
+                                                       Margin="0,0,8,0"/>
+                                <TextBlock Text="Storico Visite"/>
+                            </StackPanel>
                         </Button>
                     </StackPanel>
                     
