@@ -6,6 +6,7 @@ using PTRP.ViewModels;
 using PTRP.Data;
 using PTRP.Data.Repositories;
 using PTRP.Data.Repositories.Interfaces;
+using PTRP.App.Views.Patients;
 using System.IO;
 using System.Windows;
 
@@ -101,12 +102,13 @@ namespace PTRP.App
             services.AddSingleton<MainViewModel>();  // Singleton per condividere stato app
             services.AddTransient<FirstRunViewModel>();  // Issue #49: First Run ViewModel
             services.AddTransient<DashboardViewModel>();  // Issue #50: Dashboard ViewModel
+            services.AddTransient<PatientListViewModel>(); // Issue #51: Patient List ViewModel
             // TODO: Registrare qui i ViewModels delle pagine quando verranno creati
-            // services.AddTransient<PatientListViewModel>(); // Issue #51
             // services.AddTransient<SyncViewModel>();        // Issue #52
 
             // Registra le Views
             services.AddScoped<MainWindow>();
+            services.AddScoped<PatientListView>();  // Issue #51: Patient List View
         }
 
         /// <summary>
