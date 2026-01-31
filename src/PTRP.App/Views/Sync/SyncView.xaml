@@ -127,7 +127,7 @@
                                       Style="{StaticResource MaterialDesignOutlinedButton}"
                                       Margin="0,0,0,16"/>
 
-                                <!-- Export Button - FIX: Rimosso Style inline -->
+                                <!-- Export Button -->
                                 <Button Content="Esporta Pacchetto"
                                       Command="{Binding ExportPackageCommand}">
                                     <Button.Style>
@@ -310,7 +310,7 @@
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
 
-                                <!-- Import Button - FIX: Rimosso Style inline -->
+                                <!-- Import Button -->
                                 <Button Content="Importa Dati"
                                       Command="{Binding ImportPackageCommand}">
                                     <Button.Style>
@@ -481,7 +481,7 @@
                                                 </StackPanel>
                                             </StackPanel>
 
-                                            <!-- Type Badge -->
+                                            <!-- Type Badge - FIX: Rimosso Style inline e FontWeight -->
                                             <Border Grid.Column="3"
                                                   CornerRadius="4"
                                                   Padding="8,4"
@@ -498,11 +498,10 @@
                                                         </Style.Triggers>
                                                     </Style>
                                                 </Border.Style>
-                                                <TextBlock Text="{Binding Type}"
-                                                         Style="{StaticResource MaterialDesignCaptionTextBlock}"
-                                                         FontWeight="SemiBold">
+                                                <TextBlock Text="{Binding Type}">
                                                     <TextBlock.Style>
                                                         <Style TargetType="TextBlock" BasedOn="{StaticResource MaterialDesignCaptionTextBlock}">
+                                                            <Setter Property="FontWeight" Value="SemiBold"/>
                                                             <Style.Triggers>
                                                                 <DataTrigger Binding="{Binding Type}" Value="Export">
                                                                     <Setter Property="Foreground" Value="#1976D2"/>
