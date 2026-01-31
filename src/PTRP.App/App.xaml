@@ -5,7 +5,8 @@
              xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
              xmlns:viewmodels="clr-namespace:PTRP.ViewModels;assembly=PTRP.ViewModels"
              xmlns:setupViews="clr-namespace:PTRP.App.Views.Setup"
-             xmlns:dashboardViews="clr-namespace:PTRP.App.Views.Dashboard">
+             xmlns:dashboardViews="clr-namespace:PTRP.App.Views.Dashboard"
+             xmlns:converters="clr-namespace:PTRP.App.Converters">
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
@@ -18,6 +19,7 @@
             
             <!-- Application Resources -->
             <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+            <converters:InverseBooleanConverter x:Key="InverseBooleanConverter" />
             <BitmapImage x:Key="AppIcon" UriSource="/favicon.ico" />
             
             <!-- ViewModel to View DataTemplates -->
