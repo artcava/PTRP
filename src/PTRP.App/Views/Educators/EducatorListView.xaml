@@ -8,38 +8,28 @@
              d:DesignHeight="600" d:DesignWidth="1200">
     <Grid Margin="16">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="2*"/>  <!-- Master: Lista educatori -->
-            <ColumnDefinition Width="16"/>  <!-- Spacer -->
-            <ColumnDefinition Width="1*"/>  <!-- Detail: Dettagli educatore -->
+            <ColumnDefinition Width="2*"/>
+            <ColumnDefinition Width="16"/>
+            <ColumnDefinition Width="1*"/>
         </Grid.ColumnDefinitions>
 
-        <!-- MASTER: Lista Educatori (Sinistra) -->
         <materialDesign:Card Grid.Column="0">
             <Grid>
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>   <!-- Header -->
-                    <RowDefinition Height="Auto"/>   <!-- Search & Filters -->
-                    <RowDefinition Height="*"/>      <!-- DataGrid -->
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
-                <!-- Header -->
-                <Border Grid.Row="0" 
-                        Background="{DynamicResource PrimaryHueMidBrush}" 
-                        Padding="16">
-                    <TextBlock Text="Lista Educatori" 
-                               Style="{StaticResource MaterialDesignHeadline6TextBlock}"
-                               Foreground="White"/>
+                <Border Grid.Row="0" Background="{DynamicResource PrimaryHueMidBrush}" Padding="16">
+                    <TextBlock Text="Lista Educatori" Style="{StaticResource MaterialDesignHeadline6TextBlock}" Foreground="White"/>
                 </Border>
 
-                <!-- Search & Filters -->
                 <StackPanel Grid.Row="1" Margin="16">
-                    <!-- Search Box -->
                     <TextBox materialDesign:HintAssist.Hint="🔍 Cerca per nome o cognome"
                              Text="{Binding SearchTerm, UpdateSourceTrigger=PropertyChanged}"
                              Style="{StaticResource MaterialDesignOutlinedTextBox}"
                              Margin="0,0,0,8" />
-
-                    <!-- Filtro Ruolo -->
                     <ComboBox materialDesign:HintAssist.Hint="Filtra per ruolo"
                               ItemsSource="{Binding RoleFilters}"
                               SelectedItem="{Binding SelectedRoleFilter}"
@@ -47,7 +37,6 @@
                               Margin="0,0,0,8"/>
                 </StackPanel>
 
-                <!-- DataGrid Educatori -->
                 <DataGrid Grid.Row="2"
                           ItemsSource="{Binding Educators}"
                           SelectedItem="{Binding SelectedEducator}"
@@ -61,81 +50,44 @@
                           GridLinesVisibility="Horizontal"
                           Margin="16,0,16,16">
                     <DataGrid.Columns>
-                        <!-- Cognome -->
-                        <DataGridTextColumn Header="Cognome" 
-                                          Binding="{Binding LastName}"
-                                          Width="*"/>
-
-                        <!-- Nome -->
-                        <DataGridTextColumn Header="Nome" 
-                                          Binding="{Binding FirstName}"
-                                          Width="*"/>
-
-                        <!-- Ruolo (Badge colorato) -->
+                        <DataGridTextColumn Header="Cognome" Binding="{Binding LastName}" Width="*"/>
+                        <DataGridTextColumn Header="Nome" Binding="{Binding FirstName}" Width="*"/>
                         <DataGridTemplateColumn Header="Ruolo" Width="Auto">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
-                                    <Border Background="{Binding Role, Converter={StaticResource EducatorRoleToColorConverter}}"
-                                            CornerRadius="12"
-                                            Padding="8,4"
-                                            HorizontalAlignment="Center">
-                                        <TextBlock Text="{Binding RoleDisplay}"
-                                                   Foreground="White"
-                                                   FontSize="11"
-                                                   FontWeight="SemiBold"/>
+                                    <Border Background="{Binding Role, Converter={StaticResource EducatorRoleToColorConverter}}" CornerRadius="12" Padding="8,4" HorizontalAlignment="Center">
+                                        <TextBlock Text="{Binding RoleDisplay}" Foreground="White" FontSize="11" FontWeight="SemiBold"/>
                                     </Border>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
-
-                        <!-- N. Pazienti -->
-                        <DataGridTextColumn Header="Pazienti" 
-                                          Binding="{Binding AssignedPatientsCount}"
-                                          Width="Auto"/>
+                        <DataGridTextColumn Header="Pazienti" Binding="{Binding AssignedPatientsCount}" Width="Auto"/>
                     </DataGrid.Columns>
                 </DataGrid>
             </Grid>
         </materialDesign:Card>
 
-        <!-- DETAIL: Dettagli Educatore (Destra) -->
-        <materialDesign:Card Grid.Column="2"
-                            Visibility="{Binding SelectedEducator, Converter={StaticResource NullToVisibilityConverter}}">
+        <materialDesign:Card Grid.Column="2" Visibility="{Binding SelectedEducator, Converter={StaticResource NullToVisibilityConverter}}">
             <ScrollViewer VerticalScrollBarVisibility="Auto">
                 <StackPanel Margin="16">
-                    <!-- Header: Nome + Azioni -->
                     <Grid Margin="0,0,0,16">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-
-                        <TextBlock Grid.Column="0"
-                                   Text="{Binding SelectedEducator.FullName}"
-                                   Style="{StaticResource MaterialDesignHeadline5TextBlock}"
-                                   TextWrapping="Wrap"/>
-
+                        <TextBlock Grid.Column="0" Text="{Binding SelectedEducator.FullName}" Style="{StaticResource MaterialDesignHeadline5TextBlock}" TextWrapping="Wrap"/>
                         <StackPanel Grid.Column="1" Orientation="Horizontal">
-                            <Button ToolTip="Modifica educatore"
-                                    Style="{StaticResource MaterialDesignIconButton}"
-                                    Margin="0,0,0,4">
+                            <Button ToolTip="Modifica" Style="{StaticResource MaterialDesignIconButton}" Margin="0,0,4,0">
                                 <materialDesign:PackIcon Kind="Pencil" Width="20" Height="20"/>
                             </Button>
-                            <Button ToolTip="Disattiva educatore"
-                                    Style="{StaticResource MaterialDesignIconButton}"
-                                    Margin="0,0,0,4">
+                            <Button ToolTip="Disattiva" Style="{StaticResource MaterialDesignIconButton}">
                                 <materialDesign:PackIcon Kind="AccountOff" Width="20" Height="20"/>
                             </Button>
                         </StackPanel>
                     </Grid>
-
-                    <!-- Sezione Anagrafica -->
-                    <TextBlock Text="Anagrafica" 
-                               Style="{StaticResource MaterialDesignSubtitle1TextBlock}"
-                               Margin="0,0,0,8"/>
-                    <Border Background="{DynamicResource MaterialDesignDivider}" 
-                            CornerRadius="4" 
-                            Padding="12"
-                            Margin="0,0,0,16">
+                    
+                    <TextBlock Text="Anagrafica" Style="{StaticResource MaterialDesignSubtitle1TextBlock}" Margin="0,0,0,8"/>
+                    <Border Background="{DynamicResource MaterialDesignDivider}" CornerRadius="4" Padding="12" Margin="0,0,0,16">
                         <StackPanel>
                             <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
                                 <TextBlock Text="Ruolo: " FontWeight="SemiBold"/>
@@ -149,116 +101,59 @@
                                 <TextBlock Text="Telefono: " FontWeight="SemiBold"/>
                                 <TextBlock Text="{Binding SelectedEducator.Phone}"/>
                             </StackPanel>
-                            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                            <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="Data assunzione: " FontWeight="SemiBold"/>
                                 <TextBlock Text="{Binding SelectedEducator.HireDate, StringFormat=dd/MM/yyyy}"/>
                             </StackPanel>
                         </StackPanel>
                     </Border>
-
-                    <!-- Sezione Statistiche -->
-                    <TextBlock Text="Statistiche Mese Corrente" 
-                               Style="{StaticResource MaterialDesignSubtitle1TextBlock}"
-                               Margin="0,0,0,8"/>
-                    <Border Background="{DynamicResource MaterialDesignDivider}" 
-                            CornerRadius="4" 
-                            Padding="12"
-                            Margin="0,0,0,16">
+                    
+                    <TextBlock Text="Statistiche Mese Corrente" Style="{StaticResource MaterialDesignSubtitle1TextBlock}" Margin="0,0,0,8"/>
+                    <Border Background="{DynamicResource MaterialDesignDivider}" CornerRadius="4" Padding="12" Margin="0,0,0,16">
                         <StackPanel>
                             <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                                <materialDesign:PackIcon Kind="FileDocument" 
-                                                       Width="16" 
-                                                       Height="16" 
-                                                       VerticalAlignment="Center"
-                                                       Margin="0,0,8,0"/>
+                                <materialDesign:PackIcon Kind="FileDocument" Width="16" Height="16" VerticalAlignment="Center" Margin="0,0,8,0"/>
                                 <TextBlock Text="Visite registrate: " FontWeight="SemiBold"/>
                                 <TextBlock Text="{Binding SelectedEducator.TotalVisitsThisMonth}"/>
                             </StackPanel>
-                            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                                <materialDesign:PackIcon Kind="CalendarClock" 
-                                                       Width="16" 
-                                                       Height="16" 
-                                                       VerticalAlignment="Center"
-                                                       Margin="0,0,8,0"/>
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Kind="CalendarClock" Width="16" Height="16" VerticalAlignment="Center" Margin="0,0,8,0"/>
                                 <TextBlock Text="Appuntamenti programmati: " FontWeight="SemiBold"/>
                                 <TextBlock Text="{Binding SelectedEducator.ScheduledAppointments}"/>
                             </StackPanel>
                         </StackPanel>
                     </Border>
-
-                    <!-- Sezione Pazienti Assegnati -->
-                    <TextBlock Text="Pazienti Assegnati" 
-                               Style="{StaticResource MaterialDesignSubtitle1TextBlock}"
-                               Margin="0,0,0,8"/>
-                    <ItemsControl ItemsSource="{Binding SelectedEducator.AssignedPatients}"
-                                  Margin="0,0,0,16">
+                    
+                    <TextBlock Text="Pazienti Assegnati" Style="{StaticResource MaterialDesignSubtitle1TextBlock}" Margin="0,0,0,8"/>
+                    <ItemsControl ItemsSource="{Binding SelectedEducator.AssignedPatients}" Margin="0,0,0,16">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Border Background="{DynamicResource MaterialDesignDivider}" 
-                                        CornerRadius="4" 
-                                        Padding="12"
-                                        Margin="0,0,0,8">
+                                <Border Background="{DynamicResource MaterialDesignDivider}" CornerRadius="4" Padding="12" Margin="0,0,0,8">
                                     <StackPanel>
-                                        <!-- Nome Paziente -->
-                                        <TextBlock Text="{Binding PatientFullName}" 
-                                                   FontWeight="SemiBold"
-                                                   FontSize="14"/>
-                                        
-                                        <!-- Progetto -->
-                                        <TextBlock Text="{Binding ProjectTitle}" 
-                                                   FontSize="12"
-                                                   Foreground="{DynamicResource MaterialDesignBodyLight}"
-                                                   Margin="0,4,0,0"/>
-                                        
-                                        <!-- Prossimo Appuntamento -->
-                                        <StackPanel Orientation="Horizontal" 
-                                                    Margin="0,4,0,0"
-                                                    Visibility="{Binding NextAppointmentDate, Converter={StaticResource NullToVisibilityConverter}}">
-                                            <materialDesign:PackIcon Kind="CalendarClock" 
-                                                                   Width="14" 
-                                                                   Height="14" 
-                                                                   VerticalAlignment="Center"
-                                                                   Foreground="{DynamicResource PrimaryHueMidBrush}"
-                                                                   Margin="0,0,6,0"/>
-                                            <TextBlock Text="{Binding NextAppointmentDisplay}" 
-                                                       FontSize="12"
-                                                       Foreground="{DynamicResource PrimaryHueMidBrush}"/>
+                                        <TextBlock Text="{Binding PatientFullName}" FontWeight="SemiBold" FontSize="14"/>
+                                        <TextBlock Text="{Binding ProjectTitle}" FontSize="12" Foreground="{DynamicResource MaterialDesignBodyLight}" Margin="0,4,0,0"/>
+                                        <StackPanel Orientation="Horizontal" Margin="0,4,0,0" Visibility="{Binding NextAppointmentDate, Converter={StaticResource NullToVisibilityConverter}}">
+                                            <materialDesign:PackIcon Kind="CalendarClock" Width="14" Height="14" VerticalAlignment="Center" Foreground="{DynamicResource PrimaryHueMidBrush}" Margin="0,0,6,0"/>
+                                            <TextBlock Text="{Binding NextAppointmentDisplay}" FontSize="12" Foreground="{DynamicResource PrimaryHueMidBrush}"/>
                                         </StackPanel>
                                     </StackPanel>
                                 </Border>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
-
-                    <!-- Azioni Rapide -->
+                    
                     <StackPanel>
-                        <Button Content="Visualizza Calendario"
-                                Style="{StaticResource MaterialDesignRaisedButton}"
-                                HorizontalAlignment="Stretch"
-                                 Margin="0,0,0,8">
-                            <Button.Content>
-                                <StackPanel Orientation="Horizontal">
-                                    <materialDesign:PackIcon Kind="Calendar" 
-                                                           Width="20" 
-                                                           Height="20" 
-                                                           Margin="0,0,8,0"/>
-                                    <TextBlock Text="Visualizza Calendario"/>
-                                </StackPanel>
-                            </Button.Content>
+                        <Button Style="{StaticResource MaterialDesignRaisedButton}" HorizontalAlignment="Stretch" Margin="0,0,0,8">
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Kind="Calendar" Width="20" Height="20" Margin="0,0,8,0"/>
+                                <TextBlock Text="Visualizza Calendario"/>
+                            </StackPanel>
                         </Button>
-                        <Button Content="Assegna Paziente"
-                                Style="{StaticResource MaterialDesignOutlinedButton}"
-                                HorizontalAlignment="Stretch"
-                                 Margin="0,0,0,8">
-                            <Button.Content>
-                                <StackPanel Orientation="Horizontal">
-                                    <materialDesign:PackIcon Kind="AccountPlus" 
-                                                           Width="20" 
-                                                           Height="20" 
-                                                           Margin="0,0,8,0"/>
-                                    <TextBlock Text="Assegna Paziente"/>
-                                </StackPanel>
-                            </Button.Content>
+                        <Button Style="{StaticResource MaterialDesignOutlinedButton}" HorizontalAlignment="Stretch">
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Kind="AccountPlus" Width="20" Height="20" Margin="0,0,8,0"/>
+                                <TextBlock Text="Assegna Paziente"/>
+                            </StackPanel>
                         </Button>
                     </StackPanel>
                 </StackPanel>
