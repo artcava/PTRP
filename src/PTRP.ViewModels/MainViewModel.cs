@@ -38,7 +38,7 @@ public partial class MainViewModel : ViewModelBase
     /// Titolo della pagina corrente (per TopBar)
     /// </summary>
     [ObservableProperty]
-    private string _currentPageTitle = "Dashboard";
+    private string _currentPageTitle = "Pazienti";
     
     #endregion
     
@@ -165,9 +165,10 @@ public partial class MainViewModel : ViewModelBase
         // Initialize last sync (placeholder)
         UpdateLastSyncTime(null);
         
-        // Navigate to Dashboard by default
+        // Navigate to PatientListView by default (Dashboard not yet implemented)
         // NOTE: First-run detection is handled in App.xaml.cs OnStartup
-        NavigateToDashboard();
+        // TODO: Restore NavigateToDashboard() when Issue #50 is implemented
+        NavigateToPatients();
     }
     
     #region Navigation Menu Methods
@@ -195,13 +196,14 @@ public partial class MainViewModel : ViewModelBase
             {
                 Title = "Dashboard",
                 IconKind = PackIconKind.ViewDashboard,
-                ViewModelType = typeof(DashboardViewModel) // Issue #50: IMPLEMENTED
+                // TODO: Issue #50 - Uncomment when DashboardViewModel is implemented
+                // ViewModelType = typeof(DashboardViewModel)
             },
             new MenuItemViewModel
             {
                 Title = "Pazienti",
                 IconKind = PackIconKind.AccountGroup,
-                // ViewModelType = typeof(PatientListViewModel) // TODO: Issue #51
+                ViewModelType = typeof(PatientListViewModel) // Issue #51: IMPLEMENTED
             },
             new MenuItemViewModel
             {
@@ -275,11 +277,22 @@ public partial class MainViewModel : ViewModelBase
     /// <summary>
     /// Gestisce il cambio di ViewModel corrente dal NavigationService
     /// </summary>
-    private void OnCurrentViewModelChanged(object? sender, object? viewModel)
+    private async void OnCurrentViewModelChanged(object? sender, object? viewModel)
     {
         // Cast to ViewModelBase (NavigationService returns object? to avoid circular dependency)
         CurrentViewModel = viewModel as ViewModelBase;
         CurrentPageTitle = CurrentViewModel?.DisplayName ?? "PTRP";
+        
+        // Issue #51: Load patients when navigating to PatientListView
+        if (viewModel is PatientListViewModel patientListViewModel)
+        {
+            await patientListViewModel.LoadPatientsAsync();
+        }
+        // TODO: Issue #50 - Uncomment when DashboardViewModel is implemented
+        // else if (viewModel is DashboardViewModel dashboardViewModel)
+        // {
+        //     await dashboardViewModel.LoadDataAsync();
+        // }
     }
     
     /// <summary>
@@ -533,20 +546,19 @@ public partial class MainViewModel : ViewModelBase
     [RelayCommand]
     private void NavigateToDashboard()
     {
-        // Issue #50: Dashboard implementata
-        _navigationService.NavigateTo<DashboardViewModel>();
+        // TODO: Issue #50 - Uncomment when DashboardViewModel is implemented
+        // _navigationService.NavigateTo<DashboardViewModel>();
+        
+        // Temporary: Show placeholder message
+        ShowInfoMessage("Dashboard - In sviluppo (Issue #50)");
+        CurrentPageTitle = "Dashboard";
     }
     
     [RelayCommand]
     private void NavigateToPatients()
     {
-        // TODO: Implementare PatientListViewModel in Issue #51
-        // Per ora mostra messaggio
-        ShowInfo("Lista Pazienti - In sviluppo (Issue #51)");
-        CurrentPageTitle = "Pazienti";
-        
-        // Quando PatientListViewModel sarà implementato:
-        // _navigationService.NavigateTo<PatientListViewModel>();
+        // Issue #51: PatientListViewModel implementato
+        _navigationService.NavigateTo<PatientListViewModel>();
     }
     
     [RelayCommand]

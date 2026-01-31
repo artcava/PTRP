@@ -6,6 +6,7 @@ using PTRP.ViewModels;
 using PTRP.Data;
 using PTRP.Data.Repositories;
 using PTRP.Data.Repositories.Interfaces;
+using PTRP.App.Views.Patients;
 using System.IO;
 using System.Windows;
 
@@ -45,25 +46,30 @@ namespace PTRP.App
             var mainViewModel = _serviceProvider.GetRequiredService<MainViewModel>();
             mainWindow.DataContext = mainViewModel;
 
+            // TODO: Issue #49 & #50 - Uncomment when FirstRunViewModel and DashboardViewModel are implemented
             // Controlla se è primo avvio (Issue #49: First Run Detection)
-            var configService = _serviceProvider.GetRequiredService<IConfigurationService>();
-            var isConfigured = await configService.IsConfiguredAsync();
+            // var configService = _serviceProvider.GetRequiredService<IConfigurationService>();
+            // var isConfigured = await configService.IsConfiguredAsync();
 
-            if (!isConfigured)
-            {
-                // Mostra schermata primo avvio
-                var firstRunViewModel = _serviceProvider.GetRequiredService<FirstRunViewModel>();
-                mainViewModel.CurrentViewModel = firstRunViewModel;
-                mainViewModel.ShowInfoMessage("Importa un pacchetto di configurazione per iniziare");
-            }
-            else
-            {
-                // Applicazione già configurata - carica dashboard (Issue #50)
-                var dashboardViewModel = _serviceProvider.GetRequiredService<DashboardViewModel>();
-                await dashboardViewModel.LoadDataAsync();
-                mainViewModel.CurrentViewModel = dashboardViewModel;
-                mainViewModel.ShowInfoMessage("Benvenuto nella Dashboard!");
-            }
+            // if (!isConfigured)
+            // {
+            //     // Mostra schermata primo avvio
+            //     var firstRunViewModel = _serviceProvider.GetRequiredService<FirstRunViewModel>();
+            //     mainViewModel.CurrentViewModel = firstRunViewModel;
+            //     mainViewModel.ShowInfoMessage("Importa un pacchetto di configurazione per iniziare");
+            // }
+            // else
+            // {
+            //     // Applicazione già configurata - carica dashboard (Issue #50)
+            //     var dashboardViewModel = _serviceProvider.GetRequiredService<DashboardViewModel>();
+            //     await dashboardViewModel.LoadDataAsync();
+            //     mainViewModel.CurrentViewModel = dashboardViewModel;
+            //     mainViewModel.ShowInfoMessage("Benvenuto nella Dashboard!");
+            // }
+
+            // TEMPORARY: Navigate to PatientListView until Issues #49 and #50 are implemented
+            // MainViewModel constructor already handles this, so just show the window
+            mainViewModel.ShowSuccessMessage("Benvenuto in PTRP - Lista Pazienti");
 
             mainWindow.Show();
         }
@@ -99,14 +105,17 @@ namespace PTRP.App
 
             // Registra i ViewModels
             services.AddSingleton<MainViewModel>();  // Singleton per condividere stato app
-            services.AddTransient<FirstRunViewModel>();  // Issue #49: First Run ViewModel
-            services.AddTransient<DashboardViewModel>();  // Issue #50: Dashboard ViewModel
+            // TODO: Issue #49 - Uncomment when implemented
+            // services.AddTransient<FirstRunViewModel>();  // Issue #49: First Run ViewModel
+            // TODO: Issue #50 - Uncomment when implemented
+            // services.AddTransient<DashboardViewModel>();  // Issue #50: Dashboard ViewModel
+            services.AddTransient<PatientListViewModel>(); // Issue #51: Patient List ViewModel
             // TODO: Registrare qui i ViewModels delle pagine quando verranno creati
-            // services.AddTransient<PatientListViewModel>(); // Issue #51
             // services.AddTransient<SyncViewModel>();        // Issue #52
 
             // Registra le Views
             services.AddScoped<MainWindow>();
+            services.AddScoped<PatientListView>();  // Issue #51: Patient List View
         }
 
         /// <summary>

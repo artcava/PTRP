@@ -4,8 +4,7 @@
              xmlns:local="clr-namespace:PTRP.App"
              xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
              xmlns:viewmodels="clr-namespace:PTRP.ViewModels;assembly=PTRP.ViewModels"
-             xmlns:setupViews="clr-namespace:PTRP.App.Views.Setup"
-             xmlns:dashboardViews="clr-namespace:PTRP.App.Views.Dashboard"
+             xmlns:patientViews="clr-namespace:PTRP.App.Views.Patients"
              xmlns:converters="clr-namespace:PTRP.App.Converters">
     <Application.Resources>
         <ResourceDictionary>
@@ -19,32 +18,22 @@
             
             <!-- Application Resources -->
             <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
-            <converters:InverseBooleanConverter x:Key="InverseBooleanConverter" />
+            
+            <!-- Issue #51: Patient List Converters -->
+            <converters:ProjectStateToColorConverter x:Key="ProjectStateToColorConverter" />
+            <converters:NullToVisibilityConverter x:Key="NullToVisibilityConverter" />
+            
             <BitmapImage x:Key="AppIcon" UriSource="/favicon.ico" />
             
             <!-- ViewModel to View DataTemplates -->
-            <!-- Issue #50: Dashboard View -->
-            <DataTemplate DataType="{x:Type viewmodels:DashboardViewModel}">
-                <dashboardViews:DashboardView />
-            </DataTemplate>
             
-            <!-- Issue #49: First Run Setup View -->
-            <DataTemplate DataType="{x:Type viewmodels:FirstRunViewModel}">
-                <setupViews:FirstRunView />
-            </DataTemplate>
-            
-            <!-- TODO: Add more DataTemplates as ViewModels are implemented -->
-            <!-- Issue #51: Patient List View
+            <!-- Issue #51: Patient List View -->
             <DataTemplate DataType="{x:Type viewmodels:PatientListViewModel}">
                 <patientViews:PatientListView />
             </DataTemplate>
-            -->
             
-            <!-- Issue #52: Sync View
-            <DataTemplate DataType="{x:Type viewmodels:SyncViewModel}">
-                <syncViews:SyncView />
-            </DataTemplate>
-            -->
+            <!-- Future DataTemplates will be added here as other issues are implemented -->
+            
         </ResourceDictionary>
     </Application.Resources>
 </Application>
