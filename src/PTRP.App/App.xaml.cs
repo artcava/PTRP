@@ -58,9 +58,11 @@ namespace PTRP.App
             }
             else
             {
-                // Applicazione già configurata - carica dashboard normale
-                // TODO: Navigare a DashboardViewModel quando sarà implementato (Issue #50)
-                mainViewModel.ShowInfoMessage("Benvenuto! Dashboard in sviluppo (Issue #50)");
+                // Applicazione già configurata - carica dashboard (Issue #50)
+                var dashboardViewModel = _serviceProvider.GetRequiredService<DashboardViewModel>();
+                await dashboardViewModel.LoadDataAsync();
+                mainViewModel.CurrentViewModel = dashboardViewModel;
+                mainViewModel.ShowInfoMessage("Benvenuto nella Dashboard!");
             }
 
             mainWindow.Show();
@@ -98,8 +100,8 @@ namespace PTRP.App
             // Registra i ViewModels
             services.AddSingleton<MainViewModel>();  // Singleton per condividere stato app
             services.AddTransient<FirstRunViewModel>();  // Issue #49: First Run ViewModel
+            services.AddTransient<DashboardViewModel>();  // Issue #50: Dashboard ViewModel
             // TODO: Registrare qui i ViewModels delle pagine quando verranno creati
-            // services.AddTransient<DashboardViewModel>();  // Issue #50
             // services.AddTransient<PatientListViewModel>(); // Issue #51
             // services.AddTransient<SyncViewModel>();        // Issue #52
 
