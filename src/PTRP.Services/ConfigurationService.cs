@@ -23,7 +23,7 @@ public class ConfigurationService : IConfigurationService
     /// Controlla se l'applicazione è già configurata
     /// Verifica:
     /// 1. Database può connettersi
-    /// 2. Esiste almeno un operatore con IsCurrentUser = true
+    /// 2. Esiste almeno un educatore con IsCurrentUser = true
     /// </summary>
     public async Task<bool> IsConfiguredAsync()
     {
@@ -34,9 +34,9 @@ public class ConfigurationService : IConfigurationService
             if (!canConnect)
                 return false;
             
-            // Controlla se esiste operatore corrente (profilo locale)
-            var hasCurrentUser = await _dbContext.Operators
-                .AnyAsync(o => o.IsCurrentUser);
+            // Controlla se esiste educatore corrente (profilo locale)
+            var hasCurrentUser = await _dbContext.ProfessionalEducators
+                .AnyAsync(pe => pe.IsCurrentUser);
             
             return hasCurrentUser;
         }
@@ -122,7 +122,7 @@ public class ConfigurationService : IConfigurationService
         
         // TODO: Popolare database con dati dal pacchetto
         // Per pacchetto admin:
-        //   - Lista operatori
+        //   - Lista educatori
         //   - Lista pazienti
         //   - Progetti terapeutici
         // Per pacchetto appointments:
@@ -135,13 +135,13 @@ public class ConfigurationService : IConfigurationService
     
     /// <summary>
     /// Configura profilo utente locale
-    /// Crea operatore con flag IsCurrentUser = true
+    /// Crea educatore con flag IsCurrentUser = true
     /// </summary>
     public async Task SetupUserProfileAsync(ConfigurationPackage config)
     {
         // Verifica che non esista già un utente corrente
-        var existingCurrentUser = await _dbContext.Operators
-            .FirstOrDefaultAsync(o => o.IsCurrentUser);
+        var existingCurrentUser = await _dbContext.ProfessionalEducators
+            .FirstOrDefaultAsync(pe => pe.IsCurrentUser);
         
         if (existingCurrentUser != null)
         {
@@ -149,23 +149,26 @@ public class ConfigurationService : IConfigurationService
                 "Esiste già un profilo utente configurato");
         }
         
-        // Crea nuovo operatore per profilo locale
-        var currentUser = new Operator
+        // Crea nuovo educatore per profilo locale
+        var currentUser = new ProfessionalEducatorModel
         {
             Id = Guid.NewGuid(),
             FirstName = config.UserName,
             LastName = string.Empty,
+            Email = string.Empty,
+            PhoneNumber = string.Empty,
+            DateOfBirth = DateTime.Now.AddYears(-30), // Default
+            Specialization = config.UserRole,
+            LicenseNumber = string.Empty,
+            HireDate = DateTime.Now,
+            Status = "Active",
             Role = config.UserRole,
             IsCurrentUser = true,
-            Email = string.Empty,
-            Phone = string.Empty,
-            IsActive = true,
             CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow,
-            SyncStatus = SyncStatus.Synced
+            UpdatedAt = DateTime.UtcNow
         };
         
-        _dbContext.Operators.Add(currentUser);
+        _dbContext.ProfessionalEducators.Add(currentUser);
         await _dbContext.SaveChangesAsync();
     }
     
@@ -174,8 +177,8 @@ public class ConfigurationService : IConfigurationService
     /// </summary>
     public async Task<string> GetCurrentUserRoleAsync()
     {
-        var currentUser = await _dbContext.Operators
-            .FirstOrDefaultAsync(o => o.IsCurrentUser);
+        var currentUser = await _dbContext.ProfessionalEducators
+            .FirstOrDefaultAsync(pe => pe.IsCurrentUser);
         
         return currentUser?.Role ?? "Coordinatore";
     }
@@ -185,8 +188,8 @@ public class ConfigurationService : IConfigurationService
     /// </summary>
     public async Task<string> GetCurrentUserFullNameAsync()
     {
-        var currentUser = await _dbContext.Operators
-            .FirstOrDefaultAsync(o => o.IsCurrentUser);
+        var currentUser = await _dbContext.ProfessionalEducators
+            .FirstOrDefaultAsync(pe => pe.IsCurrentUser);
         
         if (currentUser == null)
             return "Utente";
