@@ -6,6 +6,7 @@
              xmlns:viewmodels="clr-namespace:PTRP.ViewModels;assembly=PTRP.ViewModels"
              xmlns:setupViews="clr-namespace:PTRP.App.Views.Setup"
              xmlns:dashboardViews="clr-namespace:PTRP.App.Views.Dashboard"
+             xmlns:patientViews="clr-namespace:PTRP.App.Views.Patients"
              xmlns:converters="clr-namespace:PTRP.App.Converters">
     <Application.Resources>
         <ResourceDictionary>
@@ -35,12 +36,10 @@
                 <setupViews:FirstRunView />
             </DataTemplate>
             
-            <!-- TODO: Add more DataTemplates as ViewModels are implemented -->
-            <!-- Issue #51: Patient List View
+            <!-- Issue #51: Patient List View -->
             <DataTemplate DataType="{x:Type viewmodels:PatientListViewModel}">
                 <patientViews:PatientListView />
             </DataTemplate>
-            -->
             
             <!-- Issue #52: Sync View
             <DataTemplate DataType="{x:Type viewmodels:SyncViewModel}">
