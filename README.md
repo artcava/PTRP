@@ -46,134 +46,104 @@ L'applicazione opera con **paradigma offline-first**: ogni nodo (Coordinatore e 
 ```
 PTRP/
 ├── src/
-│   ├── PTRP.Core/                        # Libreria Core - Entità e Logica Business
-│   │   ├── Models/                       # Entità di dominio
-│   │   │   ├── Entities/                 # Entità base del dominio
-│   │   │   │   ├── Patient.cs            # Anagrafica paziente
-│   │   │   │   ├── TherapeuticProject.cs # Progetto terapeutico con PTRP
-│   │   │   │   ├── ScheduledVisit.cs     # Visita programmata
-│   │   │   │   ├── ActualVisit.cs        # Visita registrata con VisitSource
-│   │   │   │   ├── Operator.cs           # Educatore/Coordinatore
-│   │   │   │   └── ProjectPhase.cs       # Fase progetto (Apertura, Verifica, etc.)
-│   │   │   ├── Enums/                    # Enumerazioni
-│   │   │   │   ├── PatientStatus.cs      # Active, Suspended, Deceased
-│   │   │   │   ├── ProjectStatus.cs      # InProgress, Suspended, Concluded
-│   │   │   │   ├── VisitSource.cs        # EducatorImport, CoordinatorDirect
-│   │   │   │   └── PhaseType.cs          # Opening, MidReview, FinalReview, etc.
-│   │   │   └── DTOs/                     # Data Transfer Objects
-│   │   │       ├── PatientDto.cs
-│   │   │       ├── ProjectDto.cs
-│   │   │       └── SyncPacketDto.cs      # Pacchetto di scambio crittografato
-│   │   ├── Interfaces/                   # Contratti servizi
-│   │   │   ├── IPatientService.cs
-│   │   │   ├── IProjectService.cs
-│   │   │   ├── IVisitService.cs
-│   │   │   ├── ISyncService.cs
-│   │   │   └── IEncryptionService.cs
-│   │   └── Exceptions/                   # Eccezioni custom
-│   │       ├── PatientNotFoundException.cs
-│   │       ├── SyncConflictException.cs
-│   │       └── ValidationException.cs
+│   ├── PTRP.Models/                  # Modelli di Dominio
+│   │   ├── PatientModel.cs           # Anagrafica paziente
+│   │   ├── TherapyProjectModel.cs    # Progetto terapeutico con PTRP
+│   │   └── ProfessionalEducatorModel.cs  # Educatore/Coordinatore
 │   │
-│   ├── PTRP.Infrastructure/              # Data Access e Servizi Esterni
-│   │   ├── Data/
-│   │   │   ├── PtrpDbContext.cs          # SQLite DbContext con crittografia
-│   │   │   ├── Configurations/           # Entity configurations (Fluent API)
-│   │   │   │   ├── PatientConfiguration.cs
-│   │   │   │   ├── ProjectConfiguration.cs
-│   │   │   │   └── VisitConfiguration.cs
-│   │   │   └── Migrations/               # Schema migrations
-│   │   ├── Repositories/                 # Data Access Pattern
-│   │   │   ├── PatientRepository.cs
-│   │   │   ├── ProjectRepository.cs
-│   │   │   ├── VisitRepository.cs
-│   │   │   └── OperatorRepository.cs
-│   │   ├── Services/                     # Implementazioni servizi
-│   │   │   ├── PatientService.cs
-│   │   │   ├── ProjectService.cs
-│   │   │   ├── VisitService.cs
-│   │   │   ├── ConflictResolutionService.cs  # Master-Slave sync logic
-│   │   │   ├── SyncPacketService.cs          # Crittografia + HMAC
-│   │   │   ├── DataMergeService.cs           # UPSERT logic
-│   │   │   └── SchemaVersioningService.cs    # Migration handling
-│   │   ├── Security/
-│   │   │   ├── EncryptionService.cs          # AES database
-│   │   │   └── HmacSigningService.cs         # Firma pacchetti
-│   │   └── Seeding/
-│   │       └── DbContextSeeder.cs            # Data seeding da registro pazienti
+│   ├── PTRP.Data/                    # Data Access Layer
+│   │   ├── PTRPDbContext.cs          # SQLite DbContext con crittografia
+│   │   └── Repositories/             # Repository Pattern
+│   │       ├── PatientRepository.cs
+│   │       ├── TherapyProjectRepository.cs
+│   │       └── EducatorRepository.cs
 │   │
-│   ├── PTRP.Application/                 # Application Layer - ViewModels
-│   │   ├── ViewModels/                   # ViewModel - Logica presentazione
-│   │   │   ├── MainViewModel.cs
+│   ├── PTRP.Services/                # Business Logic Layer
+│   │   ├── PatientService.cs         # Gestione pazienti
+│   │   ├── TherapyProjectService.cs  # Gestione progetti terapeutici
+│   │   ├── EducatorService.cs        # Gestione educatori
+│   │   ├── NavigationService.cs      # Navigazione tra viste
+│   │   ├── ConfigurationService.cs   # Configurazione applicazione
+│   │   └── Interfaces/               # Contratti servizi
+│   │       ├── IPatientService.cs
+│   │       ├── ITherapyProjectService.cs
+│   │       ├── IEducatorService.cs
+│   │       ├── INavigationService.cs
+│   │       └── IConfigurationService.cs
+│   │
+│   ├── PTRP.ViewModels/              # Presentation Logic (MVVM)
+│   │   ├── MainViewModel.cs          # ViewModel principale
+│   │   ├── MainWindowViewModel.cs    # ViewModel finestra principale
+│   │   ├── DashboardViewModel.cs     # Dashboard overview
+│   │   ├── FirstRunViewModel.cs      # Configurazione primo avvio
+│   │   ├── ViewModelBase.cs          # Base class per ViewModels
+│   │   ├── Patients/                 # ViewModels pazienti
 │   │   │   ├── PatientListViewModel.cs
-│   │   │   ├── PatientDetailViewModel.cs
+│   │   │   └── PatientDetailViewModel.cs
+│   │   ├── Projects/                 # ViewModels progetti
 │   │   │   ├── ProjectListViewModel.cs
-│   │   │   ├── ProjectDetailViewModel.cs
-│   │   │   ├── VisitListViewModel.cs
-│   │   │   └── SyncViewModel.cs              # Gestione sincronizzazione
-│   │   ├── Commands/                     # RelayCommand implementations
-│   │   ├── Converters/                   # Value Converters per XAML
-│   │   │   ├── StatusToColorConverter.cs
-│   │   │   ├── VisitSourceToBadgeConverter.cs
-│   │   │   └── DateTimeToStringConverter.cs
-│   │   └── Validators/                   # Validazione input
-│   │       ├── PatientValidator.cs
-│   │       └── ProjectValidator.cs
+│   │   │   └── ProjectDetailViewModel.cs
+│   │   └── Educators/                # ViewModels educatori
+│   │       ├── EducatorListViewModel.cs
+│   │       └── EducatorDetailViewModel.cs
 │   │
-│   └── PTRP.Presentation/                # Presentation Layer - WPF UI
-│       ├── Views/                        # Viste XAML (UserControls)
-│       │   ├── PatientListView.xaml
-│       │   ├── PatientDetailView.xaml
-│       │   ├── ProjectListView.xaml
-│       │   ├── ProjectDetailView.xaml
-│       │   ├── VisitListView.xaml
-│       │   └── SyncStatusView.xaml
-│       ├── Themes/                       # Material Design resources
-│       │   ├── Generic.xaml
-│       │   └── Colors.xaml
-│       ├── App.xaml / App.xaml.cs        # Application entry point
+│   └── PTRP.App/                     # WPF Application Layer
+│       ├── App.xaml / App.xaml.cs    # Application entry point
 │       ├── MainWindow.xaml / MainWindow.xaml.cs
-│       └── DependencyInjection.cs        # DI configuration
+│       ├── Views/                    # Viste XAML (UserControls)
+│       │   ├── DashboardView.xaml
+│       │   ├── FirstRunView.xaml
+│       │   ├── Patients/
+│       │   │   ├── PatientListView.xaml
+│       │   │   └── PatientDetailView.xaml
+│       │   ├── Projects/
+│       │   │   ├── ProjectListView.xaml
+│       │   │   └── ProjectDetailView.xaml
+│       │   └── Educators/
+│       │       ├── EducatorListView.xaml
+│       │       └── EducatorDetailView.xaml
+│       ├── Converters/               # Value Converters per XAML
+│       │   ├── BoolToVisibilityConverter.cs
+│       │   ├── StatusToColorConverter.cs
+│       │   └── DateTimeConverter.cs
+│       └── Models/                   # UI-specific models (es. NavigationItem)
 │
 ├── tests/
-│   ├── PTRP.UnitTests/                   # Unit tests
-│   │   ├── Core/
-│   │   │   ├── Models/
-│   │   │   └── Validators/
-│   │   ├── Infrastructure/
-│   │   │   ├── Services/
-│   │   │   └── Repositories/
-│   │   └── Application/
-│   │       └── ViewModels/
-│   └── PTRP.IntegrationTests/            # Integration tests
+│   ├── PTRP.UnitTests/               # Unit tests
+│   │   ├── Models/
+│   │   ├── Services/
+│   │   ├── ViewModels/
+│   │   └── Repositories/
+│   └── PTRP.IntegrationTests/        # Integration tests
 │       ├── Database/
-│       ├── Sync/                         # Test sincronizzazione e conflict resolution
-│       └── Security/                     # Test crittografia e HMAC
+│       ├── Services/
+│       └── Security/
 │
 ├── docs/
-│   ├── ARCHITECTURE.md                   # Pattern MVVM e offline-first
-│   ├── SETUP-GUIDE.md                    # Setup Visual Studio
-│   ├── DATABASE.md                       # Schema SQLite, crittografia, ER diagram
-│   ├── SYNC-PROTOCOL.md                  # Protocollo sincronizzazione
-│   ├── SECURITY.md                       # Crittografia, HMAC, key management
-│   ├── API.md                            # Services API
-│   ├── WORKFLOW.md                       # Workflow applicativo
-│   ├── DEPLOYMENT.md                     # Velopack, distribution, updates
-│   ├── DEVELOPMENT.md                    # Guida sviluppatori, Git workflow
-│   ├── PROGETTO_PTRP_SYNC.md             # Analisi tecnica architettura
-│   └── SEED.md                           # Data seeding strategy
+│   ├── ARCHITECTURE.md               # Pattern MVVM e offline-first
+│   ├── SETUP-GUIDE.md                # Setup Visual Studio
+│   ├── DATABASE.md                   # Schema SQLite, crittografia, ER diagram
+│   ├── SYNC-PROTOCOL.md              # Protocollo sincronizzazione
+│   ├── SECURITY.md                   # Crittografia, HMAC, key management
+│   ├── API.md                        # Services API
+│   ├── WORKFLOW.md                   # Workflow applicativo
+│   ├── DEPLOYMENT.md                 # Velopack, distribution, updates
+│   ├── DEVELOPMENT.md                # Guida sviluppatori, Git workflow
+│   ├── PROGETTO_PTRP_SYNC.md         # Analisi tecnica architettura
+│   └── SEED.md                       # Data seeding strategy
 │
 ├── .github/
 │   └── workflows/
-│       ├── validate.yml                  # Unit tests, SAST scan
-│       ├── security.yml                  # Security checks (chiavi, credenziali)
-│       └── deploy-velopack.yml           # Compile + Velopack release
+│       ├── validate.yml              # Unit tests, SAST scan
+│       ├── security.yml              # Security checks (chiavi, credenziali)
+│       └── deploy-velopack.yml       # Compile + Velopack release
 │
 └── [config files]
     ├── .gitignore
     ├── .editorconfig
-    ├── PTRP.sln
-    └── Directory.Build.props
+    ├── PTRP.sln                  # Solution file (in src/)
+    ├── velopack.json
+    └── LICENSE
 ```
 
 ---
@@ -195,12 +165,12 @@ PTRP/
 
 2. **Apri solution in Visual Studio**
    ```bash
-   start PTRP.sln
+   start src/PTRP.sln
    ```
 
 3. **Restore NuGet packages**
    - Visual Studio lo farà automaticamente
-   - Oppure: `dotnet restore`
+   - Oppure: `dotnet restore src/PTRP.sln`
 
 4. **Database Setup** (Automatic Migrations + Data Seeding)
    - Alla prima esecuzione, EF Core crea SQLite locale criptato
@@ -215,8 +185,8 @@ PTRP/
 
 5. **Build & Run**
    ```bash
-   dotnet build
-   dotnet run --project src/PTRP.Presentation
+   dotnet build src/PTRP.sln
+   dotnet run --project src/PTRP.App
    ```
 
 ---
@@ -257,7 +227,7 @@ Visualizzazione UI con badge/colori differenti per auditabilità.
 - 🔄 [Sync Protocol](docs/SYNC-PROTOCOL.md) - Algoritmo sincronizzazione, conflict resolution
 - 🔐 [Security](docs/SECURITY.md) - Crittografia, HMAC, key management
 - 🌱 [Seeding](docs/SEED.md) - Strategia data initialization, DbContextSeeder
-- 🛠️ [Development](docs/DEVELOPMENT.md) - Guida per sviluppatori, Git workflow
+- 🛠️ [Development](docs/DEVELOPMENT.md) - Guida sviluppatori, Git workflow
 - 🚀 [Deployment](docs/DEPLOYMENT.md) - Velopack, zero-click updates
 - 📄 [Technical Analysis](docs/PROGETTO_PTRP_SYNC.md) - Analisi tecnica completa (architetto)
 
@@ -293,10 +263,10 @@ MIT License - See [LICENSE](LICENSE) file for details
 
 ## 📞 Support
 
-Per domande, bug o feature requests:
-- 🐛 Issues: [GitHub Issues](https://github.com/artcava/PTRP/issues)
-- 📧 Email: cavallo.marco@gmail.com
-- 💬 Discussions: [GitHub Discussions](https://github.com/artcava/PTRP/discussions)
+Per bug report, feature requests o domande sull'utilizzo:
+- 🐛 **Issues**: [GitHub Issues](https://github.com/artcava/PTRP/issues)
+- 💬 **Discussions**: [GitHub Discussions](https://github.com/artcava/PTRP/discussions)
+- 📧 **Email**: cavallo.marco@gmail.com
 
 ---
 
