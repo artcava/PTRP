@@ -4,7 +4,7 @@
              xmlns:local="clr-namespace:PTRP.App"
              xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
              xmlns:viewmodels="clr-namespace:PTRP.ViewModels;assembly=PTRP.ViewModels"
-             xmlns:views="clr-namespace:PTRP.App.Views"
+             xmlns:setupViews="clr-namespace:PTRP.App.Views.Setup"
              xmlns:dashboardViews="clr-namespace:PTRP.App.Views.Dashboard">
     <Application.Resources>
         <ResourceDictionary>
@@ -28,19 +28,19 @@
             
             <!-- Issue #49: First Run Setup View -->
             <DataTemplate DataType="{x:Type viewmodels:FirstRunViewModel}">
-                <views:FirstRunView />
+                <setupViews:FirstRunView />
             </DataTemplate>
             
             <!-- TODO: Add more DataTemplates as ViewModels are implemented -->
             <!-- Issue #51: Patient List View
             <DataTemplate DataType="{x:Type viewmodels:PatientListViewModel}">
-                <views:PatientListView />
+                <patientViews:PatientListView />
             </DataTemplate>
             -->
             
             <!-- Issue #52: Sync View
             <DataTemplate DataType="{x:Type viewmodels:SyncViewModel}">
-                <views:SyncView />
+                <syncViews:SyncView />
             </DataTemplate>
             -->
         </ResourceDictionary>
