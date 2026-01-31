@@ -40,14 +40,10 @@
                 <StackPanel Grid.Row="1"
                           Margin="16">
                     <!-- Search Box -->
-                    <TextBox materialDesign:HintAssist.Hint="Cerca per nome o cognome"
+                    <TextBox materialDesign:HintAssist.Hint="🔍 Cerca per nome o cognome"
                            Style="{StaticResource MaterialDesignOutlinedTextBox}"
                            Text="{Binding SearchTerm, UpdateSourceTrigger=PropertyChanged}"
-                           Margin="0,0,0,12">
-                        <materialDesign:TextFieldAssist.LeadingIcon>
-                            <materialDesign:PackIcon Kind="Magnify"/>
-                        </materialDesign:TextFieldAssist.LeadingIcon>
-                    </TextBox>
+                           Margin="0,0,0,12"/>
                     
                     <!-- State Filter -->
                     <ComboBox materialDesign:HintAssist.Hint="Filtra per stato"
