@@ -8,6 +8,7 @@ using CommunityToolkit.Mvvm.Input;
 using MaterialDesignThemes.Wpf;
 using PTRP.Services.Interfaces;
 using PTRP.ViewModels.Educators;
+using PTRP.ViewModels.Projects;
 
 namespace PTRP.ViewModels;
 
@@ -216,7 +217,7 @@ public partial class MainViewModel : ViewModelBase
             {
                 Title = "Progetti",
                 IconKind = PackIconKind.FolderMultiple,
-                // ViewModelType = typeof(ProjectListViewModel) // TODO: FASE 2
+                ViewModelType = typeof(ProjectListViewModel) // Issue #64: IMPLEMENTED
             },
             new MenuItemViewModel
             {
@@ -293,6 +294,11 @@ public partial class MainViewModel : ViewModelBase
         else if (viewModel is EducatorListViewModel educatorListViewModel)
         {
             await educatorListViewModel.LoadEducatorsAsync();
+        }
+        // Issue #64: Load projects when navigating to ProjectListView
+        else if (viewModel is ProjectListViewModel projectListViewModel)
+        {
+            await projectListViewModel.LoadProjectsAsync();
         }
         // TODO: Issue #50 - Uncomment when DashboardViewModel is implemented
         // else if (viewModel is DashboardViewModel dashboardViewModel)
@@ -570,8 +576,8 @@ public partial class MainViewModel : ViewModelBase
     [RelayCommand]
     private void NavigateToProjects()
     {
-        ShowInfo("Progetti - In sviluppo (FASE 2)");
-        CurrentPageTitle = "Progetti";
+        // Issue #64: ProjectListViewModel implementato
+        _navigationService.NavigateTo<ProjectListViewModel>();
     }
     
     [RelayCommand]
