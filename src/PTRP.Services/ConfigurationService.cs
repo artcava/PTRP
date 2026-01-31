@@ -11,10 +11,10 @@ namespace PTRP.Services;
 /// </summary>
 public class ConfigurationService : IConfigurationService
 {
-    private readonly PtrpDbContext _dbContext;
+    private readonly PTRPDbContext _dbContext;
     private const string ConfigMarkerFile = ".ptrp_configured";
     
-    public ConfigurationService(PtrpDbContext dbContext)
+    public ConfigurationService(PTRPDbContext dbContext)
     {
         _dbContext = dbContext;
     }
