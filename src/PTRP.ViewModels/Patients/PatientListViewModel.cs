@@ -65,17 +65,10 @@ namespace PTRP.ViewModels
         [ObservableProperty]
         private bool _isLoading;
 
-        #endregion
-
-        #region Constructor
-
         /// <summary>
-        /// Initializes a new instance of PatientListViewModel.
+        /// Display name override for navigation title.
         /// </summary>
-        public PatientListViewModel()
-        {
-            DisplayName = "Pazienti";
-        }
+        public override string DisplayName => "Pazienti";
 
         #endregion
 
