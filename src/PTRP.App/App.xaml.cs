@@ -84,7 +84,7 @@ namespace PTRP.App
             Directory.CreateDirectory(appDataPath);
             var dbPath = Path.Combine(appDataPath, "ptrp.db");
 
-            services.AddDbContext<PtrpDbContext>(options =>
+            services.AddDbContext<PTRPDbContext>(options =>
                 options.UseSqlite($"Data Source={dbPath}"));
 
             // Registra i Repositories
@@ -116,7 +116,7 @@ namespace PTRP.App
             if (_serviceProvider == null) return;
 
             using var scope = _serviceProvider.CreateScope();
-            var context = scope.ServiceProvider.GetRequiredService<PtrpDbContext>();
+            var context = scope.ServiceProvider.GetRequiredService<PTRPDbContext>();
             
             // Crea il database se non esiste (senza dati)
             // I dati verranno popolati dal pacchetto di configurazione
