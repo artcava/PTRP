@@ -7,6 +7,7 @@ using PTRP.Data;
 using PTRP.Data.Repositories;
 using PTRP.Data.Repositories.Interfaces;
 using PTRP.App.Views.Patients;
+using PTRP.App.Views.Educators;
 using System.IO;
 using System.Windows;
 
@@ -110,12 +111,14 @@ namespace PTRP.App
             // TODO: Issue #50 - Uncomment when implemented
             // services.AddTransient<DashboardViewModel>();  // Issue #50: Dashboard ViewModel
             services.AddTransient<PatientListViewModel>(); // Issue #51: Patient List ViewModel
+            services.AddTransient<EducatorListViewModel>(); // Issue #63: Educator List ViewModel
             // TODO: Registrare qui i ViewModels delle pagine quando verranno creati
             // services.AddTransient<SyncViewModel>();        // Issue #52
 
             // Registra le Views
             services.AddScoped<MainWindow>();
             services.AddScoped<PatientListView>();  // Issue #51: Patient List View
+            services.AddScoped<EducatorListView>();  // Issue #63: Educator List View
         }
 
         /// <summary>
