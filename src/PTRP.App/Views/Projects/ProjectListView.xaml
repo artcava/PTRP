@@ -154,7 +154,7 @@
                     <Border Background="{DynamicResource MaterialDesignDivider}" CornerRadius="4" Padding="12" Margin="0,0,0,16">
                         <StackPanel>
                             <TextBlock Text="{Binding SelectedProject.ProgressDisplay}" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,0,0,8"/>
-                            <ProgressBar Value="{Binding SelectedProject.ProgressPercentage}" Maximum="100" Height="8" Style="{StaticResource MaterialDesignLinearProgressBar}"/>
+                            <ProgressBar Value="{Binding SelectedProject.ProgressPercentage, Mode=OneWay}" Maximum="100" Height="8" Style="{StaticResource MaterialDesignLinearProgressBar}"/>
                             <TextBlock Text="{Binding SelectedProject.ProgressPercentage, StringFormat={}{0:F0}%}" HorizontalAlignment="Center" FontSize="12" Margin="0,4,0,0"/>
                         </StackPanel>
                     </Border>
