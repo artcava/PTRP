@@ -25,9 +25,6 @@
             <converters:ProjectStateToColorConverter x:Key="ProjectStateToColorConverter" />
             <converters:NullToVisibilityConverter x:Key="NullToVisibilityConverter" />
             
-            <!-- Issue #63: Educator List Converters -->
-            <converters:EducatorRoleToColorConverter x:Key="EducatorRoleToColorConverter" />
-            
             <BitmapImage x:Key="AppIcon" UriSource="/favicon.ico" />
             
             <!-- ViewModel to View DataTemplates -->
