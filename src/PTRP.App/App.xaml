@@ -2,7 +2,10 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:PTRP.App"
-             xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes">
+             xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+             xmlns:viewmodels="clr-namespace:PTRP.ViewModels;assembly=PTRP.ViewModels"
+             xmlns:views="clr-namespace:PTRP.App.Views"
+             xmlns:dashboardViews="clr-namespace:PTRP.App.Views.Dashboard">
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
@@ -16,6 +19,30 @@
             <!-- Application Resources -->
             <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
             <BitmapImage x:Key="AppIcon" UriSource="/favicon.ico" />
+            
+            <!-- ViewModel to View DataTemplates -->
+            <!-- Issue #50: Dashboard View -->
+            <DataTemplate DataType="{x:Type viewmodels:DashboardViewModel}">
+                <dashboardViews:DashboardView />
+            </DataTemplate>
+            
+            <!-- Issue #49: First Run Setup View -->
+            <DataTemplate DataType="{x:Type viewmodels:FirstRunViewModel}">
+                <views:FirstRunView />
+            </DataTemplate>
+            
+            <!-- TODO: Add more DataTemplates as ViewModels are implemented -->
+            <!-- Issue #51: Patient List View
+            <DataTemplate DataType="{x:Type viewmodels:PatientListViewModel}">
+                <views:PatientListView />
+            </DataTemplate>
+            -->
+            
+            <!-- Issue #52: Sync View
+            <DataTemplate DataType="{x:Type viewmodels:SyncViewModel}">
+                <views:SyncView />
+            </DataTemplate>
+            -->
         </ResourceDictionary>
     </Application.Resources>
 </Application>
