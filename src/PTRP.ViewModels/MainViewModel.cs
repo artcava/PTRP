@@ -22,6 +22,7 @@ namespace PTRP.ViewModels;
 public partial class MainViewModel : ViewModelBase
 {
     private readonly INavigationService _navigationService;
+    private readonly IConfigurationService _configurationService;
     
     public override string DisplayName => "PTRP";
     
@@ -142,14 +143,17 @@ public partial class MainViewModel : ViewModelBase
     /// </summary>
     public event EventHandler<NotificationEventArgs>? NotificationRequested;
     
-    public MainViewModel(INavigationService navigationService)
+    public MainViewModel(
+        INavigationService navigationService,
+        IConfigurationService configurationService)
     {
         _navigationService = navigationService;
+        _configurationService = configurationService;
         
         // Subscribe to navigation changes
         _navigationService.CurrentViewModelChanged += OnCurrentViewModelChanged;
         
-        // TODO: Load user profile from configuration service (Issue #49)
+        // Load user profile from configuration service
         LoadUserProfile();
         
         // Initialize navigation menu based on user role
@@ -162,7 +166,7 @@ public partial class MainViewModel : ViewModelBase
         UpdateLastSyncTime(null);
         
         // Navigate to Dashboard by default
-        // TODO: Check if first run, navigate to FirstRunView if needed (Issue #49)
+        // NOTE: First-run detection is handled in App.xaml.cs OnStartup
         NavigateToDashboard();
     }
     
@@ -173,7 +177,6 @@ public partial class MainViewModel : ViewModelBase
     /// </summary>
     private void InitializeNavigationMenu()
     {
-        // TODO: Leggere ruolo da IConfigurationService in Issue #49
         var userRole = GetCurrentUserRole();
         
         NavigationMenuItems = userRole == "Coordinatore" 
@@ -338,15 +341,48 @@ public partial class MainViewModel : ViewModelBase
     #region User Profile Methods
     
     /// <summary>
-    /// Carica il profilo utente corrente
+    /// Carica il profilo utente corrente da ConfigurationService
     /// </summary>
-    private void LoadUserProfile()
+    private async void LoadUserProfile()
     {
-        // TODO: Implementare con IConfigurationService in Issue #49
-        // Per ora usa valori hardcoded
-        UserFullName = "Marco Cavallo";
-        UserRole = "Coordinatore";
-        UserInitials = "MC";
+        try
+        {
+            var fullName = await _configurationService.GetCurrentUserFullNameAsync();
+            var role = await _configurationService.GetCurrentUserRoleAsync();
+            
+            UserFullName = fullName;
+            UserRole = role;
+            UserInitials = GetInitials(fullName);
+        }
+        catch
+        {
+            // Fallback a valori default se configurazione non disponibile
+            UserFullName = "Utente";
+            UserRole = "Coordinatore";
+            UserInitials = "U";
+        }
+    }
+    
+    /// <summary>
+    /// Ricarica profilo utente dopo configurazione iniziale
+    /// Chiamato da FirstRunViewModel dopo setup completato
+    /// </summary>
+    public async Task ReloadAfterConfigurationAsync()
+    {
+        // Ricarica profilo utente
+        var fullName = await _configurationService.GetCurrentUserFullNameAsync();
+        var role = await _configurationService.GetCurrentUserRoleAsync();
+        
+        // Aggiorna UI in modo thread-safe
+        await Application.Current.Dispatcher.InvokeAsync(() =>
+        {
+            UserFullName = fullName;
+            UserRole = role;
+            UserInitials = GetInitials(fullName);
+            
+            // Ricarica menu basato su nuovo ruolo
+            InitializeNavigationMenu();
+        });
     }
     
     /// <summary>
@@ -354,9 +390,32 @@ public partial class MainViewModel : ViewModelBase
     /// </summary>
     private string GetCurrentUserRole()
     {
-        // TODO: Leggere da IConfigurationService in Issue #49
-        // Per ora ritorna "Coordinatore" come default
-        return "Coordinatore";
+        try
+        {
+            return _configurationService.GetCurrentUserRoleAsync().Result;
+        }
+        catch
+        {
+            return "Coordinatore";
+        }
+    }
+    
+    /// <summary>
+    /// Estrae iniziali da nome completo
+    /// </summary>
+    private string GetInitials(string fullName)
+    {
+        if (string.IsNullOrWhiteSpace(fullName))
+            return "U";
+        
+        var parts = fullName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length == 0)
+            return "U";
+        
+        if (parts.Length == 1)
+            return parts[0].Substring(0, Math.Min(2, parts[0].Length)).ToUpper();
+        
+        return $"{parts[0][0]}{parts[^1][0]}".ToUpper();
     }
     
     #endregion
