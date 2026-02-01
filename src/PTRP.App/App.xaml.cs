@@ -101,9 +101,15 @@ namespace PTRP.App
 
             // Registra i Repositories
             services.AddScoped<IPatientRepository, PatientRepository>();
+            services.AddScoped<IEducatorRepository, EducatorRepository>();  // Issue #63
+            services.AddScoped<IProjectRepository, ProjectRepository>();    // Issue #64
+            services.AddScoped<ISyncRepository, SyncRepository>();          // Issue #52
 
             // Registra i Services
             services.AddScoped<IPatientService, PatientService>();
+            services.AddScoped<IEducatorService, EducatorService>();        // Issue #63
+            services.AddScoped<IProjectService, ProjectService>();          // Issue #64
+            services.AddScoped<ISyncService, SyncService>();                // Issue #52
             services.AddSingleton<INavigationService, NavigationService>();  // Issue #46: Navigation Service
             services.AddScoped<IConfigurationService, ConfigurationService>(); // Issue #49: Configuration Service
 
@@ -116,8 +122,8 @@ namespace PTRP.App
             services.AddTransient<PatientListViewModel>(); // Issue #51: Patient List ViewModel
             services.AddTransient<EducatorListViewModel>(); // Issue #63: Educator List ViewModel
             services.AddTransient<ProjectListViewModel>(); // Issue #64: Project List ViewModel
-            // TODO: Registrare qui i ViewModels delle pagine quando verranno creati
-            // services.AddTransient<SyncViewModel>();        // Issue #52
+            services.AddTransient<SyncViewModel>();        // Issue #52: Sync ViewModel
+            services.AddTransient<ConflictResolutionViewModel>(); // Issue #52: Conflict Resolution ViewModel
 
             // Registra le Views
             services.AddScoped<MainWindow>();
