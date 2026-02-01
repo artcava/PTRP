@@ -102,14 +102,12 @@ namespace PTRP.App
             // Registra i Repositories
             services.AddScoped<IPatientRepository, PatientRepository>();
             services.AddScoped<IEducatorRepository, EducatorRepository>();  // Issue #63
-            services.AddScoped<IProjectRepository, ProjectRepository>();    // Issue #64
-            services.AddScoped<ISyncRepository, SyncRepository>();          // Issue #52
+            services.AddScoped<ITherapyProjectRepository, TherapyProjectRepository>();  // Issue #64
 
             // Registra i Services
             services.AddScoped<IPatientService, PatientService>();
             services.AddScoped<IEducatorService, EducatorService>();        // Issue #63
-            services.AddScoped<IProjectService, ProjectService>();          // Issue #64
-            services.AddScoped<ISyncService, SyncService>();                // Issue #52
+            services.AddScoped<ITherapyProjectService, TherapyProjectService>();  // Issue #64
             services.AddSingleton<INavigationService, NavigationService>();  // Issue #46: Navigation Service
             services.AddScoped<IConfigurationService, ConfigurationService>(); // Issue #49: Configuration Service
 
