@@ -9,6 +9,7 @@
              xmlns:patientViews="clr-namespace:PTRP.App.Views.Patients"
              xmlns:educatorViews="clr-namespace:PTRP.App.Views.Educators"
              xmlns:projectViews="clr-namespace:PTRP.App.Views.Projects"
+             xmlns:syncViews="clr-namespace:PTRP.App.Views.Sync"
              xmlns:converters="clr-namespace:PTRP.App.Converters">
     <Application.Resources>
         <ResourceDictionary>
@@ -44,6 +45,11 @@
             <!-- Issue #64: Project List View -->
             <DataTemplate DataType="{x:Type projectViewModels:ProjectListViewModel}">
                 <projectViews:ProjectListView />
+            </DataTemplate>
+            
+            <!-- Issue #52: Sync View -->
+            <DataTemplate DataType="{x:Type viewmodels:SyncViewModel}">
+                <syncViews:SyncView />
             </DataTemplate>
             
             <!-- Future DataTemplates will be added here as other issues are implemented -->

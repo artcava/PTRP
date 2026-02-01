@@ -31,25 +31,24 @@
                      Foreground="{DynamicResource MaterialDesignBodyLight}"/>
         </StackPanel>
 
-        <!-- TabControl -->
+        <!-- TabControl con larghezza sidebar fissa -->
         <TabControl Grid.Row="1"
                     SelectedIndex="{Binding SelectedTabIndex}"
-                    Style="{StaticResource MaterialDesignNavigationRailTabControl}">
+                    Style="{StaticResource MaterialDesignFilledTabControl}">
 
             <!-- TAB 1: ESPORTA APPUNTAMENTI -->
-            <TabItem Header="Esporta">
-                <TabItem.HeaderTemplate>
-                    <DataTemplate>
-                        <StackPanel Orientation="Horizontal">
-                            <materialDesign:PackIcon Kind="Export"
-                                                   Width="24"
-                                                   Height="24"
-                                                   Margin="0,0,8,0"/>
-                            <TextBlock Text="Esporta"
-                                     VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </DataTemplate>
-                </TabItem.HeaderTemplate>
+            <TabItem>
+                <TabItem.Header>
+                    <StackPanel Orientation="Horizontal">
+                        <materialDesign:PackIcon Kind="Export"
+                                               Width="20"
+                                               Height="20"
+                                               Margin="0,0,8,0"
+                                               VerticalAlignment="Center"/>
+                        <TextBlock Text="Esporta"
+                                 VerticalAlignment="Center"/>
+                    </StackPanel>
+                </TabItem.Header>
 
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="32">
@@ -201,19 +200,18 @@
             </TabItem>
 
             <!-- TAB 2: IMPORTA VISITE -->
-            <TabItem Header="Importa">
-                <TabItem.HeaderTemplate>
-                    <DataTemplate>
-                        <StackPanel Orientation="Horizontal">
-                            <materialDesign:PackIcon Kind="Import"
-                                                   Width="24"
-                                                   Height="24"
-                                                   Margin="0,0,8,0"/>
-                            <TextBlock Text="Importa"
-                                     VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </DataTemplate>
-                </TabItem.HeaderTemplate>
+            <TabItem>
+                <TabItem.Header>
+                    <StackPanel Orientation="Horizontal">
+                        <materialDesign:PackIcon Kind="Import"
+                                               Width="20"
+                                               Height="20"
+                                               Margin="0,0,8,0"
+                                               VerticalAlignment="Center"/>
+                        <TextBlock Text="Importa"
+                                 VerticalAlignment="Center"/>
+                    </StackPanel>
+                </TabItem.Header>
 
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="32">
@@ -403,19 +401,18 @@
             </TabItem>
 
             <!-- TAB 3: STORICO -->
-            <TabItem Header="Storico">
-                <TabItem.HeaderTemplate>
-                    <DataTemplate>
-                        <StackPanel Orientation="Horizontal">
-                            <materialDesign:PackIcon Kind="History"
-                                                   Width="24"
-                                                   Height="24"
-                                                   Margin="0,0,8,0"/>
-                            <TextBlock Text="Storico"
-                                     VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </DataTemplate>
-                </TabItem.HeaderTemplate>
+            <TabItem>
+                <TabItem.Header>
+                    <StackPanel Orientation="Horizontal">
+                        <materialDesign:PackIcon Kind="History"
+                                               Width="20"
+                                               Height="20"
+                                               Margin="0,0,8,0"
+                                               VerticalAlignment="Center"/>
+                        <TextBlock Text="Storico"
+                                 VerticalAlignment="Center"/>
+                    </StackPanel>
+                </TabItem.Header>
 
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="32">
@@ -481,7 +478,7 @@
                                                 </StackPanel>
                                             </StackPanel>
 
-                                            <!-- Type Badge - FIX: Rimosso Style inline e FontWeight -->
+                                            <!-- Type Badge -->
                                             <Border Grid.Column="3"
                                                   CornerRadius="4"
                                                   Padding="8,4"

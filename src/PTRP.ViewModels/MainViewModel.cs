@@ -230,7 +230,7 @@ public partial class MainViewModel : ViewModelBase
             {
                 Title = "Sincronizzazione",
                 IconKind = PackIconKind.Sync,
-                // ViewModelType = typeof(SyncViewModel) // TODO: Issue #52
+                ViewModelType = typeof(SyncViewModel) // Issue #52: IMPLEMENTED
             },
             new MenuItemViewModel
             {
@@ -271,7 +271,7 @@ public partial class MainViewModel : ViewModelBase
             {
                 Title = "Sincronizzazione",
                 IconKind = PackIconKind.CloudSync,
-                // ViewModelType = typeof(SyncViewModel) // TODO: Issue #52
+                ViewModelType = typeof(SyncViewModel) // Issue #52: IMPLEMENTED
             }
         };
     }
@@ -597,12 +597,8 @@ public partial class MainViewModel : ViewModelBase
     [RelayCommand]
     private void NavigateToSync()
     {
-        // TODO: Implementare SyncViewModel in Issue #52
-        ShowInfo("Sync - In sviluppo (Issue #52)");
-        CurrentPageTitle = "Sincronizzazione";
-        
-        // Quando SyncViewModel sarà implementato:
-        // _navigationService.NavigateTo<SyncViewModel>();
+        // Issue #52: SyncViewModel implementato
+        _navigationService.NavigateTo<SyncViewModel>();
     }
     
     [RelayCommand]
