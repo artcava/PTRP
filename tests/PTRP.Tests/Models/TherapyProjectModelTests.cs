@@ -138,4 +138,19 @@ public class TherapyProjectModelTests
         Assert.NotNull(project.ProfessionalEducators);
         Assert.Empty(project.ProfessionalEducators);
     }
+
+    [Fact]
+    public void ScheduledVisits_InitializesAsEmptyCollection()
+    {
+        // Arrange & Act
+        var project = new TherapyProjectModel
+        {
+            PatientId = Guid.NewGuid(),
+            Title = "Test Project"
+        };
+
+        // Assert - Verifica che ScheduledVisits sia inizializzato come collezione vuota
+        Assert.NotNull(project.ScheduledVisits);
+        Assert.Empty(project.ScheduledVisits);
+    }
 }

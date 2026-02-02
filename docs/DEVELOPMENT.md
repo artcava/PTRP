@@ -144,7 +144,7 @@ public record ActualVisit
 }
 ```
 
-> **Nota UI**: prevedere stili diversi in griglie/elenco per distinguere visivamente `EducatorImport` da `CoordinatorDirect`.
+> **Nota UI**: prevedere stili diversi in griglie/elenco per distinguere visualmente `EducatorImport` da `CoordinatorDirect`.
 
 ---
 
@@ -211,6 +211,49 @@ Moq                                   # Mocking Library
 
 ## 🧪 Testing
 
+### ⚠️ REGOLA CRITICA: Manutenzione Test Durante Sviluppo
+
+**Ogni modifica al codice DEVE essere accompagnata dall'aggiornamento dei test corrispondenti.**
+
+#### Checklist Test Obbligatoria
+
+**Prima di creare una PR, VERIFICA:**
+
+- [ ] **Tutti i test esistenti passano** (`dotnet test`)
+- [ ] **Se hai modificato un modello**:
+  - [ ] Aggiornati i test unit del modello in `tests/PTRP.Tests/Models/`
+  - [ ] Verificata la configurazione EF Core in `PTRPDbContext.cs`
+  - [ ] Test dei repository ancora funzionanti (se esistono)
+- [ ] **Se hai aggiunto un nuovo modello**:
+  - [ ] Creati test unit completi (proprietà, validazioni, default values)
+  - [ ] Aggiunto DbSet in `PTRPDbContext.cs`
+  - [ ] Configurate relazioni EF Core (chiavi primarie, foreign keys, indici)
+  - [ ] Test dei repository esistenti ancora funzionanti
+- [ ] **Se hai modificato DbContext**:
+  - [ ] Tutti i test di Repository/Services passano
+  - [ ] Verificato che non ci siano errori di "missing primary key"
+  - [ ] Migration EF Core creata (se necessario)
+- [ ] **Se hai aggiunto navigation properties**:
+  - [ ] Test di inizializzazione collezioni aggiornati
+  - [ ] Relazioni configurate in `OnModelCreating()`
+
+#### Errori Comuni da Evitare
+
+**❌ ERRORE: "The entity type 'XModel' requires a primary key"**
+- **Causa**: Modello aggiunto senza configurazione EF Core
+- **Fix**: Aggiungi configurazione `HasKey()` in `PTRPDbContext.OnModelCreating()`
+- **Prevenzione**: Ogni nuovo modello DEVE avere configurazione EF Core
+
+**❌ ERRORE: Test di repository falliscono dopo modifica modello**
+- **Causa**: Modello cambiato ma test non aggiornati
+- **Fix**: Aggiorna test mock/setup per riflettere nuove proprietà
+- **Prevenzione**: Esegui `dotnet test` dopo OGNI modifica al modello
+
+**❌ ERRORE: Navigation property null durante test**
+- **Causa**: Relazione non configurata in `OnModelCreating()`
+- **Fix**: Aggiungi `HasOne()/HasMany()` nel DbContext
+- **Prevenzione**: Configura relazioni quando aggiungi navigation property
+
 ### Unit Tests
 ```bash
 # Esegui tutti i test
@@ -221,11 +264,23 @@ dotnet test --filter ClassName=DataMergeServiceTests
 
 # Con output dettagliato
 dotnet test --verbosity detailed
+
+# Solo test Models
+dotnet test --filter FullyQualifiedName~Models
+
+# Solo test Repositories
+dotnet test --filter FullyQualifiedName~Repositories
 ```
 
 ### Test Structure
 ```
 tests/PTRP.Tests/
+├── Models/
+│   ├── PatientModelTests.cs
+│   ├── TherapyProjectModelTests.cs
+│   ├── ScheduledVisitModelTests.cs
+│   ├── ActualVisitModelTests.cs
+│   └── VisitOperatorModelTests.cs
 ├── ViewModels/
 │   └── PatientViewModelTests.cs
 ├── Services/
@@ -233,6 +288,9 @@ tests/PTRP.Tests/
 │   ├── ProjectServiceTests.cs
 │   ├── VisitServiceTests.cs
 │   └── ConflictResolutionServiceTests.cs
+├── Repositories/
+│   ├── PatientRepositoryTests.cs
+│   └── ProjectRepositoryTests.cs
 ├── Sync/
 │   ├── SyncPacketServiceTests.cs
 │   └── DataMergeServiceTests.cs
@@ -245,6 +303,38 @@ tests/PTRP.Tests/
 - ✅ Conflitti tra Coordinatore e Educatore sulle anagrafiche (Coordinatore vince)
 - ✅ Conflitti sulle visite (merge non distruttivo, mantiene storico)
 - ✅ Migrazione schema DB tra versioni app (V1 → V2 con dati reali)
+
+### Best Practice Test
+
+1. **Test Naming**: `MethodName_Scenario_ExpectedBehavior`
+   ```csharp
+   [Fact]
+   public void Constructor_SetsPropertiesCorrectly() { }
+   
+   [Fact]
+   public void ClinicalNotes_Validation_RequiresMinimum10Characters() { }
+   ```
+
+2. **Arrange-Act-Assert**: Struttura chiara in 3 sezioni
+   ```csharp
+   [Fact]
+   public void Test_Example()
+   {
+       // Arrange
+       var model = new PatientModel { FirstName = "Test" };
+       
+       // Act
+       var result = model.ToString();
+       
+       // Assert
+       Assert.Equal("Test", result);
+   }
+   ```
+
+3. **Coverage Minima**:
+   - Ogni modello: 10+ test (proprietà, validazioni, relazioni)
+   - Ogni service: 5+ test (CRUD operations, edge cases)
+   - Ogni repository: 3+ test (basic CRUD)
 
 ---
 
