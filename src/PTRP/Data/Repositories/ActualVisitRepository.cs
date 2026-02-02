@@ -133,41 +133,37 @@ public class ActualVisitRepository
     /// </summary>
     public async Task UpdateAsync(ActualVisitModel actualVisit)
     {
-        // Controlla se l'entità è già tracciata dal ChangeTracker
-        var trackedEntity = _context.ChangeTracker.Entries<ActualVisitModel>()
-            .FirstOrDefault(e => e.Entity.Id == actualVisit.Id);
+        // PASSO 1: Leggi il valore originale dal database PRIMA di qualsiasi altra operazione
+        // Usa una connessione "pulita" senza considerare il ChangeTracker
+        var originalScheduledVisitId = await _context.Database
+            .SqlQueryRaw<Guid>(
+                "SELECT ScheduledVisitId FROM ActualVisits WHERE Id = {0}",
+                actualVisit.Id)
+            .FirstOrDefaultAsync();
 
-        Guid originalScheduledVisitId;
-
-        if (trackedEntity != null)
+        // Se la query non restituisce risultati, l'entità non esiste
+        if (originalScheduledVisitId == Guid.Empty)
         {
-            // L'entità è già tracciata - recupera il valore originale dal database
-            var dbValues = await trackedEntity.GetDatabaseValuesAsync();
-            if (dbValues == null)
+            // Verifica alternativa per InMemoryDatabase che non supporta SQL raw
+            var exists = await _context.ActualVisits
+                .AsNoTracking()
+                .AnyAsync(av => av.Id == actualVisit.Id);
+            
+            if (!exists)
             {
                 throw new InvalidOperationException(
                     $"La visita effettiva con ID {actualVisit.Id} non esiste.");
             }
-            originalScheduledVisitId = dbValues.GetValue<Guid>(nameof(ActualVisitModel.ScheduledVisitId));
-        }
-        else
-        {
-            // L'entità non è tracciata - recupera dal database con query separata
-            var original = await _context.ActualVisits
+
+            // Per InMemoryDatabase, usa query LINQ
+            originalScheduledVisitId = await _context.ActualVisits
                 .AsNoTracking()
                 .Where(av => av.Id == actualVisit.Id)
-                .Select(av => new { av.ScheduledVisitId })
-                .FirstOrDefaultAsync();
-
-            if (original == null)
-            {
-                throw new InvalidOperationException(
-                    $"La visita effettiva con ID {actualVisit.Id} non esiste.");
-            }
-            originalScheduledVisitId = original.ScheduledVisitId;
+                .Select(av => av.ScheduledVisitId)
+                .FirstAsync();
         }
 
-        // VINCOLO CRITICO: ScheduledVisitId è immutabile
+        // PASSO 2: Verifica immutabilità
         if (originalScheduledVisitId != actualVisit.ScheduledVisitId)
         {
             throw new InvalidOperationException(
@@ -175,12 +171,16 @@ public class ActualVisitRepository
                 "Lo ScheduledVisitId è immutabile per preservare l'integrità della relazione 1:1.");
         }
 
-        // Se l'entità era già tracciata, detach prima di fare Update
-        if (trackedEntity != null)
+        // PASSO 3: Detach eventuali entità tracciate con lo stesso ID
+        var tracked = _context.ChangeTracker.Entries<ActualVisitModel>()
+            .FirstOrDefault(e => e.Entity.Id == actualVisit.Id);
+        
+        if (tracked != null)
         {
-            _context.Entry(trackedEntity.Entity).State = EntityState.Detached;
+            _context.Entry(tracked.Entity).State = EntityState.Detached;
         }
 
+        // PASSO 4: Update
         _context.ActualVisits.Update(actualVisit);
         await _context.SaveChangesAsync();
     }
