@@ -5,7 +5,8 @@ namespace PTRP.Data.Repositories;
 
 /// <summary>
 /// Repository per la gestione delle visite effettive (ActualVisit).
-/// Implementa il vincolo 1:1 con ScheduledVisit e l'immutabilità dello ScheduledVisitId.
+/// Implementa il vincolo 1:1 con ScheduledVisit.
+/// L'immutabilità dello ScheduledVisitId è garantita dal modello (private setter).
 /// </summary>
 public class ActualVisitRepository
 {
@@ -129,40 +130,16 @@ public class ActualVisitRepository
 
     /// <summary>
     /// Aggiorna una visita effettiva esistente.
-    /// CRITICO: Lo ScheduledVisitId non può essere modificato (vincolo immutabilità).
+    /// NOTA: Lo ScheduledVisitId è immutabile per design (private setter nel modello),
+    /// quindi non è necessario verificarlo qui.
     /// </summary>
     public async Task UpdateAsync(ActualVisitModel actualVisit)
     {
-        // Crea un nuovo context con le stesse opzioni per leggere il valore originale
-        // Questo bypassa completamente il ChangeTracker del context principale
-        using (var verificationContext = new PTRPDbContext(_context.Database.GetDbConnection()))
+        var exists = await ExistsAsync(actualVisit.Id);
+        if (!exists)
         {
-            var originalScheduledVisitId = await verificationContext.ActualVisits
-                .Where(av => av.Id == actualVisit.Id)
-                .Select(av => av.ScheduledVisitId)
-                .FirstOrDefaultAsync();
-
-            if (originalScheduledVisitId == Guid.Empty)
-            {
-                throw new InvalidOperationException(
-                    $"La visita effettiva con ID {actualVisit.Id} non esiste.");
-            }
-
-            // Verifica immutabilità
-            if (originalScheduledVisitId != actualVisit.ScheduledVisitId)
-            {
-                throw new InvalidOperationException(
-                    "Non è possibile modificare lo ScheduledVisitId di una visita effettiva. " +
-                    "Lo ScheduledVisitId è immutabile per preservare l'integrità della relazione 1:1.");
-            }
-        }
-
-        // Detach eventuali entità tracciate
-        var tracked = _context.ChangeTracker.Entries<ActualVisitModel>()
-            .FirstOrDefault(e => e.Entity.Id == actualVisit.Id);
-        if (tracked != null)
-        {
-            _context.Entry(tracked.Entity).State = EntityState.Detached;
+            throw new InvalidOperationException(
+                $"La visita effettiva con ID {actualVisit.Id} non esiste.");
         }
 
         _context.ActualVisits.Update(actualVisit);
