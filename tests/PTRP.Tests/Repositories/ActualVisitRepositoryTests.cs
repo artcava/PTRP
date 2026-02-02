@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using PTRP.Data;
 using PTRP.Data.Repositories;
 using PTRP.Models;
+using PTRP.Models.Enums;
 
 namespace PTRP.Tests.Repositories;
 
@@ -79,7 +80,13 @@ public class ActualVisitRepositoryTests : IDisposable
         {
             Id = Guid.NewGuid(),
             FirstName = "Test",
-            LastName = "Educator"
+            LastName = "Educator",
+            Email = "test@educator.com",
+            PhoneNumber = "1234567890",
+            DateOfBirth = DateTime.Now.AddYears(-30),
+            Specialization = "Test",
+            LicenseNumber = "LIC123",
+            HireDate = DateTime.Now.AddYears(-5)
         };
         _context.ProfessionalEducators.Add(educator);
         await _context.SaveChangesAsync();
@@ -87,8 +94,8 @@ public class ActualVisitRepositoryTests : IDisposable
         var (scheduledVisit, _) = await CreateScheduledAndActualVisit(educator);
         var actualVisit = await _repository.GetByScheduledVisitIdAsync(scheduledVisit.Id);
 
-        var fromDate = actualVisit!.VisitDate.AddDays(-1);
-        var toDate = actualVisit.VisitDate.AddDays(1);
+        var fromDate = actualVisit!.ActualDate.AddDays(-1);
+        var toDate = actualVisit.ActualDate.AddDays(1);
 
         // Act
         var result = (await _repository.GetByEducatorIdInRangeAsync(educator.Id, fromDate, toDate)).ToList();
@@ -113,28 +120,35 @@ public class ActualVisitRepositoryTests : IDisposable
         var actualVisit1 = new ActualVisitModel
         {
             ScheduledVisitId = scheduledVisit1.Id,
-            VisitDate = DateTime.Now,
+            ActualDate = DateTime.Now,
+            StartTime = new TimeSpan(9, 0, 0),
+            EndTime = new TimeSpan(10, 0, 0),
             ClinicalNotes = "Test notes",
-            PatientAttendance = "Attended",
-            VisitSource = "EducatorImport"
+            PatientPresence = PresenceStatus.Present,
+            Source = VisitSource.EducatorImport,
+            RegisteredBy = educator.Id,
+            RegisteredByName = $"{educator.FirstName} {educator.LastName}"
         };
 
         var actualVisit2 = new ActualVisitModel
         {
             ScheduledVisitId = scheduledVisit2.Id,
-            VisitDate = DateTime.Now.AddDays(1),
+            ActualDate = DateTime.Now.AddDays(1),
+            StartTime = new TimeSpan(9, 0, 0),
+            EndTime = new TimeSpan(10, 0, 0),
             ClinicalNotes = "Test notes 2",
-            PatientAttendance = "Attended",
-            VisitSource = "EducatorImport"
+            PatientPresence = PresenceStatus.Present,
+            Source = VisitSource.EducatorImport,
+            RegisteredBy = educator.Id,
+            RegisteredByName = $"{educator.FirstName} {educator.LastName}"
         };
 
         var visitOperator = new VisitOperatorModel
         {
             ActualVisitId = actualVisit1.Id,
-            OperatorId = educator.Id,
-            Role = "Lead"
+            EducatorId = educator.Id
         };
-        actualVisit1.VisitOperators.Add(visitOperator);
+        actualVisit1.OperatorsPresent.Add(visitOperator);
 
         await _repository.AddAsync(actualVisit1);
         await _repository.AddAsync(actualVisit2);
@@ -162,14 +176,22 @@ public class ActualVisitRepositoryTests : IDisposable
         };
         await _projectRepository.AddAsync(project);
 
+        var educator = CreateEducator();
+        _context.ProfessionalEducators.Add(educator);
+        await _context.SaveChangesAsync();
+
         var scheduledVisit = await CreateScheduledVisit(project);
         var actualVisit = new ActualVisitModel
         {
             ScheduledVisitId = scheduledVisit.Id,
-            VisitDate = DateTime.Now,
+            ActualDate = DateTime.Now,
+            StartTime = new TimeSpan(9, 0, 0),
+            EndTime = new TimeSpan(10, 0, 0),
             ClinicalNotes = "Test",
-            PatientAttendance = "Attended",
-            VisitSource = "EducatorImport"
+            PatientPresence = PresenceStatus.Present,
+            Source = VisitSource.EducatorImport,
+            RegisteredBy = educator.Id,
+            RegisteredByName = $"{educator.FirstName} {educator.LastName}"
         };
         await _repository.AddAsync(actualVisit);
 
@@ -185,15 +207,15 @@ public class ActualVisitRepositoryTests : IDisposable
     {
         // Arrange
         var actualVisit = await CreateValidActualVisit();
-        actualVisit.PatientAttendance = "Attended";
+        actualVisit.PatientPresence = PresenceStatus.Present;
         await _repository.AddAsync(actualVisit);
 
         // Act
-        var result = (await _repository.GetByPatientAttendanceAsync("Attended")).ToList();
+        var result = (await _repository.GetByPatientAttendanceAsync("Present")).ToList();
 
         // Assert
         Assert.Single(result);
-        Assert.Equal("Attended", result[0].PatientAttendance);
+        Assert.Equal(PresenceStatus.Present, result[0].PatientPresence);
     }
 
     [Fact]
@@ -215,13 +237,21 @@ public class ActualVisitRepositoryTests : IDisposable
     public async Task AddAsync_NonExistentScheduledVisit_ThrowsException()
     {
         // Arrange
+        var educator = CreateEducator();
+        _context.ProfessionalEducators.Add(educator);
+        await _context.SaveChangesAsync();
+
         var actualVisit = new ActualVisitModel
         {
             ScheduledVisitId = Guid.NewGuid(), // Non-existent
-            VisitDate = DateTime.Now,
+            ActualDate = DateTime.Now,
+            StartTime = new TimeSpan(9, 0, 0),
+            EndTime = new TimeSpan(10, 0, 0),
             ClinicalNotes = "Test",
-            PatientAttendance = "Attended",
-            VisitSource = "EducatorImport"
+            PatientPresence = PresenceStatus.Present,
+            Source = VisitSource.EducatorImport,
+            RegisteredBy = educator.Id,
+            RegisteredByName = $"{educator.FirstName} {educator.LastName}"
         };
 
         // Act & Assert
@@ -238,14 +268,22 @@ public class ActualVisitRepositoryTests : IDisposable
 
         var scheduledVisitId = actualVisit1.ScheduledVisitId;
 
+        var educator = CreateEducator();
+        _context.ProfessionalEducators.Add(educator);
+        await _context.SaveChangesAsync();
+
         // Arrange - Try to create second actual visit for same scheduled visit
         var actualVisit2 = new ActualVisitModel
         {
             ScheduledVisitId = scheduledVisitId,
-            VisitDate = DateTime.Now.AddDays(1),
+            ActualDate = DateTime.Now.AddDays(1),
+            StartTime = new TimeSpan(9, 0, 0),
+            EndTime = new TimeSpan(10, 0, 0),
             ClinicalNotes = "Second visit",
-            PatientAttendance = "Attended",
-            VisitSource = "EducatorImport"
+            PatientPresence = PresenceStatus.Present,
+            Source = VisitSource.EducatorImport,
+            RegisteredBy = educator.Id,
+            RegisteredByName = $"{educator.FirstName} {educator.LastName}"
         };
 
         // Act & Assert - Should throw due to 1:1 constraint violation
@@ -347,25 +385,37 @@ public class ActualVisitRepositoryTests : IDisposable
     {
         // Arrange
         var project = await CreateValidProject();
+        var educator = CreateEducator();
+        _context.ProfessionalEducators.Add(educator);
+        await _context.SaveChangesAsync();
+
         var scheduledVisit1 = await CreateScheduledVisit(project);
         var scheduledVisit2 = await CreateScheduledVisit(project);
 
         var actualVisit1 = new ActualVisitModel
         {
             ScheduledVisitId = scheduledVisit1.Id,
-            VisitDate = DateTime.Now,
+            ActualDate = DateTime.Now,
+            StartTime = new TimeSpan(9, 0, 0),
+            EndTime = new TimeSpan(10, 0, 0),
             ClinicalNotes = "Test",
-            PatientAttendance = "Attended",
-            VisitSource = "EducatorImport"
+            PatientPresence = PresenceStatus.Present,
+            Source = VisitSource.EducatorImport,
+            RegisteredBy = educator.Id,
+            RegisteredByName = $"{educator.FirstName} {educator.LastName}"
         };
 
         var actualVisit2 = new ActualVisitModel
         {
             ScheduledVisitId = scheduledVisit2.Id,
-            VisitDate = DateTime.Now,
+            ActualDate = DateTime.Now,
+            StartTime = new TimeSpan(9, 0, 0),
+            EndTime = new TimeSpan(10, 0, 0),
             ClinicalNotes = "Test",
-            PatientAttendance = "Attended",
-            VisitSource = "EducatorImport"
+            PatientPresence = PresenceStatus.Present,
+            Source = VisitSource.EducatorImport,
+            RegisteredBy = educator.Id,
+            RegisteredByName = $"{educator.FirstName} {educator.LastName}"
         };
 
         await _repository.AddAsync(actualVisit1);
@@ -383,13 +433,21 @@ public class ActualVisitRepositoryTests : IDisposable
     {
         scheduledVisit ??= await CreateValidScheduledVisit();
 
+        var educator = CreateEducator();
+        _context.ProfessionalEducators.Add(educator);
+        await _context.SaveChangesAsync();
+
         return new ActualVisitModel
         {
             ScheduledVisitId = scheduledVisit.Id,
-            VisitDate = DateTime.Now,
+            ActualDate = DateTime.Now,
+            StartTime = new TimeSpan(9, 0, 0),
+            EndTime = new TimeSpan(10, 0, 0),
             ClinicalNotes = "Test clinical notes",
-            PatientAttendance = "Attended",
-            VisitSource = "EducatorImport"
+            PatientPresence = PresenceStatus.Present,
+            Source = VisitSource.EducatorImport,
+            RegisteredBy = educator.Id,
+            RegisteredByName = $"{educator.FirstName} {educator.LastName}"
         };
     }
 
@@ -401,16 +459,12 @@ public class ActualVisitRepositoryTests : IDisposable
 
     private async Task<ScheduledVisitModel> CreateScheduledVisit(TherapyProjectModel project)
     {
-        var visitType = new VisitTypeModel { Name = "INTAKE" };
-        _context.VisitTypes.Add(visitType);
-        await _context.SaveChangesAsync();
-
         var visit = new ScheduledVisitModel
         {
             TherapyProjectId = project.Id,
-            VisitTypeId = visitType.Id,
+            Type = VisitType.Intake,
             ScheduledDate = DateTime.Now.AddMonths(3),
-            AppointmentStatus = "Scheduled"
+            Status = AppointmentStatus.Scheduled
         };
         await _scheduledVisitRepository.AddAsync(visit);
 
@@ -447,18 +501,21 @@ public class ActualVisitRepositoryTests : IDisposable
         var actualVisit = new ActualVisitModel
         {
             ScheduledVisitId = scheduledVisit.Id,
-            VisitDate = DateTime.Now,
+            ActualDate = DateTime.Now,
+            StartTime = new TimeSpan(9, 0, 0),
+            EndTime = new TimeSpan(10, 0, 0),
             ClinicalNotes = "Test",
-            PatientAttendance = "Attended",
-            VisitSource = "EducatorImport"
+            PatientPresence = PresenceStatus.Present,
+            Source = VisitSource.EducatorImport,
+            RegisteredBy = educator.Id,
+            RegisteredByName = $"{educator.FirstName} {educator.LastName}"
         };
 
         var visitOperator = new VisitOperatorModel
         {
-            OperatorId = educator.Id,
-            Role = "Lead"
+            EducatorId = educator.Id
         };
-        actualVisit.VisitOperators.Add(visitOperator);
+        actualVisit.OperatorsPresent.Add(visitOperator);
 
         await _repository.AddAsync(actualVisit);
 
@@ -471,7 +528,13 @@ public class ActualVisitRepositoryTests : IDisposable
         {
             Id = Guid.NewGuid(),
             FirstName = "John",
-            LastName = "Doe"
+            LastName = "Doe",
+            Email = "john.doe@example.com",
+            PhoneNumber = "1234567890",
+            DateOfBirth = DateTime.Now.AddYears(-35),
+            Specialization = "General",
+            LicenseNumber = "LIC001",
+            HireDate = DateTime.Now.AddYears(-5)
         };
     }
 
