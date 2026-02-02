@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using PTRP.Models;
+using PTRP.Models.Enums;
 
 namespace PTRP.Data;
 
@@ -233,10 +234,12 @@ public class PTRPDbContext : DbContext
                 .IsRequired()
                 .HasConversion<string>(); // Store enum as string
 
+            // IMPORTANTE: HasDefaultValue deve usare valore ENUM, non stringa
+            // EF Core fa la conversione automaticamente quando salva nel DB
             entity.Property(e => e.Status)
                 .IsRequired()
                 .HasConversion<string>()
-                .HasDefaultValue("Scheduled");
+                .HasDefaultValue(AppointmentStatus.Scheduled); // Valore ENUM, non stringa
 
             entity.Property(e => e.ScheduledDate)
                 .IsRequired();
@@ -306,10 +309,11 @@ public class PTRPDbContext : DbContext
             entity.Property(e => e.Outcomes)
                 .HasMaxLength(2000);
 
+            // IMPORTANTE: HasDefaultValue deve usare valore ENUM, non stringa
             entity.Property(e => e.Source)
                 .IsRequired()
                 .HasConversion<string>()
-                .HasDefaultValue("EducatorImport");
+                .HasDefaultValue(VisitSource.EducatorImport); // Valore ENUM, non stringa
 
             entity.Property(e => e.RegisteredBy)
                 .IsRequired();
