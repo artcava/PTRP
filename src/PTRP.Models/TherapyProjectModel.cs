@@ -71,6 +71,13 @@ namespace PTRP.Models
         public ICollection<ProfessionalEducatorModel> ProfessionalEducators { get; set; } = new List<ProfessionalEducatorModel>();
 
         /// <summary>
+        /// Appuntamenti programmati (visite schedulate) associati a questo progetto.
+        /// Include i 4 appuntamenti canonici (INTAKE, INTERMEDIATE, FINAL, DISCHARGE)
+        /// e eventuali appuntamenti aggiuntivi.
+        /// </summary>
+        public ICollection<ScheduledVisitModel> ScheduledVisits { get; set; } = new List<ScheduledVisitModel>();
+
+        /// <summary>
         /// Validazione custom del modello
         /// Verifica che EndDate non sia prima di StartDate e non nel passato
         /// </summary>
