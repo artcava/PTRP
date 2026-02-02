@@ -24,7 +24,7 @@ public class ActualVisitRepository : IActualVisitRepository
     {
         return await _context.ActualVisits
             .AsNoTracking()
-            .OrderByDescending(av => av.VisitDate)
+            .OrderByDescending(av => av.ActualDate)
             .ToListAsync(ct);
     }
 
@@ -43,8 +43,8 @@ public class ActualVisitRepository : IActualVisitRepository
             .Include(av => av.ScheduledVisit)
                 .ThenInclude(sv => sv.TherapyProject)
                     .ThenInclude(tp => tp.Patient)
-            .Include(av => av.VisitOperators)
-                .ThenInclude(vo => vo.Operator)
+            .Include(av => av.OperatorsPresent)
+                .ThenInclude(vo => vo.Educator)
             .AsNoTracking()
             .FirstOrDefaultAsync(av => av.Id == id, ct);
     }
@@ -68,12 +68,12 @@ public class ActualVisitRepository : IActualVisitRepository
             .Include(av => av.ScheduledVisit)
                 .ThenInclude(sv => sv.TherapyProject)
                     .ThenInclude(tp => tp.Patient)
-            .Include(av => av.VisitOperators)
+            .Include(av => av.OperatorsPresent)
             .AsNoTracking()
-            .Where(av => av.VisitDate >= fromDate &&
-                         av.VisitDate <= toDate &&
-                         av.VisitOperators.Any(vo => vo.OperatorId == educatorId))
-            .OrderByDescending(av => av.VisitDate)
+            .Where(av => av.ActualDate >= fromDate &&
+                         av.ActualDate <= toDate &&
+                         av.OperatorsPresent.Any(vo => vo.EducatorId == educatorId))
+            .OrderByDescending(av => av.ActualDate)
             .ToListAsync(ct);
     }
 
@@ -84,7 +84,7 @@ public class ActualVisitRepository : IActualVisitRepository
             .Include(av => av.ScheduledVisit)
             .AsNoTracking()
             .Where(av => av.ScheduledVisit.TherapyProjectId == projectId)
-            .OrderByDescending(av => av.VisitDate)
+            .OrderByDescending(av => av.ActualDate)
             .ToListAsync(ct);
     }
 
@@ -96,7 +96,7 @@ public class ActualVisitRepository : IActualVisitRepository
                 .ThenInclude(sv => sv.TherapyProject)
             .AsNoTracking()
             .Where(av => av.ScheduledVisit.TherapyProject.PatientId == patientId)
-            .OrderByDescending(av => av.VisitDate)
+            .OrderByDescending(av => av.ActualDate)
             .ToListAsync(ct);
     }
 
@@ -114,8 +114,8 @@ public class ActualVisitRepository : IActualVisitRepository
 
         return await _context.ActualVisits
             .AsNoTracking()
-            .Where(av => av.PatientAttendance == normalizedStatus)
-            .OrderByDescending(av => av.VisitDate)
+            .Where(av => av.PatientPresence.ToString() == normalizedStatus)
+            .OrderByDescending(av => av.ActualDate)
             .ToListAsync(ct);
     }
 
@@ -127,8 +127,8 @@ public class ActualVisitRepository : IActualVisitRepository
 
         return await _context.ActualVisits
             .AsNoTracking()
-            .Where(av => av.VisitDate >= startOfDay && av.VisitDate <= endOfDay)
-            .OrderByDescending(av => av.VisitDate)
+            .Where(av => av.ActualDate >= startOfDay && av.ActualDate <= endOfDay)
+            .OrderByDescending(av => av.ActualDate)
             .ToListAsync(ct);
     }
 
@@ -140,8 +140,8 @@ public class ActualVisitRepository : IActualVisitRepository
     {
         return await _context.ActualVisits
             .AsNoTracking()
-            .Where(av => av.VisitDate >= fromDate && av.VisitDate <= toDate)
-            .OrderByDescending(av => av.VisitDate)
+            .Where(av => av.ActualDate >= fromDate && av.ActualDate <= toDate)
+            .OrderByDescending(av => av.ActualDate)
             .ToListAsync(ct);
     }
 
@@ -184,12 +184,6 @@ public class ActualVisitRepository : IActualVisitRepository
             actualVisit.CreatedAt = DateTime.Now;
         }
 
-        // Imposta VisitSource se non già impostato
-        if (string.IsNullOrEmpty(actualVisit.VisitSource))
-        {
-            actualVisit.VisitSource = "EducatorImport"; // Default: importazione da educatore
-        }
-
         await _context.ActualVisits.AddAsync(actualVisit, ct);
         await _context.SaveChangesAsync(ct);
     }
@@ -218,11 +212,16 @@ public class ActualVisitRepository : IActualVisitRepository
         }
 
         // Aggiorna i campi modificabili
-        existingVisit.VisitDate = actualVisit.VisitDate;
+        existingVisit.ActualDate = actualVisit.ActualDate;
+        existingVisit.StartTime = actualVisit.StartTime;
+        existingVisit.EndTime = actualVisit.EndTime;
         existingVisit.ClinicalNotes = actualVisit.ClinicalNotes;
-        existingVisit.PatientAttendance = actualVisit.PatientAttendance;
-        existingVisit.VisitSource = actualVisit.VisitSource;
+        existingVisit.Outcomes = actualVisit.Outcomes;
+        existingVisit.PatientPresence = actualVisit.PatientPresence;
+        existingVisit.Source = actualVisit.Source;
         existingVisit.UpdatedAt = DateTime.Now;
+        existingVisit.UpdatedBy = actualVisit.UpdatedBy;
+        existingVisit.Version++;
 
         _context.ActualVisits.Update(existingVisit);
         await _context.SaveChangesAsync(ct);
@@ -232,7 +231,7 @@ public class ActualVisitRepository : IActualVisitRepository
     public async Task<bool> DeleteAsync(Guid id, CancellationToken ct = default)
     {
         var actualVisit = await _context.ActualVisits
-            .Include(av => av.VisitOperators)
+            .Include(av => av.OperatorsPresent)
             .FirstOrDefaultAsync(av => av.Id == id, ct);
             
         if (actualVisit == null)
@@ -241,7 +240,7 @@ public class ActualVisitRepository : IActualVisitRepository
         }
 
         // Rimuovi le relazioni N-N con gli operatori prima di eliminare la visita
-        actualVisit.VisitOperators.Clear();
+        actualVisit.OperatorsPresent.Clear();
 
         _context.ActualVisits.Remove(actualVisit);
         await _context.SaveChangesAsync(ct);
@@ -281,10 +280,10 @@ public class ActualVisitRepository : IActualVisitRepository
         CancellationToken ct = default)
     {
         return await _context.ActualVisits
-            .Include(av => av.VisitOperators)
+            .Include(av => av.OperatorsPresent)
             .AsNoTracking()
-            .CountAsync(av => av.VisitDate >= fromDate &&
-                              av.VisitDate <= toDate &&
-                              av.VisitOperators.Any(vo => vo.OperatorId == educatorId), ct);
+            .CountAsync(av => av.ActualDate >= fromDate &&
+                              av.ActualDate <= toDate &&
+                              av.OperatorsPresent.Any(vo => vo.EducatorId == educatorId), ct);
     }
 }
