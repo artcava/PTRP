@@ -204,7 +204,7 @@ public class ScheduledVisitRepositoryTests : IDisposable
             new ScheduledVisitModel
             {
                 TherapyProjectId = project.Id,
-                Type = VisitType.Followup,
+                Type = VisitType.ExtraVisit,
                 ScheduledDate = DateTime.Now.AddMonths(9),
                 Status = AppointmentStatus.Scheduled
             }
