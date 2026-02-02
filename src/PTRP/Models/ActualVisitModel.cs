@@ -39,11 +39,13 @@ public class ActualVisitModel
     }
 
     /// <summary>
-    /// Metodo interno per impostare lo ScheduledVisitId.
-    /// Utilizzato dai test e dal repository durante la creazione.
+    /// Imposta lo ScheduledVisitId.
     /// Può essere chiamato solo UNA VOLTA.
+    /// ATTENZIONE: Questo metodo è pubblico solo per consentire i test.
+    /// In produzione, utilizzare solo durante la creazione iniziale dell'entità.
     /// </summary>
-    internal void SetScheduledVisitId(Guid scheduledVisitId)
+    /// <exception cref="InvalidOperationException">Se lo ScheduledVisitId è già stato impostato.</exception>
+    public void SetScheduledVisitId(Guid scheduledVisitId)
     {
         if (ScheduledVisitId != Guid.Empty)
         {
