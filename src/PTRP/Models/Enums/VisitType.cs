@@ -9,25 +9,25 @@ public enum VisitType
     /// <summary>
     /// Prima apertura - valutazione iniziale (+3 mesi dall'inizio progetto, 90 min)
     /// </summary>
-    Intake,
+    INTAKE,
 
     /// <summary>
-    /// Verifica intermedia (+6 mesi dall'Intake, 60 min)
+    /// Verifica intermedia (+6 mesi dall'INTAKE, 60 min)
     /// </summary>
-    Intermediate,
+    INTERMEDIATE,
 
     /// <summary>
     /// Verifica finale (+6 mesi dalla verifica intermedia, 60 min)
     /// </summary>
-    Final,
+    FINAL,
 
     /// <summary>
     /// Dimissioni (+1 mese dalla verifica finale, 45 min)
     /// </summary>
-    Discharge,
+    DISCHARGE,
 
     /// <summary>
-    /// Visita aggiuntiva/straordinaria (non canonica)
+    /// Visita aggiuntiva/straordinaria follow-up (non canonica)
     /// </summary>
-    ExtraVisit
+    FOLLOW_UP
 }
