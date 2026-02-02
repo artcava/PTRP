@@ -124,7 +124,7 @@ public class ActualVisitRepositoryTests : IDisposable
             StartTime = new TimeSpan(9, 0, 0),
             EndTime = new TimeSpan(10, 0, 0),
             ClinicalNotes = "Test notes",
-            PatientPresence = PresenceStatus.Present,
+            PatientPresence = PresenceStatus.Attended,
             Source = VisitSource.EducatorImport,
             RegisteredBy = educator.Id,
             RegisteredByName = $"{educator.FirstName} {educator.LastName}"
@@ -137,7 +137,7 @@ public class ActualVisitRepositoryTests : IDisposable
             StartTime = new TimeSpan(9, 0, 0),
             EndTime = new TimeSpan(10, 0, 0),
             ClinicalNotes = "Test notes 2",
-            PatientPresence = PresenceStatus.Present,
+            PatientPresence = PresenceStatus.Attended,
             Source = VisitSource.EducatorImport,
             RegisteredBy = educator.Id,
             RegisteredByName = $"{educator.FirstName} {educator.LastName}"
@@ -188,7 +188,7 @@ public class ActualVisitRepositoryTests : IDisposable
             StartTime = new TimeSpan(9, 0, 0),
             EndTime = new TimeSpan(10, 0, 0),
             ClinicalNotes = "Test",
-            PatientPresence = PresenceStatus.Present,
+            PatientPresence = PresenceStatus.Attended,
             Source = VisitSource.EducatorImport,
             RegisteredBy = educator.Id,
             RegisteredByName = $"{educator.FirstName} {educator.LastName}"
@@ -207,15 +207,15 @@ public class ActualVisitRepositoryTests : IDisposable
     {
         // Arrange
         var actualVisit = await CreateValidActualVisit();
-        actualVisit.PatientPresence = PresenceStatus.Present;
+        actualVisit.PatientPresence = PresenceStatus.Attended;
         await _repository.AddAsync(actualVisit);
 
         // Act
-        var result = (await _repository.GetByPatientAttendanceAsync("Present")).ToList();
+        var result = (await _repository.GetByPatientAttendanceAsync("Attended")).ToList();
 
         // Assert
         Assert.Single(result);
-        Assert.Equal(PresenceStatus.Present, result[0].PatientPresence);
+        Assert.Equal(PresenceStatus.Attended, result[0].PatientPresence);
     }
 
     [Fact]
@@ -248,7 +248,7 @@ public class ActualVisitRepositoryTests : IDisposable
             StartTime = new TimeSpan(9, 0, 0),
             EndTime = new TimeSpan(10, 0, 0),
             ClinicalNotes = "Test",
-            PatientPresence = PresenceStatus.Present,
+            PatientPresence = PresenceStatus.Attended,
             Source = VisitSource.EducatorImport,
             RegisteredBy = educator.Id,
             RegisteredByName = $"{educator.FirstName} {educator.LastName}"
@@ -280,7 +280,7 @@ public class ActualVisitRepositoryTests : IDisposable
             StartTime = new TimeSpan(9, 0, 0),
             EndTime = new TimeSpan(10, 0, 0),
             ClinicalNotes = "Second visit",
-            PatientPresence = PresenceStatus.Present,
+            PatientPresence = PresenceStatus.Attended,
             Source = VisitSource.EducatorImport,
             RegisteredBy = educator.Id,
             RegisteredByName = $"{educator.FirstName} {educator.LastName}"
@@ -399,7 +399,7 @@ public class ActualVisitRepositoryTests : IDisposable
             StartTime = new TimeSpan(9, 0, 0),
             EndTime = new TimeSpan(10, 0, 0),
             ClinicalNotes = "Test",
-            PatientPresence = PresenceStatus.Present,
+            PatientPresence = PresenceStatus.Attended,
             Source = VisitSource.EducatorImport,
             RegisteredBy = educator.Id,
             RegisteredByName = $"{educator.FirstName} {educator.LastName}"
@@ -412,7 +412,7 @@ public class ActualVisitRepositoryTests : IDisposable
             StartTime = new TimeSpan(9, 0, 0),
             EndTime = new TimeSpan(10, 0, 0),
             ClinicalNotes = "Test",
-            PatientPresence = PresenceStatus.Present,
+            PatientPresence = PresenceStatus.Attended,
             Source = VisitSource.EducatorImport,
             RegisteredBy = educator.Id,
             RegisteredByName = $"{educator.FirstName} {educator.LastName}"
@@ -444,7 +444,7 @@ public class ActualVisitRepositoryTests : IDisposable
             StartTime = new TimeSpan(9, 0, 0),
             EndTime = new TimeSpan(10, 0, 0),
             ClinicalNotes = "Test clinical notes",
-            PatientPresence = PresenceStatus.Present,
+            PatientPresence = PresenceStatus.Attended,
             Source = VisitSource.EducatorImport,
             RegisteredBy = educator.Id,
             RegisteredByName = $"{educator.FirstName} {educator.LastName}"
@@ -505,7 +505,7 @@ public class ActualVisitRepositoryTests : IDisposable
             StartTime = new TimeSpan(9, 0, 0),
             EndTime = new TimeSpan(10, 0, 0),
             ClinicalNotes = "Test",
-            PatientPresence = PresenceStatus.Present,
+            PatientPresence = PresenceStatus.Attended,
             Source = VisitSource.EducatorImport,
             RegisteredBy = educator.Id,
             RegisteredByName = $"{educator.FirstName} {educator.LastName}"
