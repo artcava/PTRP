@@ -1,367 +1,362 @@
-# Architettura PTRP
+# ARCHITECTURE.md - Architettura Software PTRP
 
-## Pattern MVVM
+## 📋 Panoramica
 
-L'applicazione segue il pattern **Model-View-ViewModel (MVVM)** con la seguente struttura:
+Questo documento descrive l'architettura software di **PTRP (Progetti Terapeutici Riabilitativi Personalizzati)**, applicazione WPF desktop per la gestione offline-first di pazienti, progetti terapeutici e visite.
 
-### Layers
-
-```
-PTRP.App (WPF UI)
-    ↓ usa
-PTRP.ViewModels (Logic + Commands)
-    ↓ usa
-PTRP.Services (Business Logic)
-    ↓ usa
-PTRP.Models (Domain Models)
-```
+**Source of Truth per Workflow e Regole di Business:** [USER-WORKFLOW.md](USER-WORKFLOW.md)
 
 ---
 
-## Profili Utente e Riconoscimento
+## 🏗️ Pattern Architetturale: MVVM
 
-Il sistema supporta **due profili utente** con permessi differenziati:
+L'applicazione segue rigorosamente il pattern **Model-View-ViewModel (MVVM)** con separazione netta delle responsabilità:
 
-### 1. Coordinatore
-- Gestione completa anagrafiche pazienti
-- Gestione anagrafica educatori professionali
-- Creazione e assegnazione progetti terapeutici
-- Assegnazione educatori ai progetti
-- Visualizzazione globale di tutti i dati
-- Esportazione appuntamenti per educatori
+### Layer Stack
 
-### 2. Educatore Professionale
-- Visualizzazione pazienti e progetti assegnati
-- Registrazione visite a partire dagli appuntamenti
-- Importazione appuntamenti dal Coordinatore
-- Esportazione visite registrate
-- Accesso limitato ai soli dati di competenza
-
-### Meccanismo di Auto-Configurazione
-
-Il profilo utente viene configurato automaticamente al primo avvio attraverso l'importazione di un pacchetto di configurazione specifico:
-
-**Due Tipi di Pacchetti:**
-1. **admin.ptrp** - Configurazione Coordinatore (fornito durante deployment)
-2. **appointments_{cognome}_{YYYYMMDD}.ptrp** - Configurazione Educatore (esportato dal Coordinatore)
-
-Il sistema riconosce il profilo dal tipo di pacchetto importato e configura automaticamente i permessi.
-
-Per dettagli completi sul flusso di setup, vedere `docs/USER-WORKFLOW.md` sezione "RICONOSCIMENTO PROFILO UTENTE".
-
----
-
-## Enumerazioni di Dominio
-
-### ProjectStatus
-
-Rappresenta lo **stato del Progetto Terapeutico** (non del paziente).
-
-```csharp
-public enum ProjectStatus
-{
-    Active,      // Progetto attivo in corso
-    Suspended,   // Progetto temporaneamente sospeso
-    Completed,   // Progetto completato con successo
-    Deceased     // Progetto chiuso per decesso paziente
-}
 ```
-
-**Regola Critica:** Un paziente può avere **UN SOLO** progetto con stato `Active` contemporaneamente.
-
----
-
-### VisitType
-
-Rappresenta la **tipologia di appuntamento/visita** nel percorso terapeutico.
-
-```csharp
-public enum VisitType
-{
-    Intake,           // Prima Apertura (INTAKE) - dopo 3 mesi dall'assegnazione
-    Intermediate,     // Verifica Intermedia - dopo 6 mesi dalla Prima Apertura
-    Final,           // Verifica Finale - dopo 6 mesi dalla Verifica Intermedia
-    Discharge,       // Dimissioni - dopo 1 mese dalla Verifica Finale
-    ExtraVisit       // Visite aggiuntive non canoniche
-}
-```
-
-**Appuntamenti Canonici:** Ogni progetto genera automaticamente 4 appuntamenti programmati con le tempistiche sopra indicate.
-
----
-
-### AppointmentStatus
-
-Rappresenta lo **stato di un appuntamento programmato**.
-
-```csharp
-public enum AppointmentStatus
-{
-    Scheduled,    // Appuntamento programmato (stato iniziale)
-    Completed,    // Appuntamento completato (visita registrata)
-    Missed,       // Appuntamento mancato (paziente non si è presentato)
-    Rescheduled   // Appuntamento riprogrammato
-}
+┌─────────────────────────────────────────────────────────┐
+│  PTRP.App (WPF Views)                                   │
+│  └─ XAML Views + Code-Behind minimale                   │
+└────────────────────┬────────────────────────────────────┘
+                     │ Data Binding + Commands
+┌────────────────────▼────────────────────────────────────┐
+│  PTRP.ViewModels (Presentation Logic)                   │
+│  └─ Commands, ObservableCollections, UI State           │
+└────────────────────┬────────────────────────────────────┘
+                     │ Calls business logic
+┌────────────────────▼────────────────────────────────────┐
+│  PTRP.Services (Business Logic)                         │
+│  └─ Orchestrazione, Validazioni, Regole di Dominio      │
+└────────────────────┬────────────────────────────────────┘
+                     │ CRUD operations
+┌────────────────────▼────────────────────────────────────┐
+│  PTRP.Data (Repositories)                               │
+│  └─ EF Core DbContext, Query, Persistenza               │
+└────────────────────┬────────────────────────────────────┘
+                     │ Mappa su
+┌────────────────────▼────────────────────────────────────┐
+│  PTRP.Models (Domain Models)                            │
+│  └─ Entità di dominio, Enumerazioni, Vincoli            │
+└─────────────────────────────────────────────────────────┘
+                     │ Persistite in
+┌────────────────────▼────────────────────────────────────┐
+│  SQLite Database (Criptato AES-256)                     │
+│  └─ File locale .db cifrato                             │
+└─────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-### PatientAttendance
+## 🎯 Modelli di Dominio (PTRP.Models)
 
-Rappresenta lo **stato di presenza del paziente** durante una visita effettiva.
+### 1. **PatientModel** (Paziente)
 
-```csharp
-public enum PatientAttendance
-{
-    PresentCollaborative,      // Presente e Collaborativo
-    PresentNonCollaborative,   // Presente ma Non Collaborativo
-    AbsentJustified,           // Assente Giustificato
-    AbsentUnjustified          // Assente Non Giustificato
-}
-```
-
----
-
-### VisitSource
-
-Rappresenta l'**origine della registrazione** di una visita effettiva.
-
-```csharp
-public enum VisitSource
-{
-    EducatorImport,    // Dato originato dall'applicativo dell'Educatore
-    CoordinatorDirect  // Inserimento manuale effettuato dal Coordinatore
-}
-```
-
-Questa distinzione è critica per l'audit trail e la tracciabilità delle visite.
-
----
-
-## Modelli di Dominio
-
-### PatientModel
-
-Rappresenta un **Paziente** nel sistema.
+Rappresenta un paziente nel sistema.
 
 **Proprietà:**
 - `Guid Id`: Identificatore univoco (autogenerato)
-- `string FirstName`: Nome
-- `string LastName`: Cognome
-- `DateTime CreatedAt`: Data di creazione (default: DateTime.Now)
-- `DateTime? UpdatedAt`: Data di ultimo aggiornamento (nullable)
-- `ICollection<TherapyProjectModel> TherapyProjects`: Progetti terapeutici associati
+- `string FirstName`: Nome (obbligatorio, max 100 caratteri)
+- `string LastName`: Cognome (obbligatorio, max 100 caratteri)
+- `DateTime? DateOfBirth`: Data di nascita (opzionale)
+- `string? FiscalCode`: Codice fiscale (opzionale, unique)
+- `string? PhoneNumber`: Telefono (opzionale)
+- `string? Email`: Email (opzionale)
+- `string? Address`: Indirizzo (opzionale)
+- `string? Notes`: Note aggiuntive (opzionale)
+- `DateTime CreatedAt`: Timestamp creazione (default: DateTime.UtcNow)
+- `DateTime? UpdatedAt`: Timestamp ultimo aggiornamento
+- `string? CreatedBy`: Operatore che ha creato il record
+- `string? UpdatedBy`: Operatore che ha aggiornato il record
+- `int Version`: Versione record per ottimistic locking (default: 1)
+
+**Relazioni:**
+- `ICollection<TherapyProjectModel> TherapyProjects`: Progetti terapeutici associati (1:N)
 
 **ToString:** `"{FirstName} {LastName}"`
 
 ---
 
-### TherapyProjectModel
+### 2. **TherapyProjectModel** (Progetto Terapeutico)
 
-Rappresenta un **Progetto Terapeutico** associato a un paziente.
+Rappresenta un progetto terapeutico associato a un paziente.
 
 **Proprietà:**
-- `Guid Id`: Identificatore univoco (autogenerato)
+- `Guid Id`: Identificatore univoco
 - `Guid PatientId`: FK al paziente
-- `string Title`: Titolo del progetto
-- `string Description`: Descrizione dettagliata
-- `DateTime StartDate`: Data di inizio
-- `DateTime? EndDate`: Data di fine (nullable, per progetti in corso)
-- `ProjectStatus Status`: Stato del progetto (enum: Active, Suspended, Completed, Deceased)
-- `DateTime CreatedAt`: Data di creazione (default: DateTime.Now)
-- `DateTime? UpdatedAt`: Data di ultimo aggiornamento (nullable)
+- `string Title`: Titolo progetto (obbligatorio)
+- `string? Description`: Descrizione dettagliata
+- `DateTime StartDate`: Data inizio progetto (obbligatorio)
+- `DateTime? PlannedEndDate`: Data fine pianificata (opzionale)
+- `DateTime? ActualEndDate`: Data fine effettiva (opzionale)
+- `ProjectStatus Status`: Stato progetto (default: `Active`)
+- `string? Notes`: Note aggiuntive
+- `DateTime CreatedAt`: Timestamp creazione
+- `DateTime? UpdatedAt`: Timestamp aggiornamento
+- `string? CreatedBy`: Operatore creatore
+- `string? UpdatedBy`: Operatore ultimo aggiornamento
+- `int Version`: Versione per optimistic locking
 
 **Relazioni:**
-- `PatientModel Patient`: Navigazione al paziente
-- `ICollection<ProfessionalEducatorModel> ProfessionalEducators`: Educatori assegnati (N:N)
-- `ICollection<ScheduledVisitModel> ScheduledVisits`: Appuntamenti programmati
+- `PatientModel Patient`: Paziente associato (N:1)
+- `ICollection<ProfessionalEducatorModel> ProfessionalEducators`: Educatori assegnati (N:N via `ProjectOperatorModel`)
+- `ICollection<ScheduledVisitModel> ScheduledVisits`: Visite programmate (1:N)
 
-**Vincoli:**
-- Un paziente può avere **un solo** progetto con `Status = Active` contemporaneamente
-- Alla creazione di un progetto vengono generati automaticamente 4 appuntamenti canonici
+**Enumerazione `ProjectStatus`:**
+```csharp
+public enum ProjectStatus
+{
+    Active,      // Progetto attivo
+    Suspended,   // Progetto sospeso temporaneamente
+    Completed,   // Progetto concluso regolarmente
+    Deceased     // Paziente deceduto
+}
+```
 
-**ToString:** `"{Title} (Paziente ID: {PatientId})"`
+**Vincolo Critico:** Un paziente può avere **UN SOLO** progetto con `Status = Active` contemporaneamente (validato in `TherapyProjectService`).
+
+**ToString:** `"{Title} (Paziente: {Patient?.FullName})"`
 
 ---
 
-### ProfessionalEducatorModel
+### 3. **ProfessionalEducatorModel** (Operatore/Educatore)
 
-Rappresenta un **Educatore Professionale** che può essere assegnato a molteplici progetti.
+Rappresenta un educatore professionale.
 
 **Proprietà:**
-- `Guid Id`: Identificatore univoco (autogenerato)
-- `string FirstName`: Nome
-- `string LastName`: Cognome
-- `string Email`: Email di contatto
-- `string PhoneNumber`: Numero di telefono
-- `DateTime DateOfBirth`: Data di nascita
-- `string Specialization`: Specializzazione professionale (es. "Psicologo", "Fisioterapista")
-- `string LicenseNumber`: Numero di licenza/albo professionale
-- `DateTime HireDate`: Data di assunzione/collaborazione
+- `Guid Id`: Identificatore univoco
+- `string FirstName`: Nome (obbligatorio, max 100 caratteri)
+- `string LastName`: Cognome (obbligatorio, max 100 caratteri)
+- `string Email`: Email (obbligatorio, unique)
+- `string? PhoneNumber`: Telefono
+- `DateTime? DateOfBirth`: Data di nascita
+- `string? Specialization`: Specializzazione (es. "Psicologo", "Educatore Sociale")
+- `string? LicenseNumber`: Numero albo professionale
+- `DateTime? HireDate`: Data assunzione/collaborazione
 - `string Status`: Stato (default: "Active")
-- `DateTime CreatedAt`: Data di creazione (default: DateTime.Now)
-- `DateTime? UpdatedAt`: Data di ultimo aggiornamento (nullable)
+- `DateTime CreatedAt`: Timestamp creazione
+- `DateTime? UpdatedAt`: Timestamp aggiornamento
+- `string? CreatedBy`: Operatore creatore
+- `string? UpdatedBy`: Operatore ultimo aggiornamento
+- `int Version`: Versione optimistic locking
 
 **Relazioni:**
 - `ICollection<TherapyProjectModel> AssignedTherapyProjects`: Progetti assegnati (N:N)
-- `ICollection<VisitOperatorModel> VisitParticipations`: Visite a cui ha partecipato
+- `ICollection<ActualVisitModel> ConductedVisits`: Visite effettuate (N:N via `VisitOperatorModel`)
 
 **ToString:** `"{FirstName} {LastName} ({Specialization})"`
 
 ---
 
-### ScheduledVisitModel
+### 4. **VisitTypeModel** (Tipologia Visita)
 
-Rappresenta un **Appuntamento Programmato** nel calendario.
+Definisce le tipologie di visite canoniche e straordinarie.
 
 **Proprietà:**
-- `Guid Id`: Identificatore univoco (autogenerato)
-- `Guid TherapyProjectId`: FK al progetto terapeutico
-- `VisitType Type`: Tipologia appuntamento (Intake, Intermediate, Final, Discharge, ExtraVisit)
-- `DateTime ScheduledDate`: Data programmata
-- `TimeSpan? ScheduledTime`: Ora programmata (opzionale)
-- `int? EstimatedDurationMinutes`: Durata stimata in minuti
-- `AppointmentStatus Status`: Stato appuntamento (Scheduled, Completed, Missed, Rescheduled)
-- `string Notes`: Note sull'appuntamento
-- `DateTime CreatedAt`: Data di creazione
-- `DateTime? UpdatedAt`: Data di ultimo aggiornamento
+- `Guid Id`: Identificatore univoco
+- `string Code`: Codice tipologia (unique, es. "Intake", "Intermediate", "Final", "Discharge", "ExtraVisit")
+- `string Description`: Descrizione leggibile
+- `bool IsActive`: Flag per disabilitare tipologie obsolete
+- `DateTime CreatedAt`: Timestamp creazione
+- `DateTime? UpdatedAt`: Timestamp aggiornamento
 
 **Relazioni:**
-- `TherapyProjectModel TherapyProject`: Navigazione al progetto
-- `ActualVisitModel? ActualVisit`: Visita effettiva associata (relazione 1:1, nullable)
+- `ICollection<ScheduledVisitModel> ScheduledVisits`: Visite programmate (1:N)
+
+**Valori Predefiniti (Seeding):**
+- `Intake` - Prima apertura (valutazione iniziale)
+- `Intermediate` - Verifica intermedia (6 mesi)
+- `Final` - Verifica finale (12 mesi)
+- `Discharge` - Dimissioni (13 mesi)
+- `ExtraVisit` - Visita aggiuntiva/straordinaria
+
+**ToString:** `"{Code} - {Description}"`
+
+---
+
+### 5. **ScheduledVisitModel** (Visita Programmata)
+
+Rappresenta una visita programmata/appuntamento.
+
+**Proprietà:**
+- `Guid Id`: Identificatore univoco
+- `Guid ProjectId`: FK al progetto terapeutico
+- `Guid VisitTypeId`: FK alla tipologia visita
+- `DateTime ScheduledDate`: Data programmata
+- `TimeSpan? ScheduledStartTime`: Ora inizio prevista (opzionale)
+- `int? ExpectedDurationMinutes`: Durata attesa in minuti (opzionale)
+- `AppointmentStatus Status`: Stato appuntamento (default: `Scheduled`)
+- `string? Location`: Luogo visita (es. "Sede", "Domicilio paziente")
+- `string? Notes`: Note aggiuntive
+- `DateTime CreatedAt`: Timestamp creazione
+- `DateTime? UpdatedAt`: Timestamp aggiornamento
+- `string? CreatedBy`: Operatore creatore
+- `string? UpdatedBy`: Operatore ultimo aggiornamento
+- `int Version`: Versione optimistic locking
+
+**Relazioni:**
+- `TherapyProjectModel Project`: Progetto associato (N:1)
+- `VisitTypeModel VisitType`: Tipologia visita (N:1)
+- `ActualVisitModel? ActualVisit`: Visita effettiva (1:1, nullable)
+
+**Enumerazione `AppointmentStatus`:**
+```csharp
+public enum AppointmentStatus
+{
+    Scheduled,     // Appuntamento programmato (non ancora effettuato)
+    Completed,     // Appuntamento completato (esiste ActualVisit)
+    Missed,        // Appuntamento mancato (paziente non si è presentato)
+    Rescheduled    // Appuntamento riprogrammato (creato nuovo ScheduledVisit)
+}
+```
 
 **Vincoli:**
-- Un `ScheduledVisit` può avere **al massimo una** `ActualVisit` associata (relazione 1:1)
+- `ScheduledDate` non può essere nel passato (validato applicativamente)
+- Un `ScheduledVisit` può avere **al massimo** una `ActualVisit` (relazione 1:1)
 
-**ToString:** `"{Type} - {ScheduledDate:dd/MM/yyyy}"`
+**ToString:** `"{VisitType?.Code} - {ScheduledDate:yyyy-MM-dd}"`
 
 ---
 
-### ActualVisitModel
+### 6. **ActualVisitModel** (Visita Effettiva)
 
-Rappresenta una **Visita Effettiva** registrata a partire da un appuntamento.
-
-**⚠️ VINCOLO CRITICO:** Una visita può essere creata **SOLO** a partire da un `ScheduledVisit` esistente (relazione 1:1 obbligatoria).
+Rappresenta una visita effettivamente svolta.
 
 **Proprietà:**
-- `Guid Id`: Identificatore univoco (autogenerato)
-- `Guid ScheduledVisitId`: FK all'appuntamento programmato (obbligatorio, 1:1)
-- `DateTime ActualDate`: Data effettiva della visita
-- `TimeSpan? ActualStartTime`: Ora inizio effettiva
-- `TimeSpan? ActualEndTime`: Ora fine effettiva
-- `VisitSource Source`: Origine registrazione (EducatorImport, CoordinatorDirect)
-- `DateTime RegistrationDate`: Data di registrazione nel sistema
+- `Guid Id`: Identificatore univoco
+- `Guid ScheduledVisitId`: FK alla visita programmata (UNIQUE - relazione 1:1)
+- `DateTime ActualDate`: Data effettiva visita
+- `TimeSpan? ActualStartTime`: Ora inizio effettiva (opzionale)
+- `TimeSpan? ActualEndTime`: Ora fine effettiva (opzionale)
+- `VisitSource Source`: Origine registrazione (default: `CoordinatorDirect`)
+- `DateTime RegistrationDate`: Data/ora registrazione nel sistema
 - `string ClinicalNotes`: Note cliniche (obbligatorio)
-- `string Outcomes`: Esiti e obiettivi raggiunti
-- `PatientAttendance AttendanceStatus`: Presenza paziente (enum)
-- `DateTime CreatedAt`: Data di creazione
-- `DateTime? UpdatedAt`: Data di ultimo aggiornamento
+- `string? Outcomes`: Esiti/risultati visita (opzionale)
+- `PatientAttendance AttendanceStatus`: Presenza paziente (obbligatorio)
+- `string? SignatureHash`: Hash firma elettronica (opzionale)
+- `DateTime CreatedAt`: Timestamp creazione
+- `DateTime? UpdatedAt`: Timestamp aggiornamento
+- `string? CreatedBy`: Operatore creatore
+- `string? UpdatedBy`: Operatore ultimo aggiornamento
+- `int Version`: Versione optimistic locking
 
 **Relazioni:**
-- `ScheduledVisitModel ScheduledVisit`: Navigazione all'appuntamento (1:1 obbligatorio)
-- `ICollection<VisitOperatorModel> Operators`: Operatori presenti (N:N)
+- `ScheduledVisitModel ScheduledVisit`: Visita programmata corrispondente (1:1)
+- `ICollection<VisitOperatorModel> VisitOperators`: Operatori partecipanti (1:N → N:N con `ProfessionalEducatorModel`)
 
-**Validazioni:**
-- `ScheduledVisitId` obbligatorio (non nullable)
-- `ClinicalNotes` obbligatorio (non vuoto)
-- `ActualDate` non può essere futura
-- `ActualEndTime` deve essere successiva a `ActualStartTime`
-- Almeno un operatore deve essere presente
+**Enumerazione `VisitSource`:**
+```csharp
+public enum VisitSource
+{
+    EducatorImport,      // Registrata da educatore e importata via sync
+    CoordinatorDirect    // Registrata direttamente da coordinatore
+}
+```
 
-**ToString:** `"Visita {ScheduledVisit.Type} del {ActualDate:dd/MM/yyyy}"`
+**Enumerazione `PatientAttendance`:**
+```csharp
+public enum PatientAttendance
+{
+    PresentCollaborative,        // Paziente presente e collaborativo
+    PresentNonCollaborative,     // Paziente presente ma non collaborativo
+    AbsentJustified,             // Paziente assente con giustificazione
+    AbsentUnjustified            // Paziente assente senza giustificazione
+}
+```
+
+**Vincoli:**
+- `ActualDate` non può essere futura (validato applicativamente)
+- `ActualEndTime` > `ActualStartTime` (se entrambi specificati)
+- `ClinicalNotes` obbligatorio (NOT NULL)
+- `ScheduledVisitId` deve essere UNIQUE (una visita programmata → al massimo una visita effettiva)
+
+**ToString:** `"Visita del {ActualDate:yyyy-MM-dd} - {AttendanceStatus}"`
 
 ---
 
-### VisitOperatorModel
+### 7. **VisitOperatorModel** (Tabella di Giunzione N:N)
 
-Rappresenta la **partecipazione di un Operatore** a una visita effettiva (relazione N:N).
+Rappresenta la partecipazione di un operatore a una visita effettiva (relazione N:N tra `ActualVisitModel` e `ProfessionalEducatorModel`).
 
 **Proprietà:**
-- `Guid ActualVisitId`: FK alla visita effettiva (chiave composita)
-- `Guid OperatorId`: FK all'operatore (chiave composita)
-- `string RoleInVisit`: Ruolo nella visita (es. "Lead", "Assistant")
-- `string Notes`: Note sulla partecipazione
+- `Guid Id`: Identificatore univoco
+- `Guid ActualVisitId`: FK alla visita effettiva
+- `Guid OperatorId`: FK all'operatore
+- `string RoleInVisit`: Ruolo nella visita (es. "Lead", "Assistant", "Observer")
+- `string? Notes`: Note aggiuntive su partecipazione
+- `DateTime CreatedAt`: Timestamp creazione
+- `DateTime? UpdatedAt`: Timestamp aggiornamento
+- `string? CreatedBy`: Operatore creatore
+- `string? UpdatedBy`: Operatore ultimo aggiornamento
+- `int Version`: Versione optimistic locking
 
 **Relazioni:**
-- `ActualVisitModel ActualVisit`: Navigazione alla visita
-- `ProfessionalEducatorModel Operator`: Navigazione all'operatore
+- `ActualVisitModel ActualVisit`: Visita effettiva (N:1)
+- `ProfessionalEducatorModel Operator`: Operatore partecipante (N:1)
 
-**Chiave Primaria Composita:** (`ActualVisitId`, `OperatorId`)
+**Vincolo Unique:** `(ActualVisitId, OperatorId)` → uno stesso operatore non può comparire due volte nella stessa visita.
 
-**ToString:** `"{Operator.FirstName} {Operator.LastName} - {RoleInVisit}"`
+**ToString:** `"{Operator?.FullName} - {RoleInVisit}"`
 
 ---
 
-## Relazioni tra Modelli
+### 8. **ProjectOperatorModel** (Tabella di Giunzione N:N)
+
+Rappresenta l'assegnazione di un operatore a un progetto terapeutico (relazione N:N tra `TherapyProjectModel` e `ProfessionalEducatorModel`).
+
+**Proprietà:**
+- `Guid Id`: Identificatore univoco
+- `Guid ProjectId`: FK al progetto
+- `Guid OperatorId`: FK all'operatore
+- `string RoleInProject`: Ruolo nel progetto (es. "Coordinator", "Assistant", "Consultant")
+- `DateTime AssignedAt`: Data assegnazione
+- `DateTime? RemovedAt`: Data rimozione (nullable, se ancora assegnato)
+- `string? Notes`: Note aggiuntive
+- `DateTime CreatedAt`: Timestamp creazione
+- `DateTime? UpdatedAt`: Timestamp aggiornamento
+- `string? CreatedBy`: Operatore creatore
+- `string? UpdatedBy`: Operatore ultimo aggiornamento
+- `int Version`: Versione optimistic locking
+
+**Relazioni:**
+- `TherapyProjectModel Project`: Progetto terapeutico (N:1)
+- `ProfessionalEducatorModel Operator`: Operatore assegnato (N:1)
+
+**Vincolo Unique:** `(ProjectId, OperatorId)` per assegnazioni attive (RemovedAt IS NULL).
+
+**ToString:** `"{Operator?.FullName} - {RoleInProject} su {Project?.Title}"`
+
+---
+
+## 🔄 Relazioni tra Modelli (ER Diagram Completo)
 
 ```
-PatientModel (1) ────────────── (N) TherapyProjectModel
-                                       ↓ (ha stato: Active/Suspended/Completed/Deceased)
-                                       ↓ (N:N)
-                                       ↓
-                                ProfessionalEducatorModel
-                                       ↓
-                                       ↓ (1:N)
-                                       ↓
-                                ScheduledVisitModel (4 canonici + extra)
-                                       ↓
-                                       ↓ (1:1 vincolo obbligatorio)
-                                       ↓
-                                ActualVisitModel
-                                       ↓
-                                       ↓ (N:N)
-                                       ↓
-                                VisitOperatorModel ───── ProfessionalEducatorModel
+PatientModel (1) ────────── (N) TherapyProjectModel
+                                       |
+                                       | (N)
+                                       |
+                            ProjectOperatorModel (N:N)
+                                       |
+                                       | (N)
+                                       |
+                             ProfessionalEducatorModel
+                                       |
+                                       | (N)
+                                       |
+                             VisitOperatorModel (N:N)
+                                       |
+                                       | (N)
+                                       |
+TherapyProjectModel (1) ── (N) ScheduledVisitModel (1:1) ── ActualVisitModel
+                                       |
+                                       | (N)
+                                       |
+                                VisitTypeModel (1)
 ```
 
-**Regole Fondamentali:**
-1. Un **Paziente** ha **molti Progetti Terapeutici**, ma **uno solo** può essere `Active`
-2. Un **Progetto Terapeutico** ha **molti Educatori Professionali** (N:N)
-3. Un **Progetto** genera automaticamente **4 appuntamenti canonici** alla creazione
-4. Un **Appuntamento** può avere **al massimo una Visita** (1:1)
-5. Una **Visita** deve essere creata **sempre** a partire da un Appuntamento (vincolo obbligatorio)
-6. Una **Visita** può avere **molti Operatori** presenti (N:N)
-
 ---
 
-## Regole di Schedulazione Appuntamenti
-
-### Appuntamenti Canonici
-
-Ogni progetto terapeutico genera automaticamente 4 appuntamenti programmati con le seguenti tempistiche:
-
-1. **Prima Apertura (INTAKE)**
-   - Tipo: `VisitType.Intake`
-   - Tempistica: +3 mesi dalla data di inizio progetto (`StartDate`)
-   - Durata stimata: 90 minuti
-
-2. **Verifica Intermedia**
-   - Tipo: `VisitType.Intermediate`
-   - Tempistica: +6 mesi dalla Prima Apertura
-   - Durata stimata: 60 minuti
-
-3. **Verifica Finale**
-   - Tipo: `VisitType.Final`
-   - Tempistica: +6 mesi dalla Verifica Intermedia
-   - Durata stimata: 60 minuti
-
-4. **Dimissioni (DISCHARGE)**
-   - Tipo: `VisitType.Discharge`
-   - Tempistica: +1 mese dalla Verifica Finale
-   - Durata stimata: 45 minuti
-
-### Visite Extra
-
-Oltre ai 4 appuntamenti canonici, il sistema permette la creazione di:
-- **Visite aggiuntive** (`VisitType.ExtraVisit`)
-- **Follow-up** su richiesta
-- **Urgenze** cliniche
-
-Queste visite extra non seguono uno schema temporale predefinito e vengono create manualmente dal Coordinatore.
-
----
-
-## Servizi
+## 🧰 Servizi (PTRP.Services)
 
 ### PatientService
 
@@ -375,6 +370,11 @@ Queste visite extra non seguono uno schema temporale predefinito e vengono creat
 - `Task DeleteAsync(Guid id)`
 - `Task<IEnumerable<PatientModel>> SearchAsync(string searchTerm)`
 
+**Validazioni:**
+- `FirstName` e `LastName` obbligatori
+- `FiscalCode` unico (se specificato)
+- `Email` formato valido (se specificata)
+
 ---
 
 ### TherapyProjectService
@@ -382,146 +382,252 @@ Queste visite extra non seguono uno schema temporale predefinito e vengono creat
 **Interfaccia:** `ITherapyProjectService`
 
 **Metodi:**
-- `Task<TherapyProjectModel> CreateProjectAsync(TherapyProjectModel project)`
-  - Valida unicità progetto attivo per paziente
-  - Genera automaticamente 4 appuntamenti canonici
-- `Task<TherapyProjectModel> UpdateProjectStatusAsync(Guid projectId, ProjectStatus newStatus)`
-  - Valida transizioni di stato
-- `Task<IEnumerable<ScheduledVisitModel>> GetCanonicalAppointmentsAsync(Guid projectId)`
+- `Task<IEnumerable<TherapyProjectModel>> GetAllAsync()`
+- `Task<TherapyProjectModel> GetByIdAsync(Guid id)`
+- `Task<IEnumerable<TherapyProjectModel>> GetByPatientIdAsync(Guid patientId)`
+- `Task<TherapyProjectModel?> GetActiveProjectByPatientIdAsync(Guid patientId)`
+- `Task AddAsync(TherapyProjectModel project)`
+- `Task UpdateAsync(TherapyProjectModel project)`
+- `Task DeleteAsync(Guid id)`
+- `Task SuspendProjectAsync(Guid projectId, string reason)`
+- `Task ResumeProjectAsync(Guid projectId)`
+- `Task CompleteProjectAsync(Guid projectId, DateTime completionDate)`
+
+**Regole di Business:**
+- Un paziente può avere **UN SOLO** progetto `Active` contemporaneamente
+- Schedulazione automatica 4 visite canoniche alla creazione progetto
+- `PlannedEndDate` >= `StartDate` (se specificata)
+- Non permettere eliminazione se esistono visite registrate
 
 ---
 
-### ScheduledVisitService
+### VisitService
 
-**Interfaccia:** `IScheduledVisitService`
+**Interfaccia:** `IVisitService`
 
 **Metodi:**
-- `Task<IEnumerable<ScheduledVisitModel>> GetByProjectAsync(Guid projectId)`
-- `Task<IEnumerable<ScheduledVisitModel>> GetByEducatorAsync(Guid educatorId, DateTime from, DateTime to)`
-- `Task<ScheduledVisitModel> RescheduleAsync(Guid visitId, DateTime newDate)`
-- `Task MarkAsMissedAsync(Guid visitId)`
+- `Task<IEnumerable<ScheduledVisitModel>> GetScheduledVisitsByProjectIdAsync(Guid projectId)`
+- `Task<ScheduledVisitModel> GetScheduledVisitByIdAsync(Guid id)`
+- `Task CreateScheduledVisitAsync(ScheduledVisitModel scheduledVisit)`
+- `Task UpdateScheduledVisitAsync(ScheduledVisitModel scheduledVisit)`
+- `Task DeleteScheduledVisitAsync(Guid id)`
+- `Task<ActualVisitModel> RegisterActualVisitAsync(ActualVisitModel actualVisit)`
+- `Task<IEnumerable<ActualVisitModel>> GetActualVisitsByProjectIdAsync(Guid projectId)`
+- `Task<ActualVisitModel> GetActualVisitByIdAsync(Guid id)`
+
+**Regole di Business:**
+- Una `ScheduledVisit` può avere **al massimo** una `ActualVisit`
+- `ActualDate` non può essere futura
+- `ActualEndTime` > `ActualStartTime` (se entrambi specificati)
+- Registrare `ActualVisit` imposta automaticamente `ScheduledVisit.Status = Completed`
 
 ---
 
-### ActualVisitService
-
-**Interfaccia:** `IActualVisitService`
-
-**Metodi:**
-- `Task<ActualVisitModel> RegisterVisitAsync(Guid scheduledVisitId, ActualVisitModel visitData)`
-  - Valida vincolo 1:1 con ScheduledVisit
-  - Valida presenza di almeno un operatore
-  - Aggiorna stato appuntamento a Completed
-- `Task AddOperatorAsync(Guid visitId, Guid operatorId, string role)`
-- `Task<IEnumerable<ActualVisitModel>> GetByEducatorAsync(Guid educatorId, DateTime from, DateTime to)`
-
----
-
-## ViewModels
+## 🖥️ ViewModels (PTRP.ViewModels)
 
 ### MainWindowViewModel
 
 **Responsabilità:**
-- Gestione lista pazienti
-- Ricerca pazienti
-- Comandi CRUD (Add, Update, Delete)
-- Stato UI (loading, messaggi)
+- Navigazione principale sidebar
+- Gestione autenticazione utente
+- Stato globale applicazione
+
+**Proprietà:**
+- `string CurrentUserName`
+- `bool IsAuthenticated`
+- `string CurrentViewName`
+
+**Comandi:**
+- `NavigateToCommand`: Navigazione tra view
+- `LogoutCommand`: Logout utente
+
+---
+
+### PatientListViewModel
+
+**Responsabilità:**
+- Lista pazienti
+- Ricerca e filtri
+- Comandi CRUD pazienti
 
 **Proprietà:**
 - `ObservableCollection<PatientModel> Patients`
-- `PatientModel SelectedPatient`
+- `PatientModel? SelectedPatient`
 - `string SearchTerm`
-- `string StatusMessage`
 - `bool IsLoading`
 
 **Comandi:**
 - `SearchPatientsCommand`
 - `ClearSearchCommand`
 - `AddPatientCommand`
-- `UpdatePatientCommand`
+- `EditPatientCommand`
 - `DeletePatientCommand`
 
 ---
 
-### CalendarViewModel
+### ProjectFormViewModel
 
 **Responsabilità:**
-- Visualizzazione calendario mensile
-- Filtri per educatore, tipo visita, stato progetto
-- Lista appuntamenti giornalieri
-- Azioni rapide (Registra Visita, Riprogramma, Segna Mancato)
+- Creazione/modifica progetto terapeutico
+- Assegnazione educatori
+- Gestione stato progetto
 
 **Proprietà:**
-- `DateTime SelectedMonth`
-- `DateTime SelectedDate`
-- `ObservableCollection<ScheduledVisitModel> DayAppointments`
-- Filtri vari
+- `TherapyProjectModel CurrentProject`
+- `ObservableCollection<ProfessionalEducatorModel> AvailableEducators`
+- `ObservableCollection<ProfessionalEducatorModel> AssignedEducators`
 
-**Logica di Colorazione:**
-- Calendario usa **codice colore per STATO PROGETTO**, non per tipo appuntamento:
-  - 🟢 Active (Progetto in corso)
-  - 🟡 Suspended (Progetto sospeso)
-  - ⚫ Deceased (Paziente deceduto)
-  - ⚪ Completed (Progetto concluso)
+**Comandi:**
+- `SaveProjectCommand`
+- `CancelCommand`
+- `AssignEducatorCommand`
+- `RemoveEducatorCommand`
 
 ---
 
 ### VisitFormViewModel
 
 **Responsabilità:**
-- Registrazione visita effettiva a partire da appuntamento
-- Validazione vincoli (date, operatori, note obbligatorie)
-- Selezione multipla operatori presenti
+- Registrazione visita effettiva
+- Selezione operatori partecipanti
+- Validazione campi obbligatori
 
 **Proprietà:**
-- `ScheduledVisitModel ScheduledVisit` (obbligatorio)
-- `ActualVisitModel ActualVisit`
+- `ActualVisitModel CurrentVisit`
 - `ObservableCollection<ProfessionalEducatorModel> AvailableOperators`
-- `ObservableCollection<ProfessionalEducatorModel> SelectedOperators`
+- `ObservableCollection<VisitOperatorModel> SelectedOperators`
 
 **Comandi:**
-- `SaveVisitCommand` (valida e chiama `IActualVisitService.RegisterVisitAsync`)
+- `SaveVisitCommand`
+- `CancelCommand`
+- `AddOperatorCommand`
+- `RemoveOperatorCommand`
 
 ---
 
-## Calendario e Visualizzazione
+## 🗄️ Persistenza (PTRP.Data)
 
-### Logica di Codifica Colori
+### PtrpDbContext
 
-Il calendario mensile utilizza badge colorati basati sullo **stato del progetto** associato all'appuntamento:
+**DbSets:**
+- `DbSet<PatientModel> Patients`
+- `DbSet<TherapyProjectModel> TherapyProjects`
+- `DbSet<ProfessionalEducatorModel> Operators`
+- `DbSet<VisitTypeModel> VisitTypes`
+- `DbSet<ScheduledVisitModel> ScheduledVisits`
+- `DbSet<ActualVisitModel> ActualVisits`
+- `DbSet<VisitOperatorModel> VisitOperators`
+- `DbSet<ProjectOperatorModel> ProjectOperators`
 
-- **🟢 Verde (Active)**: Progetto attivo in corso
-- **🟡 Giallo (Suspended)**: Progetto temporaneamente sospeso
-- **⚫ Nero (Deceased)**: Progetto chiuso per decesso paziente
-- **⚪ Bianco (Completed)**: Progetto completato con successo
-
-Questa scelta facilita l'identificazione immediata dello stato clinico del paziente associato all'appuntamento.
-
----
-
-## Note di Design
-
-1. **Tutti gli ID sono `Guid`** per supportare scenari distribuiti e evitare collisioni
-2. **Timestamp di audit** (`CreatedAt`, `UpdatedAt`) su tutti i modelli per tracciabilità
-3. **Relazioni bidirezionali** tra modelli per navigazione ORM-friendly
-4. **ToString() significativi** per debugging e logging
-5. **Proprietà di default** per semplificare la creazione degli oggetti
-6. **Enum fortemente tipizzati** per stati, tipologie e source tracking
-7. **Vincolo 1:1 obbligatorio** tra ScheduledVisit e ActualVisit per integrità dati
-8. **Unicità progetto attivo** garantita a livello applicativo e database
+**Configurazioni Fluent API:**
+- Unique constraints su `FiscalCode`, `Email`
+- Cascade delete su relazioni 1:N
+- Restrict delete su FK critiche (es. `VisitTypeModel`)
+- Unique constraint su `(ActualVisitId, OperatorId)` in `VisitOperators`
+- Index su campi frequentemente ricercati
 
 ---
 
-## Riferimenti
+## 🔐 Sicurezza e Crittografia
 
-- [USER-WORKFLOW.md](USER-WORKFLOW.md) - Flussi utente dettagliati (source of truth)
-- [DATABASE.md](DATABASE.md) - Schema database SQLite completo
-- [PROGETTO_PTRP_SYNC.md](PROGETTO_PTRP_SYNC.md) - Architettura sincronizzazione
-- [SECURITY.md](SECURITY.md) - Modello di sicurezza e GDPR
-- [DEVELOPMENT.md](DEVELOPMENT.md) - Guida sviluppatori
+**Database a Riposo:**
+- SQLite cifrato con **AES-256 CBC**
+- Key derivation: **PBKDF2** (≥10,000 iterazioni)
+- Password utente come sorgente chiave
+
+**Pacchetti Sincronizzazione:**
+- HMAC-SHA256 per integrità payload
+- AES-256 per cifratura dati
+- Verifica firma prima di import
+
+Vedi [SECURITY.md](SECURITY.md) per dettagli completi.
 
 ---
 
-**Documento aggiornato:** 02 Febbraio 2026  
-**Versione:** 2.0 (Allineato con USER-WORKFLOW.md)  
-**Autore:** Marco Cavallo (@artcava)
+## 📦 Dependency Injection
+
+**Registrazione Servizi (`App.xaml.cs`):**
+
+```csharp
+services.AddDbContext<PtrpDbContext>(options =>
+    options.UseSqlite("Data Source=ptrp.db"));
+
+// Repositories
+services.AddScoped<IPatientRepository, PatientRepository>();
+services.AddScoped<ITherapyProjectRepository, TherapyProjectRepository>();
+services.AddScoped<IVisitRepository, VisitRepository>();
+services.AddScoped<IOperatorRepository, OperatorRepository>();
+
+// Services
+services.AddScoped<IPatientService, PatientService>();
+services.AddScoped<ITherapyProjectService, TherapyProjectService>();
+services.AddScoped<IVisitService, VisitService>();
+services.AddScoped<IOperatorService, OperatorService>();
+
+// ViewModels
+services.AddTransient<MainWindowViewModel>();
+services.AddTransient<PatientListViewModel>();
+services.AddTransient<ProjectFormViewModel>();
+services.AddTransient<VisitFormViewModel>();
+```
+
+---
+
+## 📚 Convenzioni di Design
+
+1. **GUID per tutti gli ID**: Supporto scenari distribuiti, evita collisioni durante sync
+2. **Timestamp Audit**: `CreatedAt`, `UpdatedAt`, `CreatedBy`, `UpdatedBy` su tutte le entità
+3. **Optimistic Locking**: Campo `Version` per gestione concorrenza
+4. **Relazioni bidirezionali**: Navigation properties per facilità query EF Core
+5. **ToString() significativi**: Debugging e logging leggibili
+6. **Validazione a livello servizio**: Servizi business validano prima di passare a repository
+7. **Enumerazioni per stati**: Evitare magic strings, type-safety compiletime
+8. **Naming consistente**: PascalCase per proprietà, camelCase per parametri
+
+---
+
+## 🔄 Ciclo di Vita Progetto Terapeutico (Workflow Canonico)
+
+Vedi [USER-WORKFLOW.md](USER-WORKFLOW.md) per dettagli completi.
+
+**Fasi principali:**
+1. **Creazione Progetto**: Coordinatore crea progetto, assegna educatori
+2. **Schedulazione Automatica**: Sistema schedula 4 visite canoniche:
+   - Prima Apertura (INTAKE): StartDate + 3 mesi
+   - Verifica Intermedia: INTAKE + 6 mesi
+   - Verifica Finale: Verifica Intermedia + 6 mesi
+   - Dimissioni (DISCHARGE): Verifica Finale + 1 mese
+3. **Registrazione Visite**: Educatori registrano visite effettive
+4. **Sincronizzazione**: Pacchetti sync importati dal coordinatore
+5. **Chiusura Progetto**: Completamento o sospensione progetto
+
+---
+
+## 🧪 Testing
+
+**Test Coverage Target:** ≥80% per servizi business
+
+**Struttura Test:**
+- `PTRP.Tests.Unit`: Unit test per servizi e validazioni
+- `PTRP.Tests.Integration`: Integration test per repository e DbContext
+
+**Framework:**
+- xUnit per test runner
+- Moq per mocking
+- FluentAssertions per asserzioni leggibili
+
+---
+
+## 📖 Riferimenti
+
+- [USER-WORKFLOW.md](USER-WORKFLOW.md) - **Source of Truth** per workflow e regole business
+- [DATABASE.md](DATABASE.md) - Schema database dettagliato
+- [SECURITY.md](SECURITY.md) - Sicurezza e crittografia
+- [PROGETTO_PTRP_SYNC.md](PROGETTO_PTRP_SYNC.md) - Protocollo sincronizzazione
+- [SEED.md](SEED.md) - Data seeding
+
+---
+
+**Versione**: 3.0  
+**Ultimo aggiornamento**: 02 Febbraio 2026  
+**Stato**: Allineato con USER-WORKFLOW.md e modelli dominio visite (#71, #85)
