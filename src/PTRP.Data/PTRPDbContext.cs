@@ -5,7 +5,7 @@ namespace PTRP.Data;
 
 /// <summary>
 /// Database context principale per l'applicazione PTRP
-/// Gestisce le entità: Patient, TherapyProject, ProfessionalEducator
+/// Gestisce le entità: Patient, TherapyProject, ProfessionalEducator, ScheduledVisit, ActualVisit
 /// </summary>
 public class PTRPDbContext : DbContext
 {
@@ -28,6 +28,21 @@ public class PTRPDbContext : DbContext
     /// DbSet per gli Educatori Professionali
     /// </summary>
     public DbSet<ProfessionalEducatorModel> ProfessionalEducators { get; set; }
+
+    /// <summary>
+    /// DbSet per gli Appuntamenti Programmati (Visite Schedulate)
+    /// </summary>
+    public DbSet<ScheduledVisitModel> ScheduledVisits { get; set; }
+
+    /// <summary>
+    /// DbSet per le Visite Effettive Registrate
+    /// </summary>
+    public DbSet<ActualVisitModel> ActualVisits { get; set; }
+
+    /// <summary>
+    /// DbSet per la relazione Many-to-Many tra ActualVisit e ProfessionalEducator
+    /// </summary>
+    public DbSet<VisitOperatorModel> VisitOperators { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -95,6 +110,12 @@ public class PTRPDbContext : DbContext
             entity.Property(e => e.UpdatedAt);
 
             // Relazione N-1 con Patient (già configurata sopra)
+
+            // Relazione 1-N con ScheduledVisit
+            entity.HasMany(tp => tp.ScheduledVisits)
+                .WithOne(sv => sv.TherapyProject)
+                .HasForeignKey(sv => sv.TherapyProjectId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             // Relazione N-N con ProfessionalEducator
             entity.HasMany(tp => tp.ProfessionalEducators)
@@ -197,6 +218,172 @@ public class PTRPDbContext : DbContext
             // Issue #49: Indice per ricerca per ruolo
             entity.HasIndex(e => e.Role)
                 .HasDatabaseName("IX_ProfessionalEducators_Role");
+        });
+
+        // Configurazione ScheduledVisitModel
+        modelBuilder.Entity<ScheduledVisitModel>(entity =>
+        {
+            entity.ToTable("ScheduledVisits");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.TherapyProjectId)
+                .IsRequired();
+
+            entity.Property(e => e.Type)
+                .IsRequired()
+                .HasConversion<string>(); // Store enum as string
+
+            entity.Property(e => e.Status)
+                .IsRequired()
+                .HasConversion<string>()
+                .HasDefaultValue("Scheduled");
+
+            entity.Property(e => e.ScheduledDate)
+                .IsRequired();
+
+            entity.Property(e => e.RescheduledDate);
+
+            entity.Property(e => e.Notes)
+                .HasMaxLength(1000);
+
+            entity.Property(e => e.CreatedAt)
+                .IsRequired();
+
+            entity.Property(e => e.UpdatedAt);
+
+            entity.Property(e => e.Version)
+                .IsRequired()
+                .HasDefaultValue(1);
+
+            // Relazione N-1 con TherapyProject (già configurata sopra)
+
+            // Relazione 1-1 con ActualVisit (opzionale)
+            entity.HasOne(sv => sv.ActualVisit)
+                .WithOne(av => av.ScheduledVisit)
+                .HasForeignKey<ActualVisitModel>(av => av.ScheduledVisitId)
+                .OnDelete(DeleteBehavior.Restrict); // Prevent cascade delete of actual visit when scheduled visit deleted
+
+            // Indici per query performance
+            entity.HasIndex(e => e.TherapyProjectId)
+                .HasDatabaseName("IX_ScheduledVisits_TherapyProjectId");
+
+            entity.HasIndex(e => e.ScheduledDate)
+                .HasDatabaseName("IX_ScheduledVisits_ScheduledDate");
+
+            entity.HasIndex(e => e.Status)
+                .HasDatabaseName("IX_ScheduledVisits_Status");
+
+            entity.HasIndex(e => e.Type)
+                .HasDatabaseName("IX_ScheduledVisits_Type");
+        });
+
+        // Configurazione ActualVisitModel
+        modelBuilder.Entity<ActualVisitModel>(entity =>
+        {
+            entity.ToTable("ActualVisits");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.ScheduledVisitId)
+                .IsRequired();
+
+            entity.Property(e => e.ActualDate)
+                .IsRequired();
+
+            entity.Property(e => e.StartTime)
+                .IsRequired();
+
+            entity.Property(e => e.EndTime)
+                .IsRequired();
+
+            entity.Property(e => e.PatientPresence)
+                .IsRequired()
+                .HasConversion<string>();
+
+            entity.Property(e => e.ClinicalNotes)
+                .IsRequired()
+                .HasMaxLength(5000);
+
+            entity.Property(e => e.Outcomes)
+                .HasMaxLength(2000);
+
+            entity.Property(e => e.Source)
+                .IsRequired()
+                .HasConversion<string>()
+                .HasDefaultValue("EducatorImport");
+
+            entity.Property(e => e.RegisteredBy)
+                .IsRequired();
+
+            entity.Property(e => e.RegisteredByName)
+                .IsRequired()
+                .HasMaxLength(200);
+
+            entity.Property(e => e.CreatedAt)
+                .IsRequired();
+
+            entity.Property(e => e.UpdatedAt);
+
+            entity.Property(e => e.Version)
+                .IsRequired()
+                .HasDefaultValue(1);
+
+            // Relazione 1-1 con ScheduledVisit (già configurata sopra)
+
+            // Indici per query performance
+            entity.HasIndex(e => e.ScheduledVisitId)
+                .IsUnique() // 1-1 relationship
+                .HasDatabaseName("IX_ActualVisits_ScheduledVisitId");
+
+            entity.HasIndex(e => e.ActualDate)
+                .HasDatabaseName("IX_ActualVisits_ActualDate");
+
+            entity.HasIndex(e => e.RegisteredBy)
+                .HasDatabaseName("IX_ActualVisits_RegisteredBy");
+
+            entity.HasIndex(e => e.Source)
+                .HasDatabaseName("IX_ActualVisits_Source");
+        });
+
+        // Configurazione VisitOperatorModel (Join Table Many-to-Many)
+        modelBuilder.Entity<VisitOperatorModel>(entity =>
+        {
+            entity.ToTable("VisitOperators");
+            
+            // CHIAVE PRIMARIA COMPOSITA: ActualVisitId + EducatorId
+            entity.HasKey(vo => new { vo.ActualVisitId, vo.EducatorId });
+
+            entity.Property(vo => vo.ActualVisitId)
+                .IsRequired();
+
+            entity.Property(vo => vo.EducatorId)
+                .IsRequired();
+
+            entity.Property(vo => vo.IsRegistrant)
+                .IsRequired()
+                .HasDefaultValue(false);
+
+            entity.Property(vo => vo.AssignedAt)
+                .IsRequired();
+
+            // Relazione N-1 con ActualVisit
+            entity.HasOne(vo => vo.ActualVisit)
+                .WithMany(av => av.OperatorsPresent)
+                .HasForeignKey(vo => vo.ActualVisitId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Relazione N-1 con ProfessionalEducator
+            entity.HasOne(vo => vo.Educator)
+                .WithMany() // ProfessionalEducator non ha navigation property verso VisitOperator
+                .HasForeignKey(vo => vo.EducatorId)
+                .OnDelete(DeleteBehavior.Restrict); // Prevent cascade delete if educator is deleted
+
+            // Indice per query "tutte le visite di un educatore"
+            entity.HasIndex(vo => vo.EducatorId)
+                .HasDatabaseName("IX_VisitOperators_EducatorId");
+
+            // Indice per query "chi ha registrato questa visita"
+            entity.HasIndex(vo => vo.IsRegistrant)
+                .HasDatabaseName("IX_VisitOperators_IsRegistrant");
         });
     }
 }
