@@ -20,6 +20,7 @@ Each repository implements:
 3. **CancellationToken Support**: All async methods support cancellation
 4. **Eager Loading**: Use `Include()` / `ThenInclude()` to load related entities only when needed
 5. **Query Optimization**: Use `AsNoTracking()` for read-only operations to improve performance
+6. **Domain Constraints**: Use C# language features (e.g., `init` accessor) to enforce immutability at compile-time
 
 ## Repository Implementations
 
@@ -137,60 +138,136 @@ var visitsThisMonth = await _scheduledVisitRepository.GetByEducatorIdInRangeAsyn
 - Supporting educator visit registration and export for sync
 
 **Key Methods**:
-- `GetByIdWithRelationsAsync(Guid id)` - Load with appointment, patient, project, and operators
+- `GetByIdAsync(Guid id)` - Load single visit with operators
 - `GetByScheduledVisitIdAsync(Guid scheduledVisitId)` - **1:1 query** - single visit or null
 - `GetByEducatorIdInRangeAsync(Guid educatorId, DateTime from, DateTime to)` - Visits registered by educator in period (used for export/sync)
 - `GetByProjectIdAsync(Guid projectId)` - All registered visits for project
 - `GetByPatientIdAsync(Guid patientId)` - All visits for patient
 - `GetByPatientAttendanceAsync(string status)` - Filter by attendance (Attended, Absent, PartiallyAttended)
-- `GetByDateAsync(DateTime date)` - Visits on specific date
-- `GetInRangeAsync(DateTime from, DateTime to)` - Visits in date range
 - `ExistsByScheduledVisitIdAsync(Guid scheduledVisitId)` - Check if visit already registered (1:1 constraint)
 - `CountByProjectIdAsync(Guid projectId)` - Statistics
-- `CountByEducatorInRangeAsync(Guid educatorId, DateTime from, DateTime to)` - Statistics for reporting
+- `AddAsync()`, `UpdateAsync()`, `DeleteAsync()` - CRUD operations
 
 **CRITICAL: 1:1 Constraint Enforcement**
 
-The relationship between `ScheduledVisitModel` and `ActualVisitModel` is strictly 1:1:
-- Each `ScheduledVisit` can have **at most ONE** `ActualVisit`
-- **UNIQUE constraint** on `ScheduledVisitId` enforced at DB level
-- Repository enforces at application level:
+The relationship between `ScheduledVisitModel` and `ActualVisitModel` is strictly **1:1 and immutable**.
+
+#### Design: Immutability with `init` Accessor
+
+The `ScheduledVisitId` property uses C# 9's `init` accessor to guarantee immutability:
 
 ```csharp
-// AddAsync throws if actual visit already exists for this appointment
-if (await this.ExistsByScheduledVisitIdAsync(actualVisit.ScheduledVisitId))
-    throw new InvalidOperationException("Relationship already exists");
+public class ActualVisitModel
+{
+    public Guid Id { get; set; }
+    
+    /// <summary>
+    /// IMMUTABILE: Può essere impostato solo durante l'inizializzazione (object initializer).
+    /// Una volta creato, questo vincolo 1:1 non può mai essere violato.
+    /// </summary>
+    public Guid ScheduledVisitId { get; init; }
+    
+    public DateTime ActualDate { get; set; }
+    public TimeSpan StartTime { get; set; }
+    public TimeSpan EndTime { get; set; }
+    public string ClinicalNotes { get; set; } = string.Empty;
+    public PresenceStatus PatientPresence { get; set; }
+    public VisitSource Source { get; set; }
+    public Guid RegisteredBy { get; set; }
+    public string RegisteredByName { get; set; } = string.Empty;
+    
+    // Navigation
+    public ScheduledVisitModel ScheduledVisit { get; set; } = null!;
+    public ICollection<VisitOperatorModel> OperatorsPresent { get; set; } = new List<VisitOperatorModel>();
+}
 ```
 
-- **UpdateAsync prevents changing the ScheduledVisitId** (immutable relationship)
+#### Why `init`?
 
-**Example Usage**:
+- **Compile-time guarantee**: Attempting `actualVisit.ScheduledVisitId = newId;` fails with `CS8852`
+- **Zero runtime overhead**: No validation methods or property wrappers needed
+- **Standard C# idiom**: Idiomatic approach for immutable properties in C# 9+
+- **EF Core compatible**: Works seamlessly with Entity Framework Core
+
+#### Correct Usage
+
 ```csharp
-// Register a visit (educator workflow)
+// ✅ CORRECT: Set during initialization
 var actualVisit = new ActualVisitModel
 {
-    ScheduledVisitId = appointmentId, // Links to appointment
-    VisitDate = DateTime.Now,
+    ScheduledVisitId = appointmentId,  // OK - only during init
+    ActualDate = DateTime.Now,
+    StartTime = new TimeSpan(9, 0, 0),
+    EndTime = new TimeSpan(10, 0, 0),
     ClinicalNotes = "Patient showed good progress...",
-    PatientAttendance = "Attended",
-    VisitSource = "EducatorImport"
+    PatientPresence = PresenceStatus.PresentCollaborative,
+    Source = VisitSource.EducatorImport,
+    RegisteredBy = educatorId,
+    RegisteredByName = $"{educator.FirstName} {educator.LastName}"
 };
-
-// Add operator to visit (N:N)
-var visitOperator = new VisitOperatorModel
-{
-    OperatorId = educatorId,
-    Role = "Lead"
-};
-actualVisit.VisitOperators.Add(visitOperator);
 
 await _actualVisitRepository.AddAsync(actualVisit);
 
-// Later: query for export/sync
-var visitsSinceLastSync = await _actualVisitRepository.GetByEducatorIdInRangeAsync(
-    educatorId,
-    lastSyncDate,
-    DateTime.Now);
+// ❌ INCORRECT: Attempt to modify after creation
+actualVisit.ScheduledVisitId = anotherAppointmentId;
+// Error CS8852: Init-only property can only be assigned in an object initializer
+```
+
+#### Repository-Level Validation
+
+Additionally, `AddAsync` enforces business rules at runtime:
+
+```csharp
+public async Task AddAsync(ActualVisitModel actualVisit)
+{
+    // Verify ScheduledVisit exists
+    if (!await _context.ScheduledVisits.AnyAsync(sv => sv.Id == actualVisit.ScheduledVisitId))
+    {
+        throw new InvalidOperationException(
+            $"La visita programmata con ID {actualVisit.ScheduledVisitId} non esiste.");
+    }
+
+    // Enforce 1:1 constraint - no second visit for same appointment
+    if (await ExistsByScheduledVisitIdAsync(actualVisit.ScheduledVisitId))
+    {
+        throw new InvalidOperationException(
+            $"La visita programmata con ID {actualVisit.ScheduledVisitId} ha già una visita effettiva associata.");
+    }
+
+    _context.ActualVisits.Add(actualVisit);
+    await _context.SaveChangesAsync();
+}
+```
+
+#### UpdateAsync: No Changes to ScheduledVisitId
+
+`UpdateAsync` is simplified because `ScheduledVisitId` cannot be modified:
+
+```csharp
+public async Task UpdateAsync(ActualVisitModel actualVisit)
+{
+    // Verify visit exists
+    if (!await ExistsAsync(actualVisit.Id))
+    {
+        throw new InvalidOperationException(
+            $"La visita effettiva con ID {actualVisit.Id} non esiste.");
+    }
+
+    _context.ActualVisits.Update(actualVisit);
+    await _context.SaveChangesAsync();
+}
+```
+
+The `init` accessor guarantees that `ScheduledVisitId` was set at creation and cannot be changed. No runtime checks needed.
+
+**Example Usage**:
+```csharp
+var actualVisit = await _actualVisitRepository.GetByIdAsync(visitId);
+actualVisit.ClinicalNotes = "Updated notes"; // OK
+actualVisit.PatientPresence = PresenceStatus.PresentCollaborative; // OK
+await _actualVisitRepository.UpdateAsync(actualVisit);
+
+// actualVisit.ScheduledVisitId = otherId; // Compile-time error!
 ```
 
 ---
@@ -291,8 +368,8 @@ await _actualVisitRepository.UpdateAsync(visitToModify); // Detects changes
 - **`InvalidOperationException`**: 
   - Entity not found during update/delete
   - Referenced entity doesn't exist (FK constraint)
-  - **1:1 constraint violation** (ActualVisit already exists)
-  - Attempting to change immutable relationship (ScheduledVisitId)
+  - **1:1 constraint violation** (ActualVisit already exists for ScheduledVisit)
+  - *(No longer thrown for changing ScheduledVisitId - prevented at compile-time)*
 
 - **`ArgumentNullException`**: Null parameter passed to method
 
@@ -301,13 +378,17 @@ await _actualVisitRepository.UpdateAsync(visitToModify); // Detects changes
 ```csharp
 try
 {
-    var actualVisit = new ActualVisitModel { /* ... */ };
+    var actualVisit = new ActualVisitModel 
+    { 
+        ScheduledVisitId = appointmentId,
+        // ... other properties
+    };
     await _actualVisitRepository.AddAsync(actualVisit);
 }
 catch (InvalidOperationException ex) when (ex.Message.Contains("1:1"))
 {
     // Handle duplicate actual visit for same appointment
-    logger.LogWarning($"Visit already registered for appointment {actualVisit.ScheduledVisitId}");
+    logger.LogWarning($"Visit already registered for appointment {appointmentId}");
     // Show user-friendly error
 }
 catch (InvalidOperationException ex)
@@ -369,7 +450,8 @@ public class RepositoryTests : IDisposable
 ### Critical Tests for ActualVisitRepository
 
 - **1:1 Constraint**: Verify second `ActualVisit` for same `ScheduledVisit` throws exception
-- **Immutable Relationship**: Verify `UpdateAsync` prevents changing `ScheduledVisitId`
+- **Immutability at Compile-Time**: `ScheduledVisitId` cannot be reassigned (language feature test)
+- **UpdateAsync Validation**: Verify existing visits can be updated without modifying `ScheduledVisitId`
 - **Cascade Delete**: Verify removing visit cleans up `VisitOperatorModel` entries
 
 ---
@@ -399,6 +481,41 @@ CREATE INDEX IX_ActualVisit_VisitDate ON ActualVisits(VisitDate);
 
 ---
 
+## Domain Constraints Best Practices
+
+### Use Language Features to Enforce Constraints
+
+For immutable relationships (like 1:1 FK), use `init` instead of runtime checks:
+
+```csharp
+// ✅ GOOD: Compile-time guarantee
+public Guid ScheduledVisitId { get; init; }
+
+// ❌ AVOID: Runtime-only (can be bypassed)
+public Guid ScheduledVisitId { get; private set; }
+```
+
+### Combine Language Features with Runtime Validation
+
+Even with `init`, repositories should validate:
+- Foreign key existence
+- 1:1 constraint (no duplicate visits for same appointment)
+- Other business rules
+
+### Document Constraints Clearly
+
+Use XML documentation to explain immutability and constraints:
+
+```csharp
+/// <summary>
+/// IMMUTABILE: Può essere impostato solo durante l'inizializzazione.
+/// Una volta creato, questo vincolo non può mai essere violato.
+/// </summary>
+public Guid ScheduledVisitId { get; init; }
+```
+
+---
+
 ## Future Enhancements
 
 1. **Caching**: Add in-memory cache for frequently-accessed lookup data (VisitTypes, Educators)
@@ -412,5 +529,6 @@ CREATE INDEX IX_ActualVisit_VisitDate ON ActualVisits(VisitDate);
 
 - [EF Core Best Practices](https://docs.microsoft.com/en-us/ef/core/performance/)
 - [Repository Pattern](https://docs.microsoft.com/en-us/dotnet/architecture/microservices/microservice-ddd-cqrs-patterns/infrastructure-persistence-layer-design)
+- [C# init Accessor](https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/init) (C# 9+)
 - PTRP Database Schema: `docs/DATABASE.md`
 - PTRP Architecture: `docs/ARCHITECTURE.md`
