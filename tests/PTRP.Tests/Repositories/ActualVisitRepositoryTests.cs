@@ -117,9 +117,8 @@ public class ActualVisitRepositoryTests : IDisposable
         var scheduledVisit1 = await CreateScheduledVisit(project);
         var scheduledVisit2 = await CreateScheduledVisit(project);
 
-        var actualVisit1 = new ActualVisitModel
+        var actualVisit1 = new ActualVisitModel(scheduledVisit1.Id)
         {
-            ScheduledVisitId = scheduledVisit1.Id,
             ActualDate = DateTime.Now,
             StartTime = new TimeSpan(9, 0, 0),
             EndTime = new TimeSpan(10, 0, 0),
@@ -130,9 +129,8 @@ public class ActualVisitRepositoryTests : IDisposable
             RegisteredByName = $"{educator.FirstName} {educator.LastName}"
         };
 
-        var actualVisit2 = new ActualVisitModel
+        var actualVisit2 = new ActualVisitModel(scheduledVisit2.Id)
         {
-            ScheduledVisitId = scheduledVisit2.Id,
             ActualDate = DateTime.Now.AddDays(1),
             StartTime = new TimeSpan(9, 0, 0),
             EndTime = new TimeSpan(10, 0, 0),
@@ -181,9 +179,8 @@ public class ActualVisitRepositoryTests : IDisposable
         await _context.SaveChangesAsync();
 
         var scheduledVisit = await CreateScheduledVisit(project);
-        var actualVisit = new ActualVisitModel
+        var actualVisit = new ActualVisitModel(scheduledVisit.Id)
         {
-            ScheduledVisitId = scheduledVisit.Id,
             ActualDate = DateTime.Now,
             StartTime = new TimeSpan(9, 0, 0),
             EndTime = new TimeSpan(10, 0, 0),
@@ -241,9 +238,8 @@ public class ActualVisitRepositoryTests : IDisposable
         _context.ProfessionalEducators.Add(educator);
         await _context.SaveChangesAsync();
 
-        var actualVisit = new ActualVisitModel
+        var actualVisit = new ActualVisitModel(Guid.NewGuid()) // Non-existent
         {
-            ScheduledVisitId = Guid.NewGuid(), // Non-existent
             ActualDate = DateTime.Now,
             StartTime = new TimeSpan(9, 0, 0),
             EndTime = new TimeSpan(10, 0, 0),
@@ -273,9 +269,8 @@ public class ActualVisitRepositoryTests : IDisposable
         await _context.SaveChangesAsync();
 
         // Arrange - Try to create second actual visit for same scheduled visit
-        var actualVisit2 = new ActualVisitModel
+        var actualVisit2 = new ActualVisitModel(scheduledVisitId)
         {
-            ScheduledVisitId = scheduledVisitId,
             ActualDate = DateTime.Now.AddDays(1),
             StartTime = new TimeSpan(9, 0, 0),
             EndTime = new TimeSpan(10, 0, 0),
@@ -308,20 +303,9 @@ public class ActualVisitRepositoryTests : IDisposable
         Assert.Equal("Updated notes", result!.ClinicalNotes);
     }
 
-    [Fact]
-    public async Task UpdateAsync_CannotChangeScheduledVisit_ThrowsException()
-    {
-        // Arrange
-        var actualVisit = await CreateValidActualVisit();
-        await _repository.AddAsync(actualVisit);
-
-        var newScheduledVisit = await CreateValidScheduledVisit();
-        actualVisit.ScheduledVisitId = newScheduledVisit.Id; // Try to change
-
-        // Act & Assert
-        await Assert.ThrowsAsync<InvalidOperationException>(
-            async () => await _repository.UpdateAsync(actualVisit));
-    }
+    // RIMOSSO: UpdateAsync_CannotChangeScheduledVisit_ThrowsException
+    // Il vincolo di immutabilità su ScheduledVisitId è ora garantito dal modello
+    // con private setter, rendendo impossibile la modifica a livello di compilazione.
 
     [Fact]
     public async Task DeleteAsync_RemovesVisit()
@@ -392,9 +376,8 @@ public class ActualVisitRepositoryTests : IDisposable
         var scheduledVisit1 = await CreateScheduledVisit(project);
         var scheduledVisit2 = await CreateScheduledVisit(project);
 
-        var actualVisit1 = new ActualVisitModel
+        var actualVisit1 = new ActualVisitModel(scheduledVisit1.Id)
         {
-            ScheduledVisitId = scheduledVisit1.Id,
             ActualDate = DateTime.Now,
             StartTime = new TimeSpan(9, 0, 0),
             EndTime = new TimeSpan(10, 0, 0),
@@ -405,9 +388,8 @@ public class ActualVisitRepositoryTests : IDisposable
             RegisteredByName = $"{educator.FirstName} {educator.LastName}"
         };
 
-        var actualVisit2 = new ActualVisitModel
+        var actualVisit2 = new ActualVisitModel(scheduledVisit2.Id)
         {
-            ScheduledVisitId = scheduledVisit2.Id,
             ActualDate = DateTime.Now,
             StartTime = new TimeSpan(9, 0, 0),
             EndTime = new TimeSpan(10, 0, 0),
@@ -437,9 +419,8 @@ public class ActualVisitRepositoryTests : IDisposable
         _context.ProfessionalEducators.Add(educator);
         await _context.SaveChangesAsync();
 
-        return new ActualVisitModel
+        return new ActualVisitModel(scheduledVisit.Id)
         {
-            ScheduledVisitId = scheduledVisit.Id,
             ActualDate = DateTime.Now,
             StartTime = new TimeSpan(9, 0, 0),
             EndTime = new TimeSpan(10, 0, 0),
@@ -498,9 +479,8 @@ public class ActualVisitRepositoryTests : IDisposable
 
         var scheduledVisit = await CreateScheduledVisit(project);
 
-        var actualVisit = new ActualVisitModel
+        var actualVisit = new ActualVisitModel(scheduledVisit.Id)
         {
-            ScheduledVisitId = scheduledVisit.Id,
             ActualDate = DateTime.Now,
             StartTime = new TimeSpan(9, 0, 0),
             EndTime = new TimeSpan(10, 0, 0),
