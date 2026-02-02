@@ -91,14 +91,14 @@ public class ScheduledVisitRepositoryTests : IDisposable
         var visit1 = new ScheduledVisitModel
         {
             TherapyProjectId = project.Id,
-            Type = VisitType.Intake,
+            Type = VisitType.INTAKE,
             ScheduledDate = now.AddDays(-1),
             Status = AppointmentStatus.Scheduled
         };
         var visit2 = new ScheduledVisitModel
         {
             TherapyProjectId = project.Id,
-            Type = VisitType.Intake,
+            Type = VisitType.INTAKE,
             ScheduledDate = now.AddDays(5),
             Status = AppointmentStatus.Scheduled
         };
@@ -176,7 +176,7 @@ public class ScheduledVisitRepositoryTests : IDisposable
         var visit = new ScheduledVisitModel
         {
             TherapyProjectId = Guid.NewGuid(), // Non-existent
-            Type = VisitType.Intake,
+            Type = VisitType.INTAKE,
             ScheduledDate = DateTime.Now,
             Status = AppointmentStatus.Scheduled
         };
@@ -197,14 +197,14 @@ public class ScheduledVisitRepositoryTests : IDisposable
             new ScheduledVisitModel
             {
                 TherapyProjectId = project.Id,
-                Type = VisitType.Intake,
+                Type = VisitType.INTAKE,
                 ScheduledDate = DateTime.Now.AddMonths(3),
                 Status = AppointmentStatus.Scheduled
             },
             new ScheduledVisitModel
             {
                 TherapyProjectId = project.Id,
-                Type = VisitType.ExtraVisit,
+                Type = VisitType.FOLLOW_UP,
                 ScheduledDate = DateTime.Now.AddMonths(9),
                 Status = AppointmentStatus.Scheduled
             }
@@ -297,7 +297,7 @@ public class ScheduledVisitRepositoryTests : IDisposable
             var visit = new ScheduledVisitModel
             {
                 TherapyProjectId = project.Id,
-                Type = VisitType.Intake,
+                Type = VisitType.INTAKE,
                 ScheduledDate = DateTime.Now.AddDays(i),
                 Status = AppointmentStatus.Scheduled
             };
@@ -331,7 +331,7 @@ public class ScheduledVisitRepositoryTests : IDisposable
         return new ScheduledVisitModel
         {
             TherapyProjectId = project.Id,
-            Type = VisitType.Intake,
+            Type = VisitType.INTAKE,
             ScheduledDate = DateTime.Now.AddMonths(3),
             Status = AppointmentStatus.Scheduled
         };
