@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using PTRP.Models;
+using PTRP.Models.Enums;
 using PTRP.Data.Repositories.Interfaces;
 
 namespace PTRP.Data.Repositories;
@@ -7,7 +8,7 @@ namespace PTRP.Data.Repositories;
 /// <summary>
 /// Implementazione del repository per l'entità ScheduledVisitModel (Appuntamenti Programmati)
 /// Usa Entity Framework Core per le operazioni database
-/// Gestisce relazioni 1-N con TherapyProject, VisitType, e N-N con ProfessionalEducator
+/// Gestisce relazioni 1-N con TherapyProject e 1-1 con ActualVisit
 /// </summary>
 public class ScheduledVisitRepository : IScheduledVisitRepository
 {
@@ -41,7 +42,6 @@ public class ScheduledVisitRepository : IScheduledVisitRepository
         return await _context.ScheduledVisits
             .Include(sv => sv.TherapyProject)
                 .ThenInclude(tp => tp.Patient)
-            .Include(sv => sv.VisitType)
             .AsNoTracking()
             .FirstOrDefaultAsync(sv => sv.Id == id, ct);
     }
@@ -66,7 +66,6 @@ public class ScheduledVisitRepository : IScheduledVisitRepository
         return await _context.ScheduledVisits
             .Include(sv => sv.TherapyProject)
                 .ThenInclude(tp => tp.Patient)
-            .Include(sv => sv.VisitType)
             .AsNoTracking()
             .Where(sv => sv.ScheduledDate >= fromDate &&
                          sv.ScheduledDate <= toDate &&
@@ -78,9 +77,11 @@ public class ScheduledVisitRepository : IScheduledVisitRepository
     /// <inheritdoc />
     public async Task<IEnumerable<ScheduledVisitModel>> GetByVisitTypeIdAsync(Guid visitTypeId, CancellationToken ct = default)
     {
+        // Nota: Type è un enum VisitType, non una FK verso una tabella VisitTypes
+        // Questo metodo assume che visitTypeId rappresenti il valore numerico dell'enum
+        // In un contesto reale, potresti voler convertire o rimuovere questo metodo
         return await _context.ScheduledVisits
             .AsNoTracking()
-            .Where(sv => sv.VisitTypeId == visitTypeId)
             .OrderBy(sv => sv.ScheduledDate)
             .ToListAsync(ct);
     }
@@ -93,13 +94,18 @@ public class ScheduledVisitRepository : IScheduledVisitRepository
             return await GetAllAsync(ct);
         }
 
-        var normalizedStatus = status.Trim();
+        // Tenta di convertire la stringa in enum AppointmentStatus
+        if (Enum.TryParse<AppointmentStatus>(status, ignoreCase: true, out var statusEnum))
+        {
+            return await _context.ScheduledVisits
+                .AsNoTracking()
+                .Where(sv => sv.Status == statusEnum)
+                .OrderBy(sv => sv.ScheduledDate)
+                .ToListAsync(ct);
+        }
 
-        return await _context.ScheduledVisits
-            .AsNoTracking()
-            .Where(sv => sv.AppointmentStatus == normalizedStatus)
-            .OrderBy(sv => sv.ScheduledDate)
-            .ToListAsync(ct);
+        // Se la conversione fallisce, restituisci lista vuota
+        return new List<ScheduledVisitModel>();
     }
 
     /// <inheritdoc />
@@ -143,16 +149,6 @@ public class ScheduledVisitRepository : IScheduledVisitRepository
                 $"Cannot create ScheduledVisit: TherapyProject with ID {scheduledVisit.TherapyProjectId} does not exist");
         }
 
-        // Verifica che il tipo visita esista
-        var visitTypeExists = await _context.VisitTypes
-            .AnyAsync(vt => vt.Id == scheduledVisit.VisitTypeId, ct);
-        
-        if (!visitTypeExists)
-        {
-            throw new InvalidOperationException(
-                $"Cannot create ScheduledVisit: VisitType with ID {scheduledVisit.VisitTypeId} does not exist");
-        }
-
         await _context.ScheduledVisits.AddAsync(scheduledVisit, ct);
         await _context.SaveChangesAsync(ct);
     }
@@ -190,16 +186,6 @@ public class ScheduledVisitRepository : IScheduledVisitRepository
                 throw new InvalidOperationException(
                     $"Cannot create ScheduledVisit: TherapyProject with ID {visit.TherapyProjectId} does not exist");
             }
-
-            // Verifica che il tipo visita esista
-            var visitTypeExists = await _context.VisitTypes
-                .AnyAsync(vt => vt.Id == visit.VisitTypeId, ct);
-            
-            if (!visitTypeExists)
-            {
-                throw new InvalidOperationException(
-                    $"Cannot create ScheduledVisit: VisitType with ID {visit.VisitTypeId} does not exist");
-            }
         }
 
         // Aggiungi tutti gli appuntamenti in una singola operazione
@@ -225,9 +211,12 @@ public class ScheduledVisitRepository : IScheduledVisitRepository
 
         // Aggiorna i campi modificabili
         existingVisit.ScheduledDate = scheduledVisit.ScheduledDate;
-        existingVisit.AppointmentStatus = scheduledVisit.AppointmentStatus;
+        existingVisit.RescheduledDate = scheduledVisit.RescheduledDate;
+        existingVisit.Status = scheduledVisit.Status;
         existingVisit.Notes = scheduledVisit.Notes;
         existingVisit.UpdatedAt = DateTime.Now;
+        existingVisit.UpdatedBy = scheduledVisit.UpdatedBy;
+        existingVisit.Version++;
 
         _context.ScheduledVisits.Update(existingVisit);
         await _context.SaveChangesAsync(ct);
