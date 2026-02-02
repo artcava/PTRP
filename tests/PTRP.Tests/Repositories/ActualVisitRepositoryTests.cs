@@ -117,7 +117,7 @@ public class ActualVisitRepositoryTests : IDisposable
         var scheduledVisit1 = await CreateScheduledVisit(project);
         var scheduledVisit2 = await CreateScheduledVisit(project);
 
-        var actualVisit1 = new ActualVisitModel(scheduledVisit1.Id)
+        var actualVisit1 = new ActualVisitModel
         {
             ActualDate = DateTime.Now,
             StartTime = new TimeSpan(9, 0, 0),
@@ -128,8 +128,9 @@ public class ActualVisitRepositoryTests : IDisposable
             RegisteredBy = educator.Id,
             RegisteredByName = $"{educator.FirstName} {educator.LastName}"
         };
+        actualVisit1.SetScheduledVisitId(scheduledVisit1.Id);
 
-        var actualVisit2 = new ActualVisitModel(scheduledVisit2.Id)
+        var actualVisit2 = new ActualVisitModel
         {
             ActualDate = DateTime.Now.AddDays(1),
             StartTime = new TimeSpan(9, 0, 0),
@@ -140,6 +141,7 @@ public class ActualVisitRepositoryTests : IDisposable
             RegisteredBy = educator.Id,
             RegisteredByName = $"{educator.FirstName} {educator.LastName}"
         };
+        actualVisit2.SetScheduledVisitId(scheduledVisit2.Id);
 
         var visitOperator = new VisitOperatorModel
         {
@@ -179,7 +181,7 @@ public class ActualVisitRepositoryTests : IDisposable
         await _context.SaveChangesAsync();
 
         var scheduledVisit = await CreateScheduledVisit(project);
-        var actualVisit = new ActualVisitModel(scheduledVisit.Id)
+        var actualVisit = new ActualVisitModel
         {
             ActualDate = DateTime.Now,
             StartTime = new TimeSpan(9, 0, 0),
@@ -190,6 +192,7 @@ public class ActualVisitRepositoryTests : IDisposable
             RegisteredBy = educator.Id,
             RegisteredByName = $"{educator.FirstName} {educator.LastName}"
         };
+        actualVisit.SetScheduledVisitId(scheduledVisit.Id);
         await _repository.AddAsync(actualVisit);
 
         // Act
@@ -238,7 +241,7 @@ public class ActualVisitRepositoryTests : IDisposable
         _context.ProfessionalEducators.Add(educator);
         await _context.SaveChangesAsync();
 
-        var actualVisit = new ActualVisitModel(Guid.NewGuid()) // Non-existent
+        var actualVisit = new ActualVisitModel
         {
             ActualDate = DateTime.Now,
             StartTime = new TimeSpan(9, 0, 0),
@@ -249,6 +252,7 @@ public class ActualVisitRepositoryTests : IDisposable
             RegisteredBy = educator.Id,
             RegisteredByName = $"{educator.FirstName} {educator.LastName}"
         };
+        actualVisit.SetScheduledVisitId(Guid.NewGuid()); // Non-existent
 
         // Act & Assert
         await Assert.ThrowsAsync<InvalidOperationException>(
@@ -269,7 +273,7 @@ public class ActualVisitRepositoryTests : IDisposable
         await _context.SaveChangesAsync();
 
         // Arrange - Try to create second actual visit for same scheduled visit
-        var actualVisit2 = new ActualVisitModel(scheduledVisitId)
+        var actualVisit2 = new ActualVisitModel
         {
             ActualDate = DateTime.Now.AddDays(1),
             StartTime = new TimeSpan(9, 0, 0),
@@ -280,6 +284,7 @@ public class ActualVisitRepositoryTests : IDisposable
             RegisteredBy = educator.Id,
             RegisteredByName = $"{educator.FirstName} {educator.LastName}"
         };
+        actualVisit2.SetScheduledVisitId(scheduledVisitId);
 
         // Act & Assert - Should throw due to 1:1 constraint violation
         await Assert.ThrowsAsync<InvalidOperationException>(
@@ -376,7 +381,7 @@ public class ActualVisitRepositoryTests : IDisposable
         var scheduledVisit1 = await CreateScheduledVisit(project);
         var scheduledVisit2 = await CreateScheduledVisit(project);
 
-        var actualVisit1 = new ActualVisitModel(scheduledVisit1.Id)
+        var actualVisit1 = new ActualVisitModel
         {
             ActualDate = DateTime.Now,
             StartTime = new TimeSpan(9, 0, 0),
@@ -387,8 +392,9 @@ public class ActualVisitRepositoryTests : IDisposable
             RegisteredBy = educator.Id,
             RegisteredByName = $"{educator.FirstName} {educator.LastName}"
         };
+        actualVisit1.SetScheduledVisitId(scheduledVisit1.Id);
 
-        var actualVisit2 = new ActualVisitModel(scheduledVisit2.Id)
+        var actualVisit2 = new ActualVisitModel
         {
             ActualDate = DateTime.Now,
             StartTime = new TimeSpan(9, 0, 0),
@@ -399,6 +405,7 @@ public class ActualVisitRepositoryTests : IDisposable
             RegisteredBy = educator.Id,
             RegisteredByName = $"{educator.FirstName} {educator.LastName}"
         };
+        actualVisit2.SetScheduledVisitId(scheduledVisit2.Id);
 
         await _repository.AddAsync(actualVisit1);
         await _repository.AddAsync(actualVisit2);
@@ -419,7 +426,7 @@ public class ActualVisitRepositoryTests : IDisposable
         _context.ProfessionalEducators.Add(educator);
         await _context.SaveChangesAsync();
 
-        return new ActualVisitModel(scheduledVisit.Id)
+        var actualVisit = new ActualVisitModel
         {
             ActualDate = DateTime.Now,
             StartTime = new TimeSpan(9, 0, 0),
@@ -430,6 +437,9 @@ public class ActualVisitRepositoryTests : IDisposable
             RegisteredBy = educator.Id,
             RegisteredByName = $"{educator.FirstName} {educator.LastName}"
         };
+        actualVisit.SetScheduledVisitId(scheduledVisit.Id);
+        
+        return actualVisit;
     }
 
     private async Task<ScheduledVisitModel> CreateValidScheduledVisit()
@@ -479,7 +489,7 @@ public class ActualVisitRepositoryTests : IDisposable
 
         var scheduledVisit = await CreateScheduledVisit(project);
 
-        var actualVisit = new ActualVisitModel(scheduledVisit.Id)
+        var actualVisit = new ActualVisitModel
         {
             ActualDate = DateTime.Now,
             StartTime = new TimeSpan(9, 0, 0),
@@ -490,6 +500,7 @@ public class ActualVisitRepositoryTests : IDisposable
             RegisteredBy = educator.Id,
             RegisteredByName = $"{educator.FirstName} {educator.LastName}"
         };
+        actualVisit.SetScheduledVisitId(scheduledVisit.Id);
 
         var visitOperator = new VisitOperatorModel
         {
