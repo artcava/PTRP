@@ -133,18 +133,21 @@ public class ActualVisitRepository
     /// </summary>
     public async Task UpdateAsync(ActualVisitModel actualVisit)
     {
-        var existing = await _context.ActualVisits
-            .AsNoTracking()
-            .FirstOrDefaultAsync(av => av.Id == actualVisit.Id);
+        // Recupera il valore originale dal database usando una query separata
+        var originalScheduledVisitId = await _context.ActualVisits
+            .Where(av => av.Id == actualVisit.Id)
+            .Select(av => new { av.ScheduledVisitId })
+            .FirstOrDefaultAsync();
 
-        if (existing == null)
+        if (originalScheduledVisitId == null)
         {
             throw new InvalidOperationException(
                 $"La visita effettiva con ID {actualVisit.Id} non esiste.");
         }
 
         // VINCOLO CRITICO: ScheduledVisitId è immutabile
-        if (existing.ScheduledVisitId != actualVisit.ScheduledVisitId)
+        // Confronta con il valore dal database, non con il ChangeTracker
+        if (originalScheduledVisitId.ScheduledVisitId != actualVisit.ScheduledVisitId)
         {
             throw new InvalidOperationException(
                 "Non è possibile modificare lo ScheduledVisitId di una visita effettiva. " +
