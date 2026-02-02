@@ -13,10 +13,10 @@ public class ActualVisitModel
 
     /// <summary>
     /// ID della visita programmata associata.
-    /// IMMUTABILE: può essere impostato solo alla creazione (private set).
+    /// IMMUTABILE: può essere impostato solo durante l'inizializzazione dell'oggetto.
     /// Garantisce l'integrità della relazione 1:1 a livello di modello.
     /// </summary>
-    public Guid ScheduledVisitId { get; private set; }
+    public Guid ScheduledVisitId { get; init; }
 
     public DateTime ActualDate { get; set; }
     public TimeSpan StartTime { get; set; }
@@ -30,28 +30,4 @@ public class ActualVisitModel
     // Navigation properties
     public ScheduledVisitModel ScheduledVisit { get; set; } = null!;
     public ICollection<VisitOperatorModel> OperatorsPresent { get; set; } = new List<VisitOperatorModel>();
-
-    /// <summary>
-    /// Costruttore vuoto per EF Core.
-    /// </summary>
-    public ActualVisitModel()
-    {
-    }
-
-    /// <summary>
-    /// Imposta lo ScheduledVisitId.
-    /// Può essere chiamato solo UNA VOLTA.
-    /// ATTENZIONE: Questo metodo è pubblico solo per consentire i test.
-    /// In produzione, utilizzare solo durante la creazione iniziale dell'entità.
-    /// </summary>
-    /// <exception cref="InvalidOperationException">Se lo ScheduledVisitId è già stato impostato.</exception>
-    public void SetScheduledVisitId(Guid scheduledVisitId)
-    {
-        if (ScheduledVisitId != Guid.Empty)
-        {
-            throw new InvalidOperationException(
-                "ScheduledVisitId è immutabile e può essere impostato solo una volta.");
-        }
-        ScheduledVisitId = scheduledVisitId;
-    }
 }
