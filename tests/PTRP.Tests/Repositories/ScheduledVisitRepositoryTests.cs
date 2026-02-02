@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using PTRP.Data;
 using PTRP.Data.Repositories;
 using PTRP.Models;
+using PTRP.Models.Enums;
 
 namespace PTRP.Tests.Repositories;
 
@@ -61,7 +62,13 @@ public class ScheduledVisitRepositoryTests : IDisposable
         {
             Id = Guid.NewGuid(),
             FirstName = "Test",
-            LastName = "Educator"
+            LastName = "Educator",
+            Email = "test@educator.com",
+            PhoneNumber = "1234567890",
+            DateOfBirth = DateTime.Now.AddYears(-30),
+            Specialization = "Test",
+            LicenseNumber = "LIC123",
+            HireDate = DateTime.Now.AddYears(-5)
         };
         _context.ProfessionalEducators.Add(educator);
 
@@ -80,24 +87,20 @@ public class ScheduledVisitRepositoryTests : IDisposable
         _context.TherapyProjects.Update(project);
         await _context.SaveChangesAsync();
 
-        var visitType = new VisitTypeModel { Name = "INTAKE" };
-        _context.VisitTypes.Add(visitType);
-        await _context.SaveChangesAsync();
-
         var now = DateTime.Now;
         var visit1 = new ScheduledVisitModel
         {
             TherapyProjectId = project.Id,
-            VisitTypeId = visitType.Id,
+            Type = VisitType.Intake,
             ScheduledDate = now.AddDays(-1),
-            AppointmentStatus = "Scheduled"
+            Status = AppointmentStatus.Scheduled
         };
         var visit2 = new ScheduledVisitModel
         {
             TherapyProjectId = project.Id,
-            VisitTypeId = visitType.Id,
+            Type = VisitType.Intake,
             ScheduledDate = now.AddDays(5),
-            AppointmentStatus = "Scheduled"
+            Status = AppointmentStatus.Scheduled
         };
 
         await _repository.AddAsync(visit1);
@@ -120,8 +123,8 @@ public class ScheduledVisitRepositoryTests : IDisposable
         var project = await CreateProjectWithVisits(2);
         var visits = (await _repository.GetByProjectIdAsync(project.Id)).ToList();
 
-        visits[0].AppointmentStatus = "Completed";
-        visits[1].AppointmentStatus = "Scheduled";
+        visits[0].Status = AppointmentStatus.Completed;
+        visits[1].Status = AppointmentStatus.Scheduled;
 
         await _repository.UpdateAsync(visits[0]);
         await _repository.UpdateAsync(visits[1]);
@@ -131,7 +134,7 @@ public class ScheduledVisitRepositoryTests : IDisposable
 
         // Assert
         Assert.Single(result);
-        Assert.Equal("Completed", result[0].AppointmentStatus);
+        Assert.Equal(AppointmentStatus.Completed, result[0].Status);
     }
 
     [Fact]
@@ -170,16 +173,12 @@ public class ScheduledVisitRepositoryTests : IDisposable
     public async Task AddAsync_NonExistentProject_ThrowsException()
     {
         // Arrange
-        var visitType = new VisitTypeModel { Name = "INTAKE" };
-        _context.VisitTypes.Add(visitType);
-        await _context.SaveChangesAsync();
-
         var visit = new ScheduledVisitModel
         {
             TherapyProjectId = Guid.NewGuid(), // Non-existent
-            VisitTypeId = visitType.Id,
+            Type = VisitType.Intake,
             ScheduledDate = DateTime.Now,
-            AppointmentStatus = "Scheduled"
+            Status = AppointmentStatus.Scheduled
         };
 
         // Act & Assert
@@ -192,25 +191,22 @@ public class ScheduledVisitRepositoryTests : IDisposable
     {
         // Arrange
         var project = await CreateValidProject();
-        var visitType = new VisitTypeModel { Name = "INTAKE" };
-        _context.VisitTypes.Add(visitType);
-        await _context.SaveChangesAsync();
 
         var visits = new[]
         {
             new ScheduledVisitModel
             {
                 TherapyProjectId = project.Id,
-                VisitTypeId = visitType.Id,
+                Type = VisitType.Intake,
                 ScheduledDate = DateTime.Now.AddMonths(3),
-                AppointmentStatus = "Scheduled"
+                Status = AppointmentStatus.Scheduled
             },
             new ScheduledVisitModel
             {
                 TherapyProjectId = project.Id,
-                VisitTypeId = visitType.Id,
+                Type = VisitType.Followup,
                 ScheduledDate = DateTime.Now.AddMonths(9),
-                AppointmentStatus = "Scheduled"
+                Status = AppointmentStatus.Scheduled
             }
         };
 
@@ -229,14 +225,14 @@ public class ScheduledVisitRepositoryTests : IDisposable
         var visit = await CreateValidScheduledVisit();
         await _repository.AddAsync(visit);
 
-        visit.AppointmentStatus = "Completed";
+        visit.Status = AppointmentStatus.Completed;
 
         // Act
         await _repository.UpdateAsync(visit);
         var result = await _repository.GetByIdAsync(visit.Id);
 
         // Assert
-        Assert.Equal("Completed", result!.AppointmentStatus);
+        Assert.Equal(AppointmentStatus.Completed, result!.Status);
     }
 
     [Fact]
@@ -295,18 +291,15 @@ public class ScheduledVisitRepositoryTests : IDisposable
     private async Task<TherapyProjectModel> CreateProjectWithVisits(int visitCount)
     {
         var project = await CreateValidProject();
-        var visitType = new VisitTypeModel { Name = "INTAKE" };
-        _context.VisitTypes.Add(visitType);
-        await _context.SaveChangesAsync();
 
         for (int i = 0; i < visitCount; i++)
         {
             var visit = new ScheduledVisitModel
             {
                 TherapyProjectId = project.Id,
-                VisitTypeId = visitType.Id,
+                Type = VisitType.Intake,
                 ScheduledDate = DateTime.Now.AddDays(i),
-                AppointmentStatus = "Scheduled"
+                Status = AppointmentStatus.Scheduled
             };
             await _repository.AddAsync(visit);
         }
@@ -334,16 +327,13 @@ public class ScheduledVisitRepositoryTests : IDisposable
     private async Task<ScheduledVisitModel> CreateValidScheduledVisit()
     {
         var project = await CreateValidProject();
-        var visitType = new VisitTypeModel { Name = "INTAKE" };
-        _context.VisitTypes.Add(visitType);
-        await _context.SaveChangesAsync();
 
         return new ScheduledVisitModel
         {
             TherapyProjectId = project.Id,
-            VisitTypeId = visitType.Id,
+            Type = VisitType.Intake,
             ScheduledDate = DateTime.Now.AddMonths(3),
-            AppointmentStatus = "Scheduled"
+            Status = AppointmentStatus.Scheduled
         };
     }
 
