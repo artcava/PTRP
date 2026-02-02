@@ -462,7 +462,7 @@ public class ActualVisitRepositoryTests : IDisposable
         var visit = new ScheduledVisitModel
         {
             TherapyProjectId = project.Id,
-            Type = VisitType.Intake,
+            Type = VisitType.INTAKE,
             ScheduledDate = DateTime.Now.AddMonths(3),
             Status = AppointmentStatus.Scheduled
         };
