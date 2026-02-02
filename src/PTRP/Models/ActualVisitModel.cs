@@ -39,17 +39,9 @@ public class ActualVisitModel
     }
 
     /// <summary>
-    /// Costruttore che imposta lo ScheduledVisitId.
-    /// Dopo questa chiamata, ScheduledVisitId non può essere modificato.
-    /// </summary>
-    public ActualVisitModel(Guid scheduledVisitId)
-    {
-        ScheduledVisitId = scheduledVisitId;
-    }
-
-    /// <summary>
     /// Metodo interno per impostare lo ScheduledVisitId.
-    /// Utilizzato dal repository durante la creazione.
+    /// Utilizzato dai test e dal repository durante la creazione.
+    /// Può essere chiamato solo UNA VOLTA.
     /// </summary>
     internal void SetScheduledVisitId(Guid scheduledVisitId)
     {
