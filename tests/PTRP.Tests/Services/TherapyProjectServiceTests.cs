@@ -175,7 +175,7 @@ public class TherapyProjectServiceTests
     }
 
     [Fact]
-    public async Task GetActiveForPatientAsync_ReturnsAtMostOne Project()
+    public async Task GetActiveForPatientAsync_ReturnsAtMostOneProject()
     {
         // Arrange
         var patientId = Guid.NewGuid();
