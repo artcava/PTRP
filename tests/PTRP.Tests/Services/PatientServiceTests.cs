@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Moq;
 using PTRP.Models;
 using PTRP.Services;
 using PTRP.Services.Interfaces;
@@ -16,6 +17,7 @@ namespace PTRP.Tests.Services
     {
         private readonly PTRPDbContext _context;
         private readonly IPatientRepository _repository;
+        private readonly Mock<ITherapyProjectRepository> _projectRepoMock;
         private readonly IPatientService _service;
 
         public PatientServiceTests()
@@ -27,7 +29,8 @@ namespace PTRP.Tests.Services
 
             _context = new PTRPDbContext(options);
             _repository = new PatientRepository(_context);
-            _service = new PatientService(_repository);
+            _projectRepoMock = new Mock<ITherapyProjectRepository>();
+            _service = new PatientService(_repository, _projectRepoMock.Object);
         }
 
         public void Dispose()
@@ -40,7 +43,7 @@ namespace PTRP.Tests.Services
         /// Test positivo: aggiunta di un paziente valido
         /// </summary>
         [Fact]
-        public async Task AddAsync_WithValidPatient_SuccessfullyAddsPatient()
+        public async Task CreateAsync_WithValidPatient_SuccessfullyAddsPatient()
         {
             // arrange
             var newPatient = new PatientModel
@@ -50,7 +53,7 @@ namespace PTRP.Tests.Services
             };
 
             // act
-            await _service.AddAsync(newPatient);
+            await _service.CreateAsync(newPatient);
 
             // assert
             Assert.NotEqual(Guid.Empty, newPatient.Id);
@@ -67,7 +70,7 @@ namespace PTRP.Tests.Services
         /// Test di errore: aggiunta paziente con FirstName vuoto
         /// </summary>
         [Fact]
-        public async Task AddAsync_WithEmptyFirstName_ThrowsArgumentException()
+        public async Task CreateAsync_WithEmptyFirstName_ThrowsArgumentException()
         {
             // arrange
             var invalidPatient = new PatientModel
@@ -78,7 +81,7 @@ namespace PTRP.Tests.Services
 
             // act & assert
             var exception = await Assert.ThrowsAsync<ArgumentException>(
-                () => _service.AddAsync(invalidPatient)
+                () => _service.CreateAsync(invalidPatient)
             );
             Assert.Contains("nome", exception.Message, StringComparison.OrdinalIgnoreCase);
         }
@@ -87,7 +90,7 @@ namespace PTRP.Tests.Services
         /// Test di errore: aggiunta paziente con LastName vuoto
         /// </summary>
         [Fact]
-        public async Task AddAsync_WithEmptyLastName_ThrowsArgumentException()
+        public async Task CreateAsync_WithEmptyLastName_ThrowsArgumentException()
         {
             // arrange
             var invalidPatient = new PatientModel
@@ -98,7 +101,7 @@ namespace PTRP.Tests.Services
 
             // act & assert
             var exception = await Assert.ThrowsAsync<ArgumentException>(
-                () => _service.AddAsync(invalidPatient)
+                () => _service.CreateAsync(invalidPatient)
             );
             Assert.Contains("cognome", exception.Message, StringComparison.OrdinalIgnoreCase);
         }
@@ -107,7 +110,7 @@ namespace PTRP.Tests.Services
         /// Test validazione: FirstName troppo lungo
         /// </summary>
         [Fact]
-        public async Task AddAsync_WithTooLongFirstName_ThrowsArgumentException()
+        public async Task CreateAsync_WithTooLongFirstName_ThrowsArgumentException()
         {
             // arrange
             var invalidPatient = new PatientModel
@@ -118,7 +121,7 @@ namespace PTRP.Tests.Services
 
             // act & assert
             var exception = await Assert.ThrowsAsync<ArgumentException>(
-                () => _service.AddAsync(invalidPatient)
+                () => _service.CreateAsync(invalidPatient)
             );
             Assert.Contains("100 caratteri", exception.Message);
         }
@@ -135,7 +138,7 @@ namespace PTRP.Tests.Services
                 FirstName = "Lucia",
                 LastName = "Verdi"
             };
-            await _service.AddAsync(newPatient);
+            await _service.CreateAsync(newPatient);
             var patientId = newPatient.Id;
 
             // act
@@ -151,16 +154,16 @@ namespace PTRP.Tests.Services
         /// Test di errore: ricerca paziente non esistente
         /// </summary>
         [Fact]
-        public async Task GetByIdAsync_WithNonExistentId_ThrowsInvalidOperationException()
+        public async Task GetByIdAsync_WithNonExistentId_ReturnsNull()
         {
             // arrange
             var nonExistentId = Guid.NewGuid();
 
-            // act & assert
-            var exception = await Assert.ThrowsAsync<InvalidOperationException>(
-                () => _service.GetByIdAsync(nonExistentId)
-            );
-            Assert.Contains("non trovato", exception.Message, StringComparison.OrdinalIgnoreCase);
+            // act
+            var result = await _service.GetByIdAsync(nonExistentId);
+
+            // assert
+            Assert.Null(result);
         }
 
         /// <summary>
@@ -175,7 +178,7 @@ namespace PTRP.Tests.Services
                 FirstName = "Mario",
                 LastName = "Rossi"
             };
-            await _service.AddAsync(patient);
+            await _service.CreateAsync(patient);
 
             // act
             patient.FirstName = "Maria";
@@ -183,6 +186,7 @@ namespace PTRP.Tests.Services
 
             // assert
             var updated = await _service.GetByIdAsync(patient.Id);
+            Assert.NotNull(updated);
             Assert.Equal("Maria", updated.FirstName);
             Assert.NotNull(updated.UpdatedAt);
         }
@@ -215,16 +219,15 @@ namespace PTRP.Tests.Services
                 FirstName = "Test",
                 LastName = "Delete"
             };
-            await _service.AddAsync(patient);
+            await _service.CreateAsync(patient);
             var patientId = patient.Id;
 
             // act
             await _service.DeleteAsync(patientId);
 
             // assert
-            await Assert.ThrowsAsync<InvalidOperationException>(
-                () => _service.GetByIdAsync(patientId)
-            );
+            var result = await _service.GetByIdAsync(patientId);
+            Assert.Null(result);
         }
 
         /// <summary>
@@ -234,9 +237,9 @@ namespace PTRP.Tests.Services
         public async Task SearchAsync_WithValidTerm_ReturnsMatchingPatients()
         {
             // arrange
-            await _service.AddAsync(new PatientModel { FirstName = "Paolo", LastName = "Gallo" });
-            await _service.AddAsync(new PatientModel { FirstName = "Maria", LastName = "Rossi" });
-            await _service.AddAsync(new PatientModel { FirstName = "Giovanni", LastName = "Gallo" });
+            await _service.CreateAsync(new PatientModel { FirstName = "Paolo", LastName = "Gallo" });
+            await _service.CreateAsync(new PatientModel { FirstName = "Maria", LastName = "Rossi" });
+            await _service.CreateAsync(new PatientModel { FirstName = "Giovanni", LastName = "Gallo" });
 
             // act
             var results = await _service.SearchAsync("Gallo");
@@ -254,7 +257,7 @@ namespace PTRP.Tests.Services
         public async Task SearchAsync_IsCaseInsensitive()
         {
             // arrange
-            await _service.AddAsync(new PatientModel { FirstName = "Paolo", LastName = "Gallo" });
+            await _service.CreateAsync(new PatientModel { FirstName = "Paolo", LastName = "Gallo" });
 
             // act
             var resultsLower = await _service.SearchAsync("gallo");
@@ -272,9 +275,9 @@ namespace PTRP.Tests.Services
         public async Task GetAllAsync_ReturnsOrderedPatients()
         {
             // arrange
-            await _service.AddAsync(new PatientModel { FirstName = "Zara", LastName = "Zeta" });
-            await _service.AddAsync(new PatientModel { FirstName = "Anna", LastName = "Alfa" });
-            await _service.AddAsync(new PatientModel { FirstName = "Mario", LastName = "Beta" });
+            await _service.CreateAsync(new PatientModel { FirstName = "Zara", LastName = "Zeta" });
+            await _service.CreateAsync(new PatientModel { FirstName = "Anna", LastName = "Alfa" });
+            await _service.CreateAsync(new PatientModel { FirstName = "Mario", LastName = "Beta" });
 
             // act
             var patients = (await _service.GetAllAsync()).ToList();
