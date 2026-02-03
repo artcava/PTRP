@@ -40,12 +40,7 @@ namespace PTRP.Services
         /// <inheritdoc />
         public async Task<PatientModel?> GetByIdAsync(Guid id, CancellationToken ct = default)
         {
-            var patient = await _patientRepository.GetByIdAsync(id);
-            if (patient == null)
-            {
-                throw new InvalidOperationException($"Paziente con ID {id} non trovato");
-            }
-            return patient;
+            return await _patientRepository.GetByIdAsync(id);
         }
 
         /// <inheritdoc />
