@@ -222,7 +222,7 @@ namespace PTRP.ViewModels
                     ? "Caricamento tutti i pazienti..." 
                     : $"Ricerca '{SearchTerm}'...";
 
-                var patients = await _patientService.SearchAsync(SearchTerm ?? string.Empty);
+                var patients = await _patientService.SearchAsync(SearchTerm);
                 
                 if (Patients != null)
                 {
@@ -342,7 +342,7 @@ namespace PTRP.ViewModels
 
                 if (patient.IsNew)
                 {
-                    await _patientService.AddAsync(patient);
+                    await _patientService.CreateAsync(patient);
                     patient.IsNew = false;
                     StatusMessage = $"Paziente {patient.FirstName} {patient.LastName} aggiunto con successo";
                 }
