@@ -1,4 +1,7 @@
+using Microsoft.EntityFrameworkCore;
 using PTRP.Models;
+using PTRP.Models.Enums;
+using PTRP.Services.Enums;
 using PTRP.Services.Interfaces;
 using PTRP.Data.Repositories.Interfaces;
 
@@ -11,42 +14,100 @@ namespace PTRP.Services
     /// </summary>
     public class PatientService : IPatientService
     {
-        private readonly IPatientRepository _repository;
+        private readonly IPatientRepository _patientRepository;
+        private readonly ITherapyProjectRepository _therapyProjectRepository;
 
         /// <summary>
         /// Costruttore con dependency injection
         /// </summary>
-        /// <param name="repository">Repository per operazioni database</param>
-        public PatientService(IPatientRepository repository)
+        /// <param name="patientRepository">Repository per operazioni database pazienti</param>
+        /// <param name="therapyProjectRepository">Repository per progetti (per filtro stato)</param>
+        public PatientService(
+            IPatientRepository patientRepository,
+            ITherapyProjectRepository therapyProjectRepository)
         {
-            _repository = repository ?? throw new ArgumentNullException(nameof(repository));
+            _patientRepository = patientRepository ?? throw new ArgumentNullException(nameof(patientRepository));
+            _therapyProjectRepository = therapyProjectRepository ?? throw new ArgumentNullException(nameof(therapyProjectRepository));
         }
 
-        /// <summary>
-        /// Recupera tutti i pazienti
-        /// </summary>
-        public async Task<IEnumerable<PatientModel>> GetAllAsync()
+        /// <inheritdoc />
+        public async Task<IReadOnlyList<PatientModel>> GetAllAsync(CancellationToken ct = default)
         {
-            return await _repository.GetAllAsync();
+            var patients = await _patientRepository.GetAllAsync();
+            return patients.ToList();
         }
 
-        /// <summary>
-        /// Recupera un paziente per ID
-        /// </summary>
-        public async Task<PatientModel?> GetByIdAsync(Guid id)
+        /// <inheritdoc />
+        public async Task<PatientModel?> GetByIdAsync(Guid id, CancellationToken ct = default)
         {
-            var patient = await _repository.GetByIdAsync(id);
-            if (patient == null)
+            return await _patientRepository.GetByIdAsync(id);
+        }
+
+        /// <inheritdoc />
+        public async Task<PatientModel?> GetByIdWithProjectsAsync(Guid id, CancellationToken ct = default)
+        {
+            return await _patientRepository.GetByIdWithProjectsAsync(id);
+        }
+
+        /// <inheritdoc />
+        public async Task<IReadOnlyList<PatientModel>> SearchAsync(
+            string? searchTerm = null,
+            ProjectStateFilter? stateFilter = null,
+            CancellationToken ct = default)
+        {
+            // Se non c'è filtro di stato, usa ricerca semplice esistente
+            if (!stateFilter.HasValue || stateFilter == ProjectStateFilter.All)
             {
-                throw new InvalidOperationException($"Paziente con ID {id} non trovato");
+                if (string.IsNullOrWhiteSpace(searchTerm))
+                {
+                    return await GetAllAsync(ct);
+                }
+                var patients = await _patientRepository.SearchAsync(searchTerm);
+                return patients.ToList();
             }
-            return patient;
+
+            // Logica con filtro stato progetto
+            // Recupera tutti i pazienti con progetti
+            IEnumerable<PatientModel> allPatients;
+            if (string.IsNullOrWhiteSpace(searchTerm))
+            {
+                // Nessun searchTerm: tutti i pazienti
+                allPatients = await _patientRepository.GetAllAsync();
+            }
+            else
+            {
+                // Con searchTerm: filtra per nome/cognome
+                allPatients = await _patientRepository.SearchAsync(searchTerm);
+            }
+
+            // Carica progetti per ciascun paziente e filtra per stato
+            var filteredPatients = new List<PatientModel>();
+
+            foreach (var patient in allPatients)
+            {
+                var projects = await _therapyProjectRepository.GetByPatientIdAsync(patient.Id);
+                
+                // Filtra progetti per stato
+                bool shouldInclude = stateFilter.Value switch
+                {
+                    ProjectStateFilter.Active => projects.Any(p => p.Status == nameof(TherapyProjectState.Active)),
+                    ProjectStateFilter.Suspended => projects.Any(p => p.Status == nameof(TherapyProjectState.Suspended)),
+                    ProjectStateFilter.Completed => projects.Any(p => p.Status == nameof(TherapyProjectState.Completed)),
+                    ProjectStateFilter.Deceased => projects.Any(p => p.Status == nameof(TherapyProjectState.Deceased)),
+                    _ => true
+                };
+
+                if (shouldInclude)
+                {
+                    filteredPatients.Add(patient);
+                }
+            }
+
+            return filteredPatients;
         }
 
-        /// <summary>
-        /// Aggiunge un nuovo paziente con validazione business
-        /// </summary>
-        public async Task AddAsync(PatientModel patient)
+        /// <inheritdoc />
+        public async Task CreateAsync(PatientModel patient, CancellationToken ct = default)
         {
             // Validazioni business logic
             if (string.IsNullOrWhiteSpace(patient.FirstName))
@@ -62,19 +123,17 @@ namespace PTRP.Services
                 throw new ArgumentException("Il cognome non può superare i 100 caratteri", nameof(patient.LastName));
 
             // Il repository gestirà la generazione dell'ID e CreatedAt
-            await _repository.AddAsync(patient);
+            await _patientRepository.AddAsync(patient);
         }
 
-        /// <summary>
-        /// Aggiorna un paziente esistente con validazione
-        /// </summary>
-        public async Task UpdateAsync(PatientModel patient)
+        /// <inheritdoc />
+        public async Task UpdateAsync(PatientModel patient, CancellationToken ct = default)
         {
             if (patient.Id == Guid.Empty)
                 throw new ArgumentException("ID paziente non valido", nameof(patient.Id));
 
             // Verifica esistenza
-            if (!await _repository.ExistsAsync(patient.Id))
+            if (!await _patientRepository.ExistsAsync(patient.Id))
             {
                 throw new InvalidOperationException($"Paziente con ID {patient.Id} non trovato");
             }
@@ -92,27 +151,17 @@ namespace PTRP.Services
             if ((patient.LastName?.Length ?? 0) > 100)
                 throw new ArgumentException("Il cognome non può superare i 100 caratteri", nameof(patient.LastName));
 
-            await _repository.UpdateAsync(patient);
+            await _patientRepository.UpdateAsync(patient);
         }
 
-        /// <summary>
-        /// Elimina un paziente
-        /// </summary>
-        public async Task DeleteAsync(Guid id)
+        /// <inheritdoc />
+        public async Task DeleteAsync(Guid id, CancellationToken ct = default)
         {
-            bool deleted = await _repository.DeleteAsync(id);
+            bool deleted = await _patientRepository.DeleteAsync(id);
             if (!deleted)
             {
                 throw new InvalidOperationException($"Paziente con ID {id} non trovato");
             }
-        }
-
-        /// <summary>
-        /// Ricerca pazienti per nome o cognome
-        /// </summary>
-        public async Task<IEnumerable<PatientModel>> SearchAsync(string searchTerm)
-        {
-            return await _repository.SearchAsync(searchTerm);
         }
     }
 }

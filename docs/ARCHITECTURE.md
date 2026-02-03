@@ -363,17 +363,23 @@ TherapyProjectModel (1) ── (N) ScheduledVisitModel (1:1) ── ActualVisitM
 **Interfaccia:** `IPatientService`
 
 **Metodi:**
-- `Task<IEnumerable<PatientModel>> GetAllAsync()`
-- `Task<PatientModel> GetByIdAsync(Guid id)`
-- `Task AddAsync(PatientModel patient)`
-- `Task UpdateAsync(PatientModel patient)`
-- `Task DeleteAsync(Guid id)`
-- `Task<IEnumerable<PatientModel>> SearchAsync(string searchTerm)`
+- `Task<IReadOnlyList<PatientModel>> GetAllAsync(CancellationToken ct = default)`
+- `Task<PatientModel?> GetByIdAsync(Guid id, CancellationToken ct = default)`
+- `Task<PatientModel?> GetByIdWithProjectsAsync(Guid id, CancellationToken ct = default)` ✨ **v1.1**
+- `Task<IReadOnlyList<PatientModel>> SearchAsync(string? searchTerm = null, ProjectStateFilter? stateFilter = null, CancellationToken ct = default)` ✨ **v1.1**
+- `Task CreateAsync(PatientModel patient, CancellationToken ct = default)`
+- `Task UpdateAsync(PatientModel patient, CancellationToken ct = default)`
+- `Task DeleteAsync(Guid id, CancellationToken ct = default)`
 
 **Validazioni:**
-- `FirstName` e `LastName` obbligatori
+- `FirstName` e `LastName` obbligatori, max 100 caratteri
 - `FiscalCode` unico (se specificato)
 - `Email` formato valido (se specificata)
+
+**Nuove Funzionalità (issue #73 - v1.1):**
+- **Ricerca Avanzata con Filtro Stato Progetto**: `SearchAsync` supporta filtro per stato progetto tramite `ProjectStateFilter` enum (All/Active/Suspended/Completed/Deceased)
+- **Caricamento Eager con Progetti**: `GetByIdWithProjectsAsync` carica paziente con tutti i progetti associati (ottimizzazione query)
+- **Supporto CancellationToken**: Tutti i metodi supportano cancellazione asincrona
 
 ---
 
@@ -381,23 +387,142 @@ TherapyProjectModel (1) ── (N) ScheduledVisitModel (1:1) ── ActualVisitM
 
 **Interfaccia:** `ITherapyProjectService`
 
-**Metodi:**
-- `Task<IEnumerable<TherapyProjectModel>> GetAllAsync()`
-- `Task<TherapyProjectModel> GetByIdAsync(Guid id)`
-- `Task<IEnumerable<TherapyProjectModel>> GetByPatientIdAsync(Guid patientId)`
-- `Task<TherapyProjectModel?> GetActiveProjectByPatientIdAsync(Guid patientId)`
-- `Task AddAsync(TherapyProjectModel project)`
-- `Task UpdateAsync(TherapyProjectModel project)`
-- `Task DeleteAsync(Guid id)`
-- `Task SuspendProjectAsync(Guid projectId, string reason)`
-- `Task ResumeProjectAsync(Guid projectId)`
-- `Task CompleteProjectAsync(Guid projectId, DateTime completionDate)`
+**Metodi Query:**
+- `Task<IEnumerable<TherapyProjectModel>> GetAllAsync(CancellationToken ct = default)`
+- `Task<TherapyProjectModel?> GetByIdAsync(Guid id, CancellationToken ct = default)`
+- `Task<TherapyProjectModel?> GetByIdWithPatientAsync(Guid id, CancellationToken ct = default)`
+- `Task<TherapyProjectModel?> GetByIdWithRelationsAsync(Guid id, CancellationToken ct = default)`
+- `Task<TherapyProjectModel?> GetActiveForPatientAsync(Guid patientId, CancellationToken ct = default)` ✨ **v1.1**
+- `Task<IReadOnlyList<TherapyProjectModel>> GetCompletedForPatientAsync(Guid patientId, CancellationToken ct = default)` ✨ **v1.1**
+- `Task<IEnumerable<TherapyProjectModel>> GetByPatientIdAsync(Guid patientId, CancellationToken ct = default)`
+- `Task<IEnumerable<TherapyProjectModel>> GetByEducatorIdAsync(Guid educatorId, CancellationToken ct = default)`
+- `Task<IEnumerable<TherapyProjectModel>> GetByStatusAsync(string status, CancellationToken ct = default)`
+- `Task<IEnumerable<TherapyProjectModel>> SearchAsync(string searchTerm, CancellationToken ct = default)`
 
-**Regole di Business:**
-- Un paziente può avere **UN SOLO** progetto `Active` contemporaneamente
-- Schedulazione automatica 4 visite canoniche alla creazione progetto
-- `PlannedEndDate` >= `StartDate` (se specificata)
-- Non permettere eliminazione se esistono visite registrate
+**Metodi Gestione Progetto:**
+- `Task<Guid> CreateProjectAsync(CreateProjectRequest request, CancellationToken ct = default)` ✨ **v1.1**
+- `Task ChangeProjectStateAsync(Guid projectId, TherapyProjectState newState, CancellationToken ct = default)` ✨ **v1.1**
+- `Task AddAsync(TherapyProjectModel project, CancellationToken ct = default)`
+- `Task UpdateAsync(TherapyProjectModel project, CancellationToken ct = default)`
+- `Task DeleteAsync(Guid id, CancellationToken ct = default)`
+- `Task AssignEducatorAsync(Guid projectId, Guid educatorId, CancellationToken ct = default)`
+- `Task RemoveEducatorAsync(Guid projectId, Guid educatorId, CancellationToken ct = default)`
+- `Task<bool> ValidateAsync(TherapyProjectModel project, CancellationToken ct = default)`
+- `Task CompleteProjectAsync(Guid projectId, CancellationToken ct = default)`
+- `Task PutOnHoldAsync(Guid projectId, CancellationToken ct = default)`
+- `Task ResumeProjectAsync(Guid projectId, CancellationToken ct = default)`
+
+**Regole di Business (issue #73 - v1.1):**
+
+1. **Unicità Progetto Active**: Un paziente può avere **UN SOLO** progetto con stato `Active` contemporaneamente. Enforced in:
+   - `CreateProjectAsync`: blocca creazione se esiste già progetto Active
+   - `ChangeProjectStateAsync`: verifica unicità prima di cambiare stato ad Active
+   - `ResumeProjectAsync`: verifica prima di riattivare progetto sospeso
+
+2. **Stati Progetto e Transizioni** (`TherapyProjectState` enum):
+   - `Active`: Progetto attivo (default, max 1 per paziente)
+   - `Suspended`: Progetto sospeso temporaneamente
+   - `Completed`: Progetto concluso (stato finale)
+   - `Deceased`: Paziente deceduto (stato finale)
+   
+   **Transizioni valide**:
+   - `Active` → `Suspended`, `Completed`, `Deceased`
+   - `Suspended` → `Active`, `Completed`, `Deceased`
+   - `Completed`/`Deceased` → **NESSUNA TRANSIZIONE** (stati finali immutabili)
+
+3. **Creazione Progetto con `CreateProjectAsync`**:
+   
+   **Validazioni**:
+   - Titolo: min 3 caratteri, obbligatorio
+   - StartDate: obbligatoria
+   - PlannedEndDate: deve essere ≥ StartDate (se specificata)
+   - EducatorIds: almeno 1 educatore obbligatorio
+   - Paziente ed educatori devono esistere nel database
+   
+   **Generazione Automatica Appuntamenti Canonici** (se `GenerateCanonicalAppointments = true`):
+   - Crea automaticamente 4 appuntamenti:
+     1. **INTAKE** (Prima Apertura): StartDate + 3 mesi (90 giorni)
+     2. **INTERMEDIATE** (Verifica Intermedia): INTAKE + 6 mesi (180 giorni)
+     3. **FINAL** (Verifica Finale): INTERMEDIATE + 6 mesi (180 giorni)
+     4. **DISCHARGE** (Dimissioni): FINAL + 1 mese (30 giorni)
+   - Gli offset temporali sono configurabili tramite `CanonicalAppointmentsConfiguration` (iniettabile via DI)
+   - Tutti gli appuntamenti generati hanno `Status = Scheduled`
+   
+   **Esempio configurazione**:
+   ```csharp
+   // Default configuration
+   var config = CanonicalAppointmentsConfiguration.Default;
+   // Custom configuration
+   var customConfig = new CanonicalAppointmentsConfiguration {
+       Appointments = new List<CanonicalAppointmentDefinition> {
+           new() { Type = VisitType.INTAKE, OffsetFromStart = TimeSpan.FromDays(90) },
+           // ... altri appuntamenti
+       }
+   };
+   ```
+
+4. **Gestione Stati con `ChangeProjectStateAsync`**:
+   - Blocca transizioni da stati finali (Completed/Deceased)
+   - Verifica unicità Active quando si cambia stato ad Active
+   - Aggiorna automaticamente `UpdatedAt` timestamp
+
+**Nuovi Tipi (issue #73 - v1.1):**
+
+**TherapyProjectState** (enum in `PTRP.Models.Enums`):
+```csharp
+public enum TherapyProjectState
+{
+    Active,      // Progetto attivo (max 1 per paziente)
+    Suspended,   // Progetto sospeso
+    Completed,   // Progetto completato (stato finale)
+    Deceased     // Paziente deceduto (stato finale)
+}
+```
+
+**ProjectStateFilter** (enum in `PTRP.Services.Enums`):
+```csharp
+public enum ProjectStateFilter
+{
+    All,         // Nessun filtro (default)
+    Active,      // Solo pazienti con almeno un progetto Active
+    Suspended,   // Solo pazienti con almeno un progetto Suspended
+    Completed,   // Solo pazienti con almeno un progetto Completed
+    Deceased     // Solo pazienti con almeno un progetto Deceased
+}
+```
+
+**CreateProjectRequest** (record in `PTRP.Services.Models`):
+```csharp
+public record CreateProjectRequest(
+    Guid PatientId,                    // ID paziente (deve esistere)
+    string Title,                      // Titolo progetto (min 3 caratteri)
+    string? Description,               // Descrizione opzionale
+    DateTime StartDate,                // Data inizio (obbligatoria)
+    DateTime? PlannedEndDate,          // Data fine pianificata (opzionale, >= StartDate)
+    TherapyProjectState InitialState,  // Stato iniziale (default: Active)
+    List<Guid> EducatorIds,            // Almeno 1 educatore (devono esistere)
+    bool GenerateCanonicalAppointments // true = genera 4 appuntamenti automatici
+);
+```
+
+**CanonicalAppointmentsConfiguration** (class in `PTRP.Services.Configuration`):
+```csharp
+public class CanonicalAppointmentsConfiguration
+{
+    public List<CanonicalAppointmentDefinition> Appointments { get; init; }
+    
+    public static CanonicalAppointmentsConfiguration Default => new()
+    {
+        Appointments = new()
+        {
+            new() { Type = VisitType.INTAKE, OffsetFromStart = TimeSpan.FromDays(90) },
+            new() { Type = VisitType.INTERMEDIATE, OffsetFromPrevious = TimeSpan.FromDays(180) },
+            new() { Type = VisitType.FINAL, OffsetFromPrevious = TimeSpan.FromDays(180) },
+            new() { Type = VisitType.DISCHARGE, OffsetFromPrevious = TimeSpan.FromDays(30) }
+        }
+    };
+}
+```
 
 ---
 
@@ -564,6 +689,10 @@ services.AddScoped<ITherapyProjectService, TherapyProjectService>();
 services.AddScoped<IVisitService, VisitService>();
 services.AddScoped<IOperatorService, OperatorService>();
 
+// Configuration (optional custom)
+services.AddSingleton<CanonicalAppointmentsConfiguration>(
+    CanonicalAppointmentsConfiguration.Default);
+
 // ViewModels
 services.AddTransient<MainWindowViewModel>();
 services.AddTransient<PatientListViewModel>();
@@ -583,6 +712,7 @@ services.AddTransient<VisitFormViewModel>();
 6. **Validazione a livello servizio**: Servizi business validano prima di passare a repository
 7. **Enumerazioni per stati**: Evitare magic strings, type-safety compiletime
 8. **Naming consistente**: PascalCase per proprietà, camelCase per parametri
+9. **CQS Pattern**: Query methods ritornano `null` se non trovato, Command methods lanciano eccezioni
 
 ---
 
@@ -616,6 +746,10 @@ Vedi [USER-WORKFLOW.md](USER-WORKFLOW.md) per dettagli completi.
 - Moq per mocking
 - FluentAssertions per asserzioni leggibili
 
+**Test Coverage (v1.1):**
+- PatientService: 11 test (validazioni, CRUD, ricerca avanzata)
+- TherapyProjectService: 8 test (regole business critiche, stati, appuntamenti)
+
 ---
 
 ## 📖 Riferimenti
@@ -628,6 +762,6 @@ Vedi [USER-WORKFLOW.md](USER-WORKFLOW.md) per dettagli completi.
 
 ---
 
-**Versione**: 3.0  
-**Ultimo aggiornamento**: 02 Febbraio 2026  
-**Stato**: Allineato con USER-WORKFLOW.md e modelli dominio visite (#71, #85)
+**Versione**: 3.1  
+**Ultimo aggiornamento**: 03 Febbraio 2026  
+**Stato**: Enhanced Patient & TherapyProject Services (#73) - Gestione stati, filtri avanzati, appuntamenti automatici
