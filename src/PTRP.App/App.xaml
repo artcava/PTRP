@@ -4,6 +4,7 @@
              xmlns:local="clr-namespace:PTRP.App"
              xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
              xmlns:viewmodels="clr-namespace:PTRP.ViewModels;assembly=PTRP.ViewModels"
+             xmlns:patientViewModels="clr-namespace:PTRP.ViewModels.Patients;assembly=PTRP.ViewModels"
              xmlns:educatorViewModels="clr-namespace:PTRP.ViewModels.Educators;assembly=PTRP.ViewModels"
              xmlns:projectViewModels="clr-namespace:PTRP.ViewModels.Projects;assembly=PTRP.ViewModels"
              xmlns:patientViews="clr-namespace:PTRP.App.Views.Patients"
@@ -32,8 +33,8 @@
             
             <!-- ViewModel to View DataTemplates -->
             
-            <!-- Issue #51: Patient List View -->
-            <DataTemplate DataType="{x:Type viewmodels:PatientListViewModel}">
+            <!-- Issue #51/#74: Patient List View -->
+            <DataTemplate DataType="{x:Type patientViewModels:PatientListViewModel}">
                 <patientViews:PatientListView />
             </DataTemplate>
             
