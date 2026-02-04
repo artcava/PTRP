@@ -121,6 +121,7 @@ namespace PTRP.App
             services.AddTransient<PatientListViewModel>(); // Issue #51/#74: Patient List ViewModel
             services.AddTransient<EducatorListViewModel>(); // Issue #63: Educator List ViewModel
             services.AddTransient<ProjectListViewModel>(); // Issue #64: Project List ViewModel
+            services.AddTransient<ProjectFormViewModel>(); // Issue #74: Project Form ViewModel
             services.AddTransient<SyncViewModel>();        // Issue #52: Sync ViewModel
             services.AddTransient<ConflictResolutionViewModel>(); // Issue #52: Conflict Resolution ViewModel
 

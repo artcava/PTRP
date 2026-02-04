@@ -158,6 +158,77 @@
                             <TextBlock Text="{Binding SelectedProject.ProgressPercentage, StringFormat={}{0:F0}%}" HorizontalAlignment="Center" FontSize="12" Margin="0,4,0,0"/>
                         </StackPanel>
                     </Border>
+
+                    <!-- Storico Progetti Completati -->
+                    <Border Visibility="{Binding HasCompletedProjects, Converter={StaticResource BoolToVisibilityConverter}}" 
+                            Margin="0,0,0,16">
+                        <StackPanel>
+                            <Grid Margin="0,0,0,8">
+                                <TextBlock Text="Progetti Completati" 
+                                           Style="{StaticResource MaterialDesignSubtitle1TextBlock}"/>
+                                <ProgressBar Style="{StaticResource MaterialDesignCircularProgressBar}"
+                                             Value="0"
+                                             IsIndeterminate="True"
+                                             Width="16"
+                                             Height="16"
+                                             HorizontalAlignment="Right"
+                                             Visibility="{Binding IsLoadingCompletedProjects, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                            </Grid>
+                            
+                            <TextBlock Text="{Binding CompletedProjectsForCurrentPatient.Count, StringFormat='Trovati {0} progetti precedenti'}"
+                                       Style="{StaticResource MaterialDesignCaptionTextBlock}"
+                                       Foreground="{DynamicResource MaterialDesignBodyLight}"
+                                       Margin="0,0,0,8"/>
+                            
+                            <ItemsControl ItemsSource="{Binding CompletedProjectsForCurrentPatient}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Button Style="{StaticResource MaterialDesignOutlinedButton}"
+                                                HorizontalAlignment="Stretch"
+                                                HorizontalContentAlignment="Stretch"
+                                                Command="{Binding DataContext.SelectCompletedProjectCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                CommandParameter="{Binding}"
+                                                Margin="0,0,0,8">
+                                            <Grid>
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="Auto"/>
+                                                    <RowDefinition Height="Auto"/>
+                                                </Grid.RowDefinitions>
+                                                
+                                                <TextBlock Grid.Row="0" 
+                                                           Text="{Binding Title}" 
+                                                           FontWeight="SemiBold" 
+                                                           TextTrimming="CharacterEllipsis"
+                                                           HorizontalAlignment="Left"/>
+                                                
+                                                <StackPanel Grid.Row="1" 
+                                                           Orientation="Horizontal" 
+                                                           Margin="0,4,0,0">
+                                                    <materialDesign:PackIcon Kind="Calendar" 
+                                                                            Width="12" 
+                                                                            Height="12" 
+                                                                            Margin="0,0,4,0" 
+                                                                            Foreground="{DynamicResource MaterialDesignBodyLight}"/>
+                                                    <TextBlock Text="{Binding PeriodShort}" 
+                                                               FontSize="11" 
+                                                               Foreground="{DynamicResource MaterialDesignBodyLight}" 
+                                                               Margin="0,0,8,0"/>
+                                                    <materialDesign:PackIcon Kind="CheckCircle" 
+                                                                            Width="12" 
+                                                                            Height="12" 
+                                                                            Margin="0,0,4,0" 
+                                                                            Foreground="{DynamicResource PrimaryHueMidBrush}"/>
+                                                    <TextBlock Text="{Binding CompletedAt, StringFormat='Completato: {0:dd/MM/yyyy}'}" 
+                                                               FontSize="11" 
+                                                               Foreground="{DynamicResource PrimaryHueMidBrush}"/>
+                                                </StackPanel>
+                                            </Grid>
+                                        </Button>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
                     
                     <TextBlock Text="Timeline Appuntamenti" Style="{StaticResource MaterialDesignSubtitle1TextBlock}" Margin="0,0,0,8"/>
                     <ItemsControl ItemsSource="{Binding SelectedProject.Appointments}" Margin="0,0,0,16">
