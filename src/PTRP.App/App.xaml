@@ -10,8 +10,7 @@
              xmlns:patientViews="clr-namespace:PTRP.App.Views.Patients"
              xmlns:educatorViews="clr-namespace:PTRP.App.Views.Educators"
              xmlns:projectViews="clr-namespace:PTRP.App.Views.Projects"
-             xmlns:syncViews="clr-namespace:PTRP.App.Views.Sync"
-             xmlns:converters="clr-namespace:PTRP.App.Converters">
+             xmlns:syncViews="clr-namespace:PTRP.App.Views.Sync">
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
@@ -24,10 +23,6 @@
             
             <!-- Application Resources -->
             <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
-            
-            <!-- Issue #51: Patient List Converters -->
-            <converters:ProjectStateToColorConverter x:Key="ProjectStateToColorConverter" />
-            <converters:NullToVisibilityConverter x:Key="NullToVisibilityConverter" />
             
             <BitmapImage x:Key="AppIcon" UriSource="/favicon.ico" />
             
