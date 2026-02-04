@@ -340,9 +340,9 @@
                 </Grid>
             </Border>
             
-            <!-- DYNAMIC CONTENT AREA -->
-            <ContentControl Grid.Row="1" 
-                          Content="{Binding CurrentViewModel}"
+            <!-- DYNAMIC CONTENT AREA - ViewLocator managed in code-behind (Issue #94) -->
+            <ContentControl x:Name="ContentArea"
+                          Grid.Row="1" 
                           Margin="0"/>
             
             <!-- SNACKBAR for notifications (MessageQueue set in code-behind) -->

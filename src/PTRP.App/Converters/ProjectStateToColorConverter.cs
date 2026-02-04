@@ -2,45 +2,33 @@ using System;
 using System.Globalization;
 using System.Windows.Data;
 using System.Windows.Media;
+using PTRP.Models.Enums;
 
-namespace PTRP.App.Converters
+namespace PTRP.App.Converters;
+
+/// <summary>
+/// Converts TherapyProjectState enum to a Color brush for UI display.
+/// Used in ProjectListView for status badges.
+/// </summary>
+public class ProjectStateToColorConverter : IValueConverter
 {
-    /// <summary>
-    /// Converts project state string to color brush for badge display.
-    /// Used in PatientListView DataGrid to show colored status badges.
-    /// </summary>
-    public class ProjectStateToColorConverter : IValueConverter
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
     {
-        /// <summary>
-        /// Converts project state to color brush.
-        /// </summary>
-        /// <param name="value">Project state string (Active, Suspended, Completed, Deceased, None)</param>
-        /// <param name="targetType">Target type (Brush)</param>
-        /// <param name="parameter">Optional parameter</param>
-        /// <param name="culture">Culture info</param>
-        /// <returns>SolidColorBrush for the badge background</returns>
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            if (value is not string state)
-                return new SolidColorBrush(Colors.Gray);
+        if (value is not TherapyProjectState status)
+            return Brushes.Gray;
 
-            return state switch
-            {
-                "Active" => new SolidColorBrush(Color.FromRgb(76, 175, 80)),      // Material Green 500
-                "Suspended" => new SolidColorBrush(Color.FromRgb(255, 193, 7)),   // Material Amber 500
-                "Completed" => new SolidColorBrush(Color.FromRgb(158, 158, 158)), // Material Grey 500
-                "Deceased" => new SolidColorBrush(Color.FromRgb(244, 67, 54)),    // Material Red 500
-                "None" => new SolidColorBrush(Color.FromRgb(189, 189, 189)),      // Material Grey 400
-                _ => new SolidColorBrush(Colors.Gray)
-            };
-        }
-
-        /// <summary>
-        /// Not implemented (one-way binding only).
-        /// </summary>
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        return status switch
         {
-            throw new NotImplementedException("ProjectStateToColorConverter is one-way only.");
-        }
+            TherapyProjectState.Active => new SolidColorBrush(Color.FromRgb(40, 167, 69)),      // Green #28A745
+            TherapyProjectState.Suspended => new SolidColorBrush(Color.FromRgb(255, 193, 7)),   // Yellow #FFC107
+            TherapyProjectState.Completed => new SolidColorBrush(Color.FromRgb(0, 123, 255)),   // Blue #007BFF
+            TherapyProjectState.Deceased => new SolidColorBrush(Color.FromRgb(108, 117, 125)),  // Gray #6C757D
+            _ => Brushes.Gray
+        };
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        throw new NotImplementedException("ProjectStateToColorConverter does not support ConvertBack");
     }
 }
