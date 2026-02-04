@@ -218,6 +218,13 @@ namespace PTRP.ViewModels.Patients
                 projectStateDisplay = MapStateToDisplay(anyProject.Status);
             }
 
+            // Map completed/closed projects (Completed, Deceased)
+            var completedProjects = model.TherapyProjects?
+                .Where(p => p.Status == "Completed" || p.Status == "Deceased")
+                .OrderByDescending(p => p.EndDate ?? p.StartDate)
+                .Select(MapCompletedProject)
+                .ToList() ?? new List<CompletedProjectViewModel>();
+
             return new PatientViewModel
             {
                 Id = model.Id,
@@ -228,7 +235,8 @@ namespace PTRP.ViewModels.Patients
                 ProjectStateDisplay = projectStateDisplay,
                 AssignedEducatorsDisplay = GetEducatorsDisplay(activeProject),
                 ActiveProject = activeProject != null ? MapActiveProject(activeProject) : null,
-                NextAppointment = null // TODO: Implement when VisitService is available
+                NextAppointment = null, // TODO: Implement when VisitService is available
+                CompletedProjects = completedProjects
             };
         }
 
@@ -285,6 +293,38 @@ namespace PTRP.ViewModels.Patients
                     Initials = $"{e.FirstName[0]}{e.LastName[0]}",
                     Role = "Educatore" // TODO: Get from ProjectOperatorModel.RoleInProject when available
                 }).ToList() ?? new List<EducatorViewModel>()
+            };
+        }
+
+        /// <summary>
+        /// Maps TherapyProjectModel to CompletedProjectViewModel for history display.
+        /// </summary>
+        private CompletedProjectViewModel MapCompletedProject(TherapyProjectModel model)
+        {
+            var startDate = model.StartDate;
+            var endDate = model.EndDate;
+
+            // Format period string
+            var periodString = endDate.HasValue 
+                ? $"{startDate:MMM yyyy} - {endDate.Value:MMM yyyy}" 
+                : $"{startDate:MMM yyyy} - (Non chiuso)";
+
+            // Get educators display
+            var educatorsDisplay = model.ProfessionalEducators != null && model.ProfessionalEducators.Any()
+                ? string.Join(", ", model.ProfessionalEducators.Select(e => $"{e.LastName[0]}. {e.FirstName}"))
+                : "Nessun educatore";
+
+            return new CompletedProjectViewModel
+            {
+                Id = model.Id,
+                Title = model.Title ?? "Progetto senza titolo",
+                FinalState = model.Status,
+                FinalStateDisplay = MapStateToDisplay(model.Status),
+                StartDate = startDate,
+                EndDate = endDate,
+                Period = periodString,
+                EducatorsDisplay = educatorsDisplay,
+                TotalVisits = 0 // TODO: Count visits when VisitService is available
             };
         }
 
