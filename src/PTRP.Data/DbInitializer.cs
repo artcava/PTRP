@@ -25,12 +25,12 @@ public static class DbInitializer
         // Configura Bogus per italiano
         Randomizer.Seed = new Random(12345); // Seed fisso per dati riproducibili
 
-        // 1. Crea Educatori Professionali (5-8)
+        // 1. Crea Educatori Professionali (7)
         var educators = CreateEducators();
         context.ProfessionalEducators.AddRange(educators);
         context.SaveChanges();
 
-        // 2. Crea Pazienti (10-15)
+        // 2. Crea Pazienti (12)
         var patients = CreatePatients();
         context.Patients.AddRange(patients);
         context.SaveChanges();
@@ -54,7 +54,7 @@ public static class DbInitializer
             .RuleFor(e => e.LastName, f => f.Name.LastName())
             .RuleFor(e => e.Email, (f, e) => f.Internet.Email(e.FirstName, e.LastName))
             .RuleFor(e => e.PhoneNumber, f => f.Phone.PhoneNumber("+39 ### ### ####"))
-            .RuleFor(e => e.IsActive, f => f.Random.Bool(0.9f)) // 90% attivi
+            .RuleFor(e => e.DateOfBirth, f => f.Date.Past(40, DateTime.Now.AddYears(-25)))
             .RuleFor(e => e.Specialization, f => f.PickRandom(
                 "Disturbi dell'umore",
                 "Dipendenze",
@@ -63,11 +63,20 @@ public static class DbInitializer
                 "Disabilità cognitiva",
                 "Disturbi della personalità"
             ))
-            .RuleFor(e => e.Notes, f => f.Lorem.Sentence())
-            .RuleFor(e => e.CreatedAt, f => f.Date.PastOffset(2).UtcDateTime)
-            .RuleFor(e => e.UpdatedAt, f => f.Date.RecentOffset().UtcDateTime);
+            .RuleFor(e => e.LicenseNumber, f => f.Random.Replace("EP-####-##"))
+            .RuleFor(e => e.HireDate, f => f.Date.Past(5))
+            .RuleFor(e => e.Status, f => f.Random.Bool(0.9f) ? "Active" : "Inactive")
+            .RuleFor(e => e.Role, f => f.PickRandom("Coordinatore", "Educatore", "Educatore")) // 1/3 coordinatore
+            .RuleFor(e => e.IsCurrentUser, f => false)
+            .RuleFor(e => e.CreatedAt, f => f.Date.Past(2))
+            .RuleFor(e => e.UpdatedAt, f => f.Date.Recent());
 
-        return educatorFaker.Generate(7);
+        var educators = educatorFaker.Generate(7);
+        // Imposta il primo come utente corrente
+        educators[0].IsCurrentUser = true;
+        educators[0].Role = "Coordinatore";
+        
+        return educators;
     }
 
     private static List<PatientModel> CreatePatients()
@@ -76,15 +85,8 @@ public static class DbInitializer
             .RuleFor(p => p.Id, f => Guid.NewGuid())
             .RuleFor(p => p.FirstName, f => f.Name.FirstName())
             .RuleFor(p => p.LastName, f => f.Name.LastName())
-            .RuleFor(p => p.DateOfBirth, f => f.Date.PastOffset(65, DateTime.Now.AddYears(-18)).UtcDateTime)
-            .RuleFor(p => p.FiscalCode, f => GenerateFakeFiscalCode())
-            .RuleFor(p => p.Address, f => f.Address.FullAddress())
-            .RuleFor(p => p.PhoneNumber, f => f.Phone.PhoneNumber("+39 ### ### ####"))
-            .RuleFor(p => p.EmergencyContact, f => f.Name.FullName())
-            .RuleFor(p => p.EmergencyPhone, f => f.Phone.PhoneNumber("+39 ### ### ####"))
-            .RuleFor(p => p.Notes, f => f.Lorem.Sentence())
-            .RuleFor(p => p.CreatedAt, f => f.Date.PastOffset(3).UtcDateTime)
-            .RuleFor(p => p.UpdatedAt, f => f.Date.RecentOffset().UtcDateTime);
+            .RuleFor(p => p.CreatedAt, f => f.Date.Past(3))
+            .RuleFor(p => p.UpdatedAt, f => f.Date.Recent());
 
         return patientFaker.Generate(12);
     }
@@ -95,6 +97,7 @@ public static class DbInitializer
     {
         var projects = new List<TherapyProjectModel>();
         var random = new Random(12345);
+        var faker = new Faker("it");
 
         foreach (var patient in patients)
         {
@@ -104,39 +107,12 @@ public static class DbInitializer
             for (int i = 0; i < projectCount; i++)
             {
                 var isActive = (i == projectCount - 1) && random.Next(0, 100) < 70; // 70% ha progetto attivo
-                var state = isActive
-                    ? TherapyProjectState.Active
-                    : new Faker().PickRandom(
-                        TherapyProjectState.Completed,
-                        TherapyProjectState.Suspended,
-                        TherapyProjectState.Deceased
-                    );
+                var status = isActive
+                    ? "In Progress"
+                    : faker.PickRandom("Completed", "On Hold", "Cancelled");
 
                 var startDate = DateTime.UtcNow.AddMonths(-random.Next(3, 24));
                 var endDate = isActive ? null : (DateTime?)startDate.AddMonths(random.Next(6, 18));
-
-                var project = new TherapyProjectModel
-                {
-                    Id = Guid.NewGuid(),
-                    PatientId = patient.Id,
-                    Title = $"PT {patient.LastName} {startDate.Year}",
-                    Description = new Faker("it").Lorem.Paragraph(),
-                    State = state,
-                    StartDate = startDate,
-                    EndDate = endDate,
-                    SuspendedAt = state == TherapyProjectState.Suspended ? endDate : null,
-                    SuspensionReason = state == TherapyProjectState.Suspended
-                        ? new Faker("it").PickRandom(
-                            "Ricovero ospedaliero",
-                            "Richiesta del paziente",
-                            "Trasferimento ad altra struttura"
-                        )
-                        : null,
-                    CompletedAt = state == TherapyProjectState.Completed ? endDate : null,
-                    Goals = new Faker("it").Lorem.Sentences(3),
-                    CreatedAt = startDate.AddDays(-7),
-                    UpdatedAt = DateTime.UtcNow
-                };
 
                 // Assegna 1-3 educatori al progetto
                 var assignedEducators = educators
@@ -144,15 +120,19 @@ public static class DbInitializer
                     .Take(random.Next(1, 4))
                     .ToList();
 
-                project.ProjectOperators = assignedEducators.Select((e, idx) => new ProjectOperatorModel
+                var project = new TherapyProjectModel
                 {
                     Id = Guid.NewGuid(),
-                    ProjectId = project.Id,
-                    OperatorId = e.Id,
-                    Role = idx == 0 ? "Coordinator" : "Assistant",
-                    AssignedAt = startDate,
-                    RemovedAt = null
-                }).ToList();
+                    PatientId = patient.Id,
+                    Title = $"PT {patient.LastName} {startDate.Year}",
+                    Description = faker.Lorem.Paragraph(),
+                    Status = status,
+                    StartDate = startDate,
+                    EndDate = endDate,
+                    CreatedAt = startDate.AddDays(-7),
+                    UpdatedAt = DateTime.UtcNow,
+                    ProfessionalEducators = assignedEducators
+                };
 
                 projects.Add(project);
             }
@@ -169,12 +149,12 @@ public static class DbInitializer
         var faker = new Faker("it");
 
         // Crea appuntamenti solo per progetti attivi
-        var activeProjects = projects.Where(p => p.State == TherapyProjectState.Active).ToList();
+        var activeProjects = projects.Where(p => p.Status == "In Progress").ToList();
 
         foreach (var project in activeProjects)
         {
             // 4 appuntamenti canonici per progetto attivo
-            var visitTypes = new[] { "Intake", "Intermediate", "Intermediate", "Final" };
+            var visitTypes = new[] { VisitType.Intake, VisitType.Intermediate, VisitType.Intermediate, VisitType.Final };
             var startDate = project.StartDate;
 
             for (int i = 0; i < visitTypes.Length; i++)
@@ -185,23 +165,22 @@ public static class DbInitializer
                 var appointment = new ScheduledVisitModel
                 {
                     Id = Guid.NewGuid(),
-                    ProjectId = project.Id,
-                    VisitTypeId = Guid.NewGuid(), // TODO: Link to real VisitTypeModel when available
+                    TherapyProjectId = project.Id,
+                    Type = visitTypes[i],
                     ScheduledDate = scheduledDate,
-                    Duration = 60,
-                    Location = faker.PickRandom("Sede Centrale", "Comunità Residenziale", "Domicilio", "Teleconferenza"),
                     Status = isPast
                         ? faker.PickRandom(AppointmentStatus.Completed, AppointmentStatus.Missed)
                         : AppointmentStatus.Scheduled,
                     Notes = faker.Lorem.Sentence(),
                     CreatedAt = scheduledDate.AddDays(-14),
-                    UpdatedAt = DateTime.UtcNow
+                    UpdatedAt = DateTime.UtcNow,
+                    Version = 1
                 };
 
                 appointments.Add(appointment);
             }
 
-            // Aggiungi 1-2 appuntamenti extra casuali
+            // Aggiungi 0-2 appuntamenti extra casuali
             var extraCount = random.Next(0, 3);
             for (int i = 0; i < extraCount; i++)
             {
@@ -210,38 +189,20 @@ public static class DbInitializer
                 appointments.Add(new ScheduledVisitModel
                 {
                     Id = Guid.NewGuid(),
-                    ProjectId = project.Id,
-                    VisitTypeId = Guid.NewGuid(), // ExtraVisit
+                    TherapyProjectId = project.Id,
+                    Type = VisitType.FollowUp,
                     ScheduledDate = extraDate,
-                    Duration = 45,
-                    Location = faker.PickRandom("Sede Centrale", "Domicilio"),
                     Status = extraDate < DateTime.UtcNow
                         ? AppointmentStatus.Completed
                         : AppointmentStatus.Scheduled,
                     Notes = "Visita straordinaria",
                     CreatedAt = extraDate.AddDays(-7),
-                    UpdatedAt = DateTime.UtcNow
+                    UpdatedAt = DateTime.UtcNow,
+                    Version = 1
                 });
             }
         }
 
         return appointments;
-    }
-
-    /// <summary>
-    /// Genera un codice fiscale fake realistico (non valido ma con formato corretto)
-    /// </summary>
-    private static string GenerateFakeFiscalCode()
-    {
-        var faker = new Faker();
-        var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-        var digits = "0123456789";
-
-        return $"{chars[faker.Random.Int(0, 25)]}{chars[faker.Random.Int(0, 25)]}{chars[faker.Random.Int(0, 25)]}" +
-               $"{chars[faker.Random.Int(0, 25)]}{chars[faker.Random.Int(0, 25)]}{chars[faker.Random.Int(0, 25)]}" +
-               $"{digits[faker.Random.Int(0, 9)]}{digits[faker.Random.Int(0, 9)]}" +
-               $"{chars[faker.Random.Int(0, 25)]}{digits[faker.Random.Int(0, 9)]}{digits[faker.Random.Int(0, 9)]}" +
-               $"{chars[faker.Random.Int(0, 25)]}{digits[faker.Random.Int(0, 9)]}{digits[faker.Random.Int(0, 9)]}{digits[faker.Random.Int(0, 9)]}" +
-               $"{chars[faker.Random.Int(0, 25)]}";
     }
 }
