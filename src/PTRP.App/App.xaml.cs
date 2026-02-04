@@ -45,8 +45,8 @@ namespace PTRP.App
             // Costruisce il service provider
             _serviceProvider = services.BuildServiceProvider();
 
-            // Assicura che il database sia creato (senza dati se primo avvio)
-            EnsureDatabaseCreated();
+            // Assicura che il database sia creato e popolato con dati di esempio (Issue #13)
+            InitializeDatabase();
 
             // Risolve MainWindow e MainViewModel
             var mainWindow = _serviceProvider.GetRequiredService<MainWindow>();
@@ -139,19 +139,47 @@ namespace PTRP.App
         }
 
         /// <summary>
-        /// Assicura che il database sia creato
-        /// Le migrations verranno applicate durante ConfigurationService.InitializeDatabaseAsync
+        /// Inizializza il database creandolo se necessario e popolandolo con dati di esempio.
+        /// Issue #13: Data seeding per sviluppo e testing.
+        /// 
+        /// IMPORTANTE: In sviluppo, ricrea il database se schema è incompleto/obsoleto.
+        /// In produzione, questa logica sarà sostituita da migrations.
         /// </summary>
-        private void EnsureDatabaseCreated()
+        private void InitializeDatabase()
         {
             if (_serviceProvider == null) return;
 
             using var scope = _serviceProvider.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<PTRPDbContext>();
             
-            // Crea il database se non esiste (senza dati)
-            // I dati verranno popolati dal pacchetto di configurazione
-            context.Database.EnsureCreated();
+            try
+            {
+                // Verifica se il database esiste e ha lo schema corretto
+                // Tentativo di query su tabella critica
+                _ = context.ScheduledVisits.Any();
+                
+                // Se arriviamo qui, il DB esiste e ha lo schema corretto
+                // Popola con dati di esempio solo se vuoto (idempotente)
+                DbInitializer.Initialize(context);
+            }
+            catch (Microsoft.Data.Sqlite.SqliteException ex) when (ex.Message.Contains("no such table"))
+            {
+                // Schema incompleto o obsoleto - ricrea database
+                System.Diagnostics.Debug.WriteLine("Database schema incomplete. Recreating...");
+                
+                // Elimina e ricrea il database con schema aggiornato
+                context.Database.EnsureDeleted();
+                context.Database.EnsureCreated();
+                
+                // Popola con dati di esempio
+                DbInitializer.Initialize(context);
+            }
+            catch (Exception)
+            {
+                // Altri errori - prova comunque a creare/aggiornare
+                context.Database.EnsureCreated();
+                DbInitializer.Initialize(context);
+            }
         }
 
         /// <summary>
