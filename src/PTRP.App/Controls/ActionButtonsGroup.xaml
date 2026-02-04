@@ -1,0 +1,56 @@
+<UserControl x:Class="PTRP.App.Controls.ActionButtonsGroup"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+             mc:Ignorable="d" 
+             d:DesignHeight="50" d:DesignWidth="300"
+             x:Name="Root">
+    <StackPanel Orientation="Horizontal"
+                HorizontalAlignment="{Binding ButtonAlignment, ElementName=Root}"
+                Margin="0,16,0,0">
+        
+        <!-- Save/Cancel Mode -->
+        <StackPanel Orientation="Horizontal"
+                   Visibility="{Binding ShowSaveCancel, ElementName=Root, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <!-- Cancel Button -->
+            <Button Style="{StaticResource MaterialDesignOutlinedButton}"
+                    Content="{Binding CancelText, ElementName=Root}"
+                    Command="{Binding CancelCommand, ElementName=Root}"
+                    Padding="16,8"
+                    Margin="0,0,8,0"
+                    MinWidth="100"/>
+            
+            <!-- Save Button -->
+            <Button Style="{StaticResource MaterialDesignRaisedButton}"
+                    Content="{Binding SaveText, ElementName=Root}"
+                    Command="{Binding SaveCommand, ElementName=Root}"
+                    Padding="16,8"
+                    MinWidth="100"
+                    materialDesign:ButtonAssist.CornerRadius="4"/>
+        </StackPanel>
+
+        <!-- Edit/Delete Mode -->
+        <StackPanel Orientation="Horizontal"
+                   Visibility="{Binding ShowEditDelete, ElementName=Root, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <!-- Delete Button -->
+            <Button Style="{StaticResource MaterialDesignOutlinedButton}"
+                    Content="{Binding DeleteText, ElementName=Root}"
+                    Command="{Binding DeleteCommand, ElementName=Root}"
+                    Padding="16,8"
+                    Margin="0,0,8,0"
+                    MinWidth="100"
+                    Foreground="#D32F2F"
+                    BorderBrush="#D32F2F"/>
+            
+            <!-- Edit Button -->
+            <Button Style="{StaticResource MaterialDesignRaisedButton}"
+                    Content="{Binding EditText, ElementName=Root}"
+                    Command="{Binding EditCommand, ElementName=Root}"
+                    Padding="16,8"
+                    MinWidth="100"
+                    materialDesign:ButtonAssist.CornerRadius="4"/>
+        </StackPanel>
+    </StackPanel>
+</UserControl>
