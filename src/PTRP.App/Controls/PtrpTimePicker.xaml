@@ -1,0 +1,27 @@
+<UserControl x:Class="PTRP.App.Controls.PtrpTimePicker"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+             mc:Ignorable="d" 
+             d:DesignHeight="60" d:DesignWidth="200"
+             x:Name="Root">
+    <StackPanel>
+        <materialDesign:TimePicker x:Name="InternalTimePicker"
+                                   SelectedTime="{Binding SelectedTime, ElementName=Root, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                   materialDesign:HintAssist.Hint="{Binding Watermark, ElementName=Root}"
+                                   Style="{StaticResource MaterialDesignFloatingHintTimePicker}"
+                                   Is24Hours="True"
+                                   WithSeconds="False"
+                                   Margin="0,0,0,4"
+                                   FontSize="14"/>
+        
+        <!-- Validation Error Message -->
+        <TextBlock Text="{Binding ValidationError, ElementName=Root}"
+                   Foreground="#D32F2F"
+                   FontSize="12"
+                   Margin="0,2,0,0"
+                   Visibility="{Binding HasValidationError, ElementName=Root, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+    </StackPanel>
+</UserControl>
