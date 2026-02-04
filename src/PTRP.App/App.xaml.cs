@@ -45,8 +45,8 @@ namespace PTRP.App
             // Costruisce il service provider
             _serviceProvider = services.BuildServiceProvider();
 
-            // Assicura che il database sia creato (senza dati se primo avvio)
-            EnsureDatabaseCreated();
+            // Assicura che il database sia creato e popolato con dati di esempio (Issue #13)
+            InitializeDatabase();
 
             // Risolve MainWindow e MainViewModel
             var mainWindow = _serviceProvider.GetRequiredService<MainWindow>();
@@ -139,19 +139,22 @@ namespace PTRP.App
         }
 
         /// <summary>
-        /// Assicura che il database sia creato
-        /// Le migrations verranno applicate durante ConfigurationService.InitializeDatabaseAsync
+        /// Inizializza il database creandolo se necessario e popolandolo con dati di esempio.
+        /// Issue #13: Data seeding per sviluppo e testing.
         /// </summary>
-        private void EnsureDatabaseCreated()
+        private void InitializeDatabase()
         {
             if (_serviceProvider == null) return;
 
             using var scope = _serviceProvider.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<PTRPDbContext>();
             
-            // Crea il database se non esiste (senza dati)
-            // I dati verranno popolati dal pacchetto di configurazione
+            // Crea il database se non esiste
             context.Database.EnsureCreated();
+
+            // Popola con dati di esempio (idempotente - non duplica)
+            // Issue #13: DbInitializer with Bogus for realistic fake data
+            DbInitializer.Initialize(context);
         }
 
         /// <summary>
