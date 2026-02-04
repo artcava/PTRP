@@ -5,10 +5,21 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
              xmlns:viewmodels="clr-namespace:PTRP.ViewModels;assembly=PTRP.ViewModels"
+             xmlns:converters="clr-namespace:PTRP.App.Converters"
              d:DataContext="{d:DesignInstance Type=viewmodels:PatientListViewModel}"
              mc:Ignorable="d"
              d:DesignHeight="800" d:DesignWidth="1200"
-             Background="{DynamicResource MaterialDesignPaper}">
+             Background="{DynamicResource MaterialDesignPaper}"
+             Loaded="UserControl_Loaded">
+    
+    <UserControl.Resources>
+        <!-- Converters -->
+        <converters:ProjectStateToColorConverter x:Key="ProjectStateToColorConverter"/>
+        <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+        
+        <!-- Value Converter for Null to Visibility -->
+        <converters:NullToVisibilityConverter x:Key="NullToVisibilityConverter"/>
+    </UserControl.Resources>
     
     <Grid Margin="16">
         <Grid.ColumnDefinitions>
@@ -25,31 +36,62 @@
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
                 
                 <!-- Header -->
                 <Border Grid.Row="0"
                         Background="{DynamicResource PrimaryHueMidBrush}"
                         Padding="16">
-                    <TextBlock Text="Lista Pazienti"
-                             Style="{StaticResource MaterialDesignHeadline6TextBlock}"
-                             Foreground="White"/>
+                    <Grid>
+                        <TextBlock Text="Lista Pazienti"
+                                 Style="{StaticResource MaterialDesignHeadline6TextBlock}"
+                                 Foreground="White"
+                                 VerticalAlignment="Center"/>
+                        
+                        <!-- Loading indicator -->
+                        <ProgressBar Style="{StaticResource MaterialDesignCircularProgressBar}"
+                                   Value="0"
+                                   IsIndeterminate="True"
+                                   Width="24"
+                                   Height="24"
+                                   HorizontalAlignment="Right"
+                                   Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                    </Grid>
                 </Border>
                 
                 <!-- Search and Filters -->
                 <StackPanel Grid.Row="1"
                           Margin="16">
                     <!-- Search Box -->
-                    <TextBox materialDesign:HintAssist.Hint="🔍 Cerca per nome o cognome"
-                           Style="{StaticResource MaterialDesignOutlinedTextBox}"
-                           Text="{Binding SearchTerm, UpdateSourceTrigger=PropertyChanged}"
-                           Margin="0,0,0,12"/>
+                    <Grid Margin="0,0,0,12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        
+                        <TextBox Grid.Column="0"
+                               materialDesign:HintAssist.Hint="🔍 Cerca per nome o cognome"
+                               Style="{StaticResource MaterialDesignOutlinedTextBox}"
+                               Text="{Binding SearchTerm, UpdateSourceTrigger=PropertyChanged}"
+                               Margin="0,0,8,0"/>
+                        
+                        <Button Grid.Column="1"
+                              Style="{StaticResource MaterialDesignIconButton}"
+                              Command="{Binding ClearSearchCommand}"
+                              ToolTip="Pulisci ricerca"
+                              Visibility="{Binding SearchTerm, Converter={StaticResource NullToVisibilityConverter}}">
+                            <materialDesign:PackIcon Kind="Close"/>
+                        </Button>
+                    </Grid>
                     
                     <!-- State Filter -->
-                    <ComboBox materialDesign:HintAssist.Hint="Filtra per stato"
+                    <ComboBox materialDesign:HintAssist.Hint="Filtra per stato progetto"
                             Style="{StaticResource MaterialDesignOutlinedComboBox}"
                             ItemsSource="{Binding ProjectStateFilters}"
-                            SelectedItem="{Binding SelectedStateFilter}"/>
+                            SelectedItem="{Binding SelectedStateFilter}"
+                            DisplayMemberPath="Display"
+                            SelectedValuePath="Value"/>
                 </StackPanel>
                 
                 <!-- DataGrid (READ-ONLY) -->
@@ -92,8 +134,30 @@
                         <DataGridTextColumn Header="Educatori"
                                           Binding="{Binding AssignedEducatorsDisplay}"
                                           Width="*"/>
+                        <DataGridTextColumn Header="Creato il"
+                                          Binding="{Binding CreatedAt, StringFormat=dd/MM/yyyy}"
+                                          Width="Auto"/>
                     </DataGrid.Columns>
                 </DataGrid>
+                
+                <!-- Error Message -->
+                <Border Grid.Row="3"
+                      Background="{DynamicResource MaterialDesignValidationErrorBrush}"
+                      Padding="12"
+                      Visibility="{Binding ErrorMessage, Converter={StaticResource NullToVisibilityConverter}}">
+                    <StackPanel Orientation="Horizontal">
+                        <materialDesign:PackIcon Kind="AlertCircle"
+                                               Width="20"
+                                               Height="20"
+                                               Foreground="White"
+                                               Margin="0,0,8,0"
+                                               VerticalAlignment="Center"/>
+                        <TextBlock Text="{Binding ErrorMessage}"
+                                 Foreground="White"
+                                 TextWrapping="Wrap"
+                                 VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Border>
             </Grid>
         </materialDesign:Card>
         
@@ -128,6 +192,17 @@
                             </Button>
                         </StackPanel>
                     </Grid>
+                    
+                    <!-- Project State Badge -->
+                    <Border Background="{Binding SelectedPatient.ProjectState, Converter={StaticResource ProjectStateToColorConverter}}"
+                          CornerRadius="16"
+                          Padding="12,6"
+                          HorizontalAlignment="Left"
+                          Margin="0,0,0,16">
+                        <TextBlock Text="{Binding SelectedPatient.ProjectStateDisplay}"
+                                 Foreground="White"
+                                 FontWeight="SemiBold"/>
+                    </Border>
                     
                     <!-- Anagrafica Section -->
                     <TextBlock Text="Anagrafica"
