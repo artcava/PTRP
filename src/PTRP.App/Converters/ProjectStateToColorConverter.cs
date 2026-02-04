@@ -7,22 +7,22 @@ using PTRP.Models.Enums;
 namespace PTRP.App.Converters;
 
 /// <summary>
-/// Converts ProjectStatus enum to a Color brush for UI display.
+/// Converts TherapyProjectState enum to a Color brush for UI display.
 /// Used in ProjectListView for status badges.
 /// </summary>
 public class ProjectStateToColorConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
     {
-        if (value is not ProjectStatus status)
+        if (value is not TherapyProjectState status)
             return Brushes.Gray;
 
         return status switch
         {
-            ProjectStatus.Active => new SolidColorBrush(Color.FromRgb(40, 167, 69)),      // Green #28A745
-            ProjectStatus.Suspended => new SolidColorBrush(Color.FromRgb(255, 193, 7)),   // Yellow #FFC107
-            ProjectStatus.Completed => new SolidColorBrush(Color.FromRgb(0, 123, 255)),   // Blue #007BFF
-            ProjectStatus.Deceased => new SolidColorBrush(Color.FromRgb(108, 117, 125)),  // Gray #6C757D
+            TherapyProjectState.Active => new SolidColorBrush(Color.FromRgb(40, 167, 69)),      // Green #28A745
+            TherapyProjectState.Suspended => new SolidColorBrush(Color.FromRgb(255, 193, 7)),   // Yellow #FFC107
+            TherapyProjectState.Completed => new SolidColorBrush(Color.FromRgb(0, 123, 255)),   // Blue #007BFF
+            TherapyProjectState.Deceased => new SolidColorBrush(Color.FromRgb(108, 117, 125)),  // Gray #6C757D
             _ => Brushes.Gray
         };
     }
