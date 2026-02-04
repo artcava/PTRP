@@ -120,8 +120,10 @@ public class ProjectFormViewModelTests
         Assert.Equal("Neri Sara", viewModel.AvailableEducators[1].Name);
         Assert.Equal("Verdi Luca", viewModel.AvailableEducators[2].Name);
         
-        // Verifica role di default per null
-        Assert.Equal("Educatore Professionale", viewModel.AvailableEducators[2].Role);
+        // Verifica role: Bianchi ha già "Educatore Professionale", Neri ha null quindi default, Verdi ha "Educatore Senior"
+        Assert.Equal("Educatore Professionale", viewModel.AvailableEducators[0].Role);
+        Assert.Equal("Educatore Professionale", viewModel.AvailableEducators[1].Role); // Neri con Role null -> default
+        Assert.Equal("Educatore Senior", viewModel.AvailableEducators[2].Role);
     }
 
     [Fact]
