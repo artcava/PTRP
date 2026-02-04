@@ -20,6 +20,9 @@
         
         <!-- Value Converter for Null to Visibility -->
         <converters:NullToVisibilityConverter x:Key="NullToVisibilityConverter"/>
+        
+        <!-- Converter for List Count to Visibility -->
+        <converters:CollectionCountToVisibilityConverter x:Key="CollectionCountToVisibilityConverter"/>
     </UserControl.Resources>
     
     <Grid Margin="16">
@@ -324,6 +327,111 @@
                                 </StackPanel>
                             </StackPanel>
                         </Border>
+                    </StackPanel>
+                    
+                    <!-- Completed Projects Section (Issue #74) -->
+                    <StackPanel Visibility="{Binding SelectedPatient.CompletedProjects, Converter={StaticResource CollectionCountToVisibilityConverter}}">
+                        <Grid Margin="0,0,0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            
+                            <TextBlock Grid.Column="0"
+                                     Text="📋 Progetti Completati"
+                                     Style="{StaticResource MaterialDesignSubtitle1TextBlock}"/>
+                            
+                            <Border Grid.Column="1"
+                                  Background="{DynamicResource MaterialDesignDivider}"
+                                  CornerRadius="10"
+                                  Padding="8,4">
+                                <TextBlock Text="{Binding SelectedPatient.CompletedProjects.Count}"
+                                         FontSize="11"
+                                         FontWeight="SemiBold"/>
+                            </Border>
+                        </Grid>
+                        
+                        <ItemsControl ItemsSource="{Binding SelectedPatient.CompletedProjects}"
+                                    Margin="0,0,0,16">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Background="{DynamicResource MaterialDesignDivider}"
+                                          CornerRadius="4"
+                                          Padding="12"
+                                          Margin="0,0,0,8">
+                                        <Grid>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                            </Grid.RowDefinitions>
+                                            
+                                            <!-- Title and State Badge -->
+                                            <Grid Grid.Row="0" Margin="0,0,0,6">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                
+                                                <TextBlock Grid.Column="0"
+                                                         Text="{Binding Title}"
+                                                         FontWeight="SemiBold"
+                                                         FontSize="13"
+                                                         TextTrimming="CharacterEllipsis"/>
+                                                
+                                                <Border Grid.Column="1"
+                                                      Background="{Binding FinalState, Converter={StaticResource ProjectStateToColorConverter}}"
+                                                      CornerRadius="8"
+                                                      Padding="6,3"
+                                                      Margin="8,0,0,0">
+                                                    <TextBlock Text="{Binding FinalStateDisplay}"
+                                                             Foreground="White"
+                                                             FontSize="10"
+                                                             FontWeight="SemiBold"/>
+                                                </Border>
+                                            </Grid>
+                                            
+                                            <!-- Period and Educators -->
+                                            <StackPanel Grid.Row="1" Margin="0,0,0,4">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <materialDesign:PackIcon Kind="CalendarRange"
+                                                                           Width="14"
+                                                                           Height="14"
+                                                                           VerticalAlignment="Center"
+                                                                           Margin="0,0,4,0"/>
+                                                    <TextBlock Text="{Binding Period}"
+                                                             FontSize="11"
+                                                             Foreground="{DynamicResource MaterialDesignBodyLight}"
+                                                             VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                                
+                                                <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
+                                                    <materialDesign:PackIcon Kind="AccountGroup"
+                                                                           Width="14"
+                                                                           Height="14"
+                                                                           VerticalAlignment="Center"
+                                                                           Margin="0,0,4,0"/>
+                                                    <TextBlock Text="{Binding EducatorsDisplay}"
+                                                             FontSize="11"
+                                                             Foreground="{DynamicResource MaterialDesignBodyLight}"
+                                                             VerticalAlignment="Center"
+                                                             TextTrimming="CharacterEllipsis"/>
+                                                </StackPanel>
+                                            </StackPanel>
+                                            
+                                            <!-- View Details Button -->
+                                            <Button Grid.Row="2"
+                                                  Style="{StaticResource MaterialDesignFlatButton}"
+                                                  Content="Visualizza"
+                                                  HorizontalAlignment="Right"
+                                                  Padding="8,4"
+                                                  Height="28"
+                                                  FontSize="11"/>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
                     </StackPanel>
                     
                     <!-- Action Buttons -->
