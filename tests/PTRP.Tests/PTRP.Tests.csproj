@@ -33,6 +33,7 @@
     <ProjectReference Include="..\..\src\PTRP.Data\PTRP.Data.csproj" />
     <ProjectReference Include="..\..\src\PTRP.Models\PTRP.Models.csproj" />
     <ProjectReference Include="..\..\src\PTRP.Services\PTRP.Services.csproj" />
+    <ProjectReference Include="..\..\src\PTRP.ViewModels\PTRP.ViewModels.csproj" />
   </ItemGroup>
 
 </Project>
