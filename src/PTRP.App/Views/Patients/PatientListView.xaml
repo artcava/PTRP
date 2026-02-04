@@ -10,7 +10,8 @@
              mc:Ignorable="d"
              d:DesignHeight="800" d:DesignWidth="1200"
              Background="{DynamicResource MaterialDesignPaper}"
-             Loaded="UserControl_Loaded">
+             Loaded="UserControl_Loaded"
+             Unloaded="UserControl_Unloaded">
     
     <UserControl.Resources>
         <!-- Converters -->
@@ -328,7 +329,9 @@
                     <!-- Action Buttons -->
                     <StackPanel>
                         <Button Style="{StaticResource MaterialDesignRaisedButton}"
-                              Margin="0,0,0,8">
+                              Margin="0,0,0,8"
+                              Command="{Binding NewProjectCommand}"
+                              IsEnabled="{Binding CanCreateNewProject}">
                             <StackPanel Orientation="Horizontal">
                                 <materialDesign:PackIcon Kind="FilePlus"
                                                        Width="20"
