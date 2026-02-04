@@ -141,6 +141,9 @@ namespace PTRP.App
         /// <summary>
         /// Inizializza il database creandolo se necessario e popolandolo con dati di esempio.
         /// Issue #13: Data seeding per sviluppo e testing.
+        /// 
+        /// IMPORTANTE: In sviluppo, ricrea il database se schema è incompleto/obsoleto.
+        /// In produzione, questa logica sarà sostituita da migrations.
         /// </summary>
         private void InitializeDatabase()
         {
@@ -149,12 +152,34 @@ namespace PTRP.App
             using var scope = _serviceProvider.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<PTRPDbContext>();
             
-            // Crea il database se non esiste
-            context.Database.EnsureCreated();
-
-            // Popola con dati di esempio (idempotente - non duplica)
-            // Issue #13: DbInitializer with Bogus for realistic fake data
-            DbInitializer.Initialize(context);
+            try
+            {
+                // Verifica se il database esiste e ha lo schema corretto
+                // Tentativo di query su tabella critica
+                _ = context.ScheduledVisits.Any();
+                
+                // Se arriviamo qui, il DB esiste e ha lo schema corretto
+                // Popola con dati di esempio solo se vuoto (idempotente)
+                DbInitializer.Initialize(context);
+            }
+            catch (Microsoft.Data.Sqlite.SqliteException ex) when (ex.Message.Contains("no such table"))
+            {
+                // Schema incompleto o obsoleto - ricrea database
+                System.Diagnostics.Debug.WriteLine("Database schema incomplete. Recreating...");
+                
+                // Elimina e ricrea il database con schema aggiornato
+                context.Database.EnsureDeleted();
+                context.Database.EnsureCreated();
+                
+                // Popola con dati di esempio
+                DbInitializer.Initialize(context);
+            }
+            catch (Exception)
+            {
+                // Altri errori - prova comunque a creare/aggiornare
+                context.Database.EnsureCreated();
+                DbInitializer.Initialize(context);
+            }
         }
 
         /// <summary>
