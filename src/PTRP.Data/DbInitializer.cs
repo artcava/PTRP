@@ -159,12 +159,13 @@ public static class DbInitializer
         foreach (var project in activeProjects)
         {
             // 4 appuntamenti canonici per progetto attivo
+            // IMPORTANTE: Enum values sono UPPERCASE_SNAKE_CASE
             var visitTypes = new[] 
             { 
-                VisitType.Intake, 
-                VisitType.Intermediate, 
-                VisitType.Intermediate, 
-                VisitType.Final 
+                VisitType.INTAKE, 
+                VisitType.INTERMEDIATE, 
+                VisitType.INTERMEDIATE, 
+                VisitType.FINAL 
             };
             
             var startDate = project.StartDate;
@@ -202,7 +203,7 @@ public static class DbInitializer
                 {
                     Id = Guid.NewGuid(),
                     TherapyProjectId = project.Id,
-                    Type = VisitType.FollowUp,
+                    Type = VisitType.FOLLOW_UP, // UPPERCASE_SNAKE_CASE
                     ScheduledDate = extraDate,
                     Status = extraDate < DateTime.UtcNow
                         ? AppointmentStatus.Completed
