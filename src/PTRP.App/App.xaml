@@ -1,7 +1,15 @@
 <Application x:Class="PTRP.App.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes">
+             xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+             xmlns:vm="clr-namespace:PTRP.ViewModels;assembly=PTRP.ViewModels"
+             xmlns:vmPatients="clr-namespace:PTRP.ViewModels.Patients;assembly=PTRP.ViewModels"
+             xmlns:vmEducators="clr-namespace:PTRP.ViewModels.Educators;assembly=PTRP.ViewModels"
+             xmlns:vmProjects="clr-namespace:PTRP.ViewModels.Projects;assembly=PTRP.ViewModels"
+             xmlns:views="clr-namespace:PTRP.App.Views"
+             xmlns:viewsPatients="clr-namespace:PTRP.App.Views.Patients"
+             xmlns:viewsEducators="clr-namespace:PTRP.App.Views.Educators"
+             xmlns:viewsProjects="clr-namespace:PTRP.App.Views.Projects">
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
@@ -17,7 +25,50 @@
             
             <BitmapImage x:Key="AppIcon" UriSource="/favicon.ico" />
             
-            <!-- ViewModel to View DataTemplates will be registered by NavigationService at runtime -->
+            <!-- ========================================
+                 ViewModel to View DataTemplates
+                 Issue #94: Explicit mapping for navigation
+                 ======================================== -->
+            
+            <!-- First Run / Setup -->
+            <DataTemplate DataType="{x:Type vm:FirstRunViewModel}">
+                <views:FirstRunView />
+            </DataTemplate>
+            
+            <!-- Patients Module (Issue #51, #74) -->
+            <DataTemplate DataType="{x:Type vmPatients:PatientListViewModel}">
+                <viewsPatients:PatientListView />
+            </DataTemplate>
+            
+            <DataTemplate DataType="{x:Type vmPatients:PatientDetailViewModel}">
+                <viewsPatients:PatientDetailView />
+            </DataTemplate>
+            
+            <!-- Educators Module (Issue #63) -->
+            <DataTemplate DataType="{x:Type vmEducators:EducatorListViewModel}">
+                <viewsEducators:EducatorListView />
+            </DataTemplate>
+            
+            <!-- Projects Module (Issue #64, #74) -->
+            <DataTemplate DataType="{x:Type vmProjects:ProjectListViewModel}">
+                <viewsProjects:ProjectListView />
+            </DataTemplate>
+            
+            <DataTemplate DataType="{x:Type vmProjects:ProjectFormViewModel}">
+                <viewsProjects:ProjectFormView />
+            </DataTemplate>
+            
+            <!-- Sync Module (Issue #52) -->
+            <DataTemplate DataType="{x:Type vm:SyncViewModel}">
+                <views:SyncView />
+            </DataTemplate>
+            
+            <!-- TODO: Dashboard Module (Issue #50) -->
+            <!-- 
+            <DataTemplate DataType="{x:Type vm:DashboardViewModel}">
+                <views:DashboardView />
+            </DataTemplate>
+            -->
             
         </ResourceDictionary>
     </Application.Resources>
