@@ -78,6 +78,23 @@ namespace PTRP.ViewModels.Patients
         /// </summary>
         public override string DisplayName => "Pazienti";
 
+        /// <summary>
+        /// Determines if a new project can be created for the selected patient.
+        /// True only if patient has NO active project.
+        /// </summary>
+        public bool CanCreateNewProject => SelectedPatient != null 
+                                          && SelectedPatient.ProjectState != "Active";
+
+        #endregion
+
+        #region Events
+
+        /// <summary>
+        /// Event raised when user requests to create a new project.
+        /// Carries patient ID and full name for ProjectFormViewModel initialization.
+        /// </summary>
+        public event EventHandler<(Guid PatientId, string PatientFullName)>? NewProjectRequested;
+
         #endregion
 
         #region Constructor
@@ -113,6 +130,20 @@ namespace PTRP.ViewModels.Patients
             SearchTerm = string.Empty;
             SelectedStateFilter = ProjectStateFilter.All;
             await SearchPatientsAsync();
+        }
+
+        /// <summary>
+        /// Command to open the project creation form for selected patient.
+        /// Only enabled if patient has no active project.
+        /// </summary>
+        [RelayCommand(CanExecute = nameof(CanCreateNewProject))]
+        private void NewProject()
+        {
+            if (SelectedPatient == null)
+                return;
+
+            // Raise event to notify view to open ProjectFormView
+            NewProjectRequested?.Invoke(this, (SelectedPatient.Id, SelectedPatient.FullName));
         }
 
         #endregion
@@ -275,6 +306,14 @@ namespace PTRP.ViewModels.Patients
         partial void OnSelectedStateFilterChanged(ProjectStateFilter value)
         {
             _ = SearchPatientsAsync();
+        }
+
+        /// <summary>
+        /// Update CanCreateNewProject when selected patient changes.
+        /// </summary>
+        partial void OnSelectedPatientChanged(PatientViewModel? value)
+        {
+            NewProjectCommand.NotifyCanExecuteChanged();
         }
 
         #endregion
