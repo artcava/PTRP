@@ -69,6 +69,13 @@ namespace PTRP.ViewModels.Patients
         private NextAppointmentViewModel? _nextAppointment;
 
         /// <summary>
+        /// List of completed projects for this patient.
+        /// Used to display project history in detail panel.
+        /// </summary>
+        [ObservableProperty]
+        private List<CompletedProjectViewModel> _completedProjects = new();
+
+        /// <summary>
         /// Notification when first/last name changes to update FullName.
         /// </summary>
         partial void OnFirstNameChanged(string value) => OnPropertyChanged(nameof(FullName));
