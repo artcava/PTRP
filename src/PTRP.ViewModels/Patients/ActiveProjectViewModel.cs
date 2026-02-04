@@ -1,48 +1,38 @@
-using CommunityToolkit.Mvvm.ComponentModel;
 using System;
 using System.Collections.Generic;
+using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace PTRP.ViewModels.Patients
 {
     /// <summary>
-    /// ViewModel representing an active therapeutic project for a patient.
-    /// Displayed in the detail panel of PatientListView.
+    /// ViewModel per rappresentare un progetto terapeutico attivo nella UI.
+    /// Usato in PatientListView per visualizzare dettagli progetto nel pannello laterale.
     /// </summary>
     public partial class ActiveProjectViewModel : ObservableObject
     {
-        /// <summary>
-        /// Unique identifier for the project.
-        /// </summary>
-        public Guid Id { get; set; }
+        [ObservableProperty]
+        private Guid _id;
 
-        /// <summary>
-        /// Project title/name.
-        /// </summary>
         [ObservableProperty]
         private string _title = string.Empty;
 
-        /// <summary>
-        /// Project validity period (e.g., "2025-2027" or "Gennaio 2025 - Dicembre 2027").
-        /// </summary>
         [ObservableProperty]
         private string _period = string.Empty;
 
-        /// <summary>
-        /// Start date of the project.
-        /// </summary>
         [ObservableProperty]
         private DateTime _startDate;
 
-        /// <summary>
-        /// End date of the project.
-        /// </summary>
         [ObservableProperty]
-        private DateTime _endDate;
+        private DateTime? _endDate; // Nullable for ongoing projects
 
-        /// <summary>
-        /// List of educators assigned to this project.
-        /// </summary>
         [ObservableProperty]
         private List<EducatorViewModel> _educators = new();
+
+        /// <summary>
+        /// Formatted period string for display.
+        /// </summary>
+        public string FormattedPeriod => EndDate.HasValue 
+            ? $"{StartDate:dd/MM/yyyy} - {EndDate.Value:dd/MM/yyyy}"
+            : $"{StartDate:dd/MM/yyyy} - In corso";
     }
 }
