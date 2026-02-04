@@ -1,6 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
-using PTRP.ViewModels;
+using PTRP.ViewModels.Patients;
 
 namespace PTRP.App.Views.Patients
 {
