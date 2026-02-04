@@ -1,6 +1,9 @@
-using MaterialDesignThemes.Wpf;
-using PTRP.ViewModels;
+using System;
+using System.ComponentModel;
 using System.Windows;
+using MaterialDesignThemes.Wpf;
+using PTRP.App.Infrastructure;
+using PTRP.ViewModels;
 
 namespace PTRP.App;
 
@@ -12,19 +15,22 @@ namespace PTRP.App;
 /// 1. Collegamento del ViewModel (binding)
 /// 2. Setup MessageQueue per Snackbar
 /// 3. Gestione eventi notifica dal ViewModel
+/// 4. Risoluzione View tramite ViewLocator (Issue #94)
 /// </summary>
 public partial class MainWindow : Window
 {
     private readonly MainViewModel _viewModel;
+    private readonly ViewLocator _viewLocator;
     
     /// <summary>
-    /// Costruttore - riceve il ViewModel via Dependency Injection
+    /// Costruttore - riceve il ViewModel e ViewLocator via Dependency Injection
     /// </summary>
-    public MainWindow(MainViewModel viewModel)
+    public MainWindow(MainViewModel viewModel, ViewLocator viewLocator)
     {
         InitializeComponent();
 
         _viewModel = viewModel;
+        _viewLocator = viewLocator;
         
         // Imposta il ViewModel come DataContext
         DataContext = _viewModel;
@@ -34,6 +40,33 @@ public partial class MainWindow : Window
         
         // Subscribe to notification events
         _viewModel.NotificationRequested += OnNotificationRequested;
+        
+        // Subscribe to CurrentViewModel changes to resolve Views via ViewLocator
+        _viewModel.PropertyChanged += OnViewModelPropertyChanged;
+    }
+    
+    /// <summary>
+    /// Intercetta i cambiamenti di CurrentViewModel e risolve la View tramite ViewLocator.
+    /// Issue #94: Permette Views con costruttori DI invece di DataTemplate statici.
+    /// </summary>
+    private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(MainViewModel.CurrentViewModel))
+        {
+            // Risolvi la View per il ViewModel corrente tramite ViewLocator
+            var view = _viewLocator.CreateViewForViewModel(_viewModel.CurrentViewModel);
+            
+            // Imposta la View nel ContentControl
+            if (view != null)
+            {
+                ContentArea.Content = view;
+            }
+            else
+            {
+                // ViewModel sconosciuto o non implementato - mostra placeholder
+                ContentArea.Content = null;
+            }
+        }
     }
     
     /// <summary>
@@ -77,6 +110,7 @@ public partial class MainWindow : Window
     protected override void OnClosed(EventArgs e)
     {
         _viewModel.NotificationRequested -= OnNotificationRequested;
+        _viewModel.PropertyChanged -= OnViewModelPropertyChanged;
         base.OnClosed(e);
     }
 }
