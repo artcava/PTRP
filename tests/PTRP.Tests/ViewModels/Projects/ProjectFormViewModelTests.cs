@@ -77,23 +77,23 @@ public class ProjectFormViewModelTests
     public async Task LoadEducatorsAsync_LoadsAndSortsEducators()
     {
         // Arrange
-        var educators = new List<EducatorModel>
+        var educators = new List<ProfessionalEducatorModel>
         {
-            new EducatorModel 
+            new ProfessionalEducatorModel
             { 
                 Id = Guid.NewGuid(), 
                 FirstName = "Marco", 
                 LastName = "Bianchi",
                 Role = "Educatore Professionale"
             },
-            new EducatorModel 
+            new ProfessionalEducatorModel
             { 
                 Id = Guid.NewGuid(), 
                 FirstName = "Luca", 
                 LastName = "Verdi",
                 Role = "Educatore Senior"
             },
-            new EducatorModel 
+            new ProfessionalEducatorModel
             { 
                 Id = Guid.NewGuid(), 
                 FirstName = "Sara", 
@@ -513,10 +513,10 @@ public class ProjectFormViewModelTests
     public async Task FullWorkflow_LoadEducators_SetData_Save_Success()
     {
         // Arrange
-        var educators = new List<EducatorModel>
+        var educators = new List<ProfessionalEducatorModel>
         {
-            new EducatorModel { Id = Guid.NewGuid(), FirstName = "John", LastName = "Doe", Role = "Educator" },
-            new EducatorModel { Id = Guid.NewGuid(), FirstName = "Jane", LastName = "Smith", Role = "Senior" }
+            new ProfessionalEducatorModel { Id = Guid.NewGuid(), FirstName = "John", LastName = "Doe", Role = "Educator" },
+            new ProfessionalEducatorModel { Id = Guid.NewGuid(), FirstName = "Jane", LastName = "Smith", Role = "Senior" }
         };
 
         _educatorServiceMock.Setup(s => s.GetAllAsync()).ReturnsAsync(educators);
