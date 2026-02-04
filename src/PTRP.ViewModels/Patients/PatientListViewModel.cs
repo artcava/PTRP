@@ -11,7 +11,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace PTRP.ViewModels
+namespace PTRP.ViewModels.Patients
 {
     /// <summary>
     /// ViewModel for PatientListView with Master-Detail layout.
@@ -99,7 +99,7 @@ namespace PTRP.ViewModels
         /// Command to load patients with current filters.
         /// </summary>
         [RelayCommand]
-        private async Task LoadPatientsAsync()
+        public async Task LoadPatientsAsync()
         {
             await SearchPatientsAsync();
         }
@@ -233,13 +233,13 @@ namespace PTRP.ViewModels
         private ActiveProjectViewModel MapActiveProject(TherapyProjectModel model)
         {
             var startDate = model.StartDate;
-            var endDate = model.PlannedEndDate ?? model.ActualEndDate;
+            var endDate = model.EndDate; // Corrected property name
 
             return new ActiveProjectViewModel
             {
                 Id = model.Id,
                 Title = model.Title,
-                Period = $"{startDate:MMMM yyyy} - {endDate:MMMM yyyy}",
+                Period = endDate.HasValue ? $"{startDate:MMMM yyyy} - {endDate:MMMM yyyy}" : $"{startDate:MMMM yyyy} - In corso",
                 StartDate = startDate,
                 EndDate = endDate,
                 Educators = model.ProfessionalEducators?.Select(e => new EducatorViewModel
