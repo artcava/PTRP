@@ -6,36 +6,44 @@ using System.Windows.Data;
 namespace PTRP.App.Converters
 {
     /// <summary>
-    /// Converts null/non-null values to Visibility.
-    /// Used to show/hide UI elements based on whether a value is present.
-    /// Example: Hide detail panel when no item is selected.
+    /// Converts null/empty values to Visibility enum.
+    /// Used to hide UI elements when data is not available.
     /// </summary>
-    [ValueConversion(typeof(object), typeof(Visibility))]
     public class NullToVisibilityConverter : IValueConverter
     {
         /// <summary>
-        /// Converts null to Collapsed, non-null to Visible.
+        /// Converts null/empty value to Visibility.
         /// </summary>
-        /// <param name="value">The value to check for null</param>
-        /// <param name="targetType">Not used</param>
-        /// <param name="parameter">Optional: "Invert" to reverse logic</param>
-        /// <param name="culture">Not used</param>
-        /// <returns>Visibility.Visible if not null, Visibility.Collapsed if null</returns>
-        public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        /// <param name="value">Value to check (object, string, etc.)</param>
+        /// <param name="targetType">Target type (Visibility)</param>
+        /// <param name="parameter">Optional parameter ("Invert" to reverse logic)</param>
+        /// <param name="culture">Culture info</param>
+        /// <returns>Visibility.Visible if value is not null/empty, Visibility.Collapsed otherwise</returns>
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            var isNull = value == null;
-            var invert = parameter is string param && param == "Invert";
+            bool isNull = value == null;
             
+            // Check for empty strings
+            if (!isNull && value is string str)
+            {
+                isNull = string.IsNullOrWhiteSpace(str);
+            }
+
+            // Check for parameter to invert logic
+            bool invert = parameter is string param && param.Equals("Invert", StringComparison.OrdinalIgnoreCase);
+
             if (invert)
             {
                 return isNull ? Visibility.Visible : Visibility.Collapsed;
             }
-            
-            return isNull ? Visibility.Collapsed : Visibility.Visible;
+            else
+            {
+                return isNull ? Visibility.Collapsed : Visibility.Visible;
+            }
         }
 
         /// <summary>
-        /// ConvertBack not implemented (one-way binding).
+        /// Not implemented (one-way binding only).
         /// </summary>
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {

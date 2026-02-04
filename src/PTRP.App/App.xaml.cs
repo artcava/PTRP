@@ -4,6 +4,7 @@ using PTRP.Services;
 using PTRP.Services.Interfaces;
 using PTRP.ViewModels;
 using PTRP.ViewModels.Educators;
+using PTRP.ViewModels.Patients;
 using PTRP.ViewModels.Projects;
 using PTRP.Data;
 using PTRP.Data.Repositories;
@@ -117,7 +118,7 @@ namespace PTRP.App
             // services.AddTransient<FirstRunViewModel>();  // Issue #49: First Run ViewModel
             // TODO: Issue #50 - Uncomment when implemented
             // services.AddTransient<DashboardViewModel>();  // Issue #50: Dashboard ViewModel
-            services.AddTransient<PatientListViewModel>(); // Issue #51: Patient List ViewModel
+            services.AddTransient<PatientListViewModel>(); // Issue #51/#74: Patient List ViewModel
             services.AddTransient<EducatorListViewModel>(); // Issue #63: Educator List ViewModel
             services.AddTransient<ProjectListViewModel>(); // Issue #64: Project List ViewModel
             services.AddTransient<SyncViewModel>();        // Issue #52: Sync ViewModel
@@ -125,7 +126,7 @@ namespace PTRP.App
 
             // Registra le Views
             services.AddScoped<MainWindow>();
-            services.AddScoped<PatientListView>();  // Issue #51: Patient List View
+            services.AddScoped<PatientListView>();  // Issue #51/#74: Patient List View
             services.AddScoped<EducatorListView>();  // Issue #63: Educator List View
             services.AddScoped<ProjectListView>();  // Issue #64: Project List View
         }

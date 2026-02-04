@@ -1,20 +1,28 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using PTRP.Models;
+using PTRP.Services.Enums;
+using PTRP.Services.Interfaces;
 using PTRP.ViewModels.Patients;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
-namespace PTRP.ViewModels
+namespace PTRP.ViewModels.Patients
 {
     /// <summary>
     /// ViewModel for PatientListView with Master-Detail layout.
-    /// Supports search, filtering, and patient selection.
+    /// Supports search, filtering by project state, and patient selection.
+    /// Integrated with IPatientService for real data access.
     /// </summary>
     public partial class PatientListViewModel : ViewModelBase
     {
+        private readonly IPatientService _patientService;
+        private CancellationTokenSource? _searchCts;
+
         #region Properties
 
         /// <summary>
@@ -24,22 +32,21 @@ namespace PTRP.ViewModels
         private string _searchTerm = string.Empty;
 
         /// <summary>
-        /// Selected project state filter.
+        /// Selected project state filter (enum-based).
         /// </summary>
         [ObservableProperty]
-        private string _selectedStateFilter = "Tutti";
+        private ProjectStateFilter _selectedStateFilter = ProjectStateFilter.All;
 
         /// <summary>
         /// Available project state filter options.
         /// </summary>
-        [ObservableProperty]
-        private ObservableCollection<string> _projectStateFilters = new()
+        public ObservableCollection<ProjectStateFilterItem> ProjectStateFilters { get; } = new()
         {
-            "Tutti",
-            "Active",
-            "Suspended",
-            "Completed",
-            "Deceased"
+            new ProjectStateFilterItem { Value = ProjectStateFilter.All, Display = "Tutti" },
+            new ProjectStateFilterItem { Value = ProjectStateFilter.Active, Display = "Attivi" },
+            new ProjectStateFilterItem { Value = ProjectStateFilter.Suspended, Display = "Sospesi" },
+            new ProjectStateFilterItem { Value = ProjectStateFilter.Completed, Display = "Completati" },
+            new ProjectStateFilterItem { Value = ProjectStateFilter.Deceased, Display = "Deceduti" }
         };
 
         /// <summary>
@@ -47,11 +54,6 @@ namespace PTRP.ViewModels
         /// </summary>
         [ObservableProperty]
         private ObservableCollection<PatientViewModel> _patients = new();
-
-        /// <summary>
-        /// All patients before filtering (source collection).
-        /// </summary>
-        private List<PatientViewModel> _allPatients = new();
 
         /// <summary>
         /// Currently selected patient for detail panel display.
@@ -66,36 +68,95 @@ namespace PTRP.ViewModels
         private bool _isLoading;
 
         /// <summary>
+        /// Error message to display if search fails.
+        /// </summary>
+        [ObservableProperty]
+        private string? _errorMessage;
+
+        /// <summary>
         /// Display name override for navigation title.
         /// </summary>
         public override string DisplayName => "Pazienti";
 
         #endregion
 
+        #region Constructor
+
+        /// <summary>
+        /// Constructor with dependency injection.
+        /// </summary>
+        /// <param name="patientService">Service for patient data access</param>
+        public PatientListViewModel(IPatientService patientService)
+        {
+            _patientService = patientService ?? throw new ArgumentNullException(nameof(patientService));
+        }
+
+        #endregion
+
+        #region Commands
+
+        /// <summary>
+        /// Command to load patients with current filters.
+        /// </summary>
+        [RelayCommand]
+        public async Task LoadPatientsAsync()
+        {
+            await SearchPatientsAsync();
+        }
+
+        /// <summary>
+        /// Command to clear search and filters.
+        /// </summary>
+        [RelayCommand]
+        private async Task ClearSearchAsync()
+        {
+            SearchTerm = string.Empty;
+            SelectedStateFilter = ProjectStateFilter.All;
+            await SearchPatientsAsync();
+        }
+
+        #endregion
+
         #region Methods
 
         /// <summary>
-        /// Loads all patients from data source (simulated for now).
-        /// In production, this will call IPatientService.
+        /// Searches patients using IPatientService with current filters.
+        /// Supports cancellation for responsive UI during typing.
         /// </summary>
-        public async Task LoadPatientsAsync()
+        private async Task SearchPatientsAsync()
         {
+            // Cancel previous search if still running
+            _searchCts?.Cancel();
+            _searchCts = new CancellationTokenSource();
+            var ct = _searchCts.Token;
+
             IsLoading = true;
-            
+            ErrorMessage = null;
+
             try
             {
-                // Simulate API call delay
-                await Task.Delay(500);
+                // Debounce: wait 300ms before executing search
+                await Task.Delay(300, ct);
 
-                // TODO: Replace with actual IPatientService.GetAllAsync()
-                _allPatients = GenerateSamplePatients();
-                
-                ApplyFilters();
+                // Call IPatientService.SearchAsync with filters
+                var searchTerm = string.IsNullOrWhiteSpace(SearchTerm) ? null : SearchTerm;
+                var stateFilter = SelectedStateFilter == ProjectStateFilter.All ? null : (ProjectStateFilter?)SelectedStateFilter;
+
+                var patientModels = await _patientService.SearchAsync(searchTerm, stateFilter, ct);
+
+                // Convert to ViewModels
+                var patientVMs = patientModels.Select(MapToViewModel).ToList();
+
+                Patients = new ObservableCollection<PatientViewModel>(patientVMs);
+            }
+            catch (OperationCanceledException)
+            {
+                // Search was cancelled, ignore
             }
             catch (Exception ex)
             {
-                // TODO: Show error notification
-                Console.WriteLine($"Error loading patients: {ex.Message}");
+                ErrorMessage = $"Errore durante il caricamento dei pazienti: {ex.Message}";
+                Patients.Clear();
             }
             finally
             {
@@ -104,133 +165,95 @@ namespace PTRP.ViewModels
         }
 
         /// <summary>
-        /// Applies search and state filters to the patient list.
+        /// Maps PatientModel to PatientViewModel for UI display.
         /// </summary>
-        private void ApplyFilters()
+        private PatientViewModel MapToViewModel(PatientModel model)
         {
-            var query = _allPatients.AsEnumerable();
+            // Determine project state from model's therapy projects
+            var activeProject = model.TherapyProjects?.FirstOrDefault(p => p.Status == "Active");
+            var anyProject = model.TherapyProjects?.FirstOrDefault();
 
-            // Apply search filter
-            if (!string.IsNullOrWhiteSpace(SearchTerm))
+            string projectState = "None";
+            string projectStateDisplay = "Nessun Progetto";
+
+            if (activeProject != null)
             {
-                query = query.Where(p =>
-                    p.FirstName.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase) ||
-                    p.LastName.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase));
+                projectState = activeProject.Status;
+                projectStateDisplay = MapStateToDisplay(activeProject.Status);
+            }
+            else if (anyProject != null)
+            {
+                projectState = anyProject.Status;
+                projectStateDisplay = MapStateToDisplay(anyProject.Status);
             }
 
-            // Apply state filter
-            if (SelectedStateFilter != "Tutti")
+            return new PatientViewModel
             {
-                query = query.Where(p => p.ProjectState == SelectedStateFilter);
-            }
-
-            Patients = new ObservableCollection<PatientViewModel>(query);
+                Id = model.Id,
+                FirstName = model.FirstName,
+                LastName = model.LastName,
+                CreatedAt = model.CreatedAt,
+                ProjectState = projectState,
+                ProjectStateDisplay = projectStateDisplay,
+                AssignedEducatorsDisplay = GetEducatorsDisplay(activeProject),
+                ActiveProject = activeProject != null ? MapActiveProject(activeProject) : null,
+                NextAppointment = null // TODO: Implement when VisitService is available
+            };
         }
 
         /// <summary>
-        /// Generates sample patient data for testing.
-        /// TODO: Remove when IPatientService is integrated.
+        /// Maps project state string to display text.
         /// </summary>
-        private List<PatientViewModel> GenerateSamplePatients()
+        private string MapStateToDisplay(string state)
         {
-            return new List<PatientViewModel>
+            return state switch
             {
-                new PatientViewModel
+                "Active" => "Attivo",
+                "Suspended" => "Sospeso",
+                "Completed" => "Completato",
+                "Deceased" => "Deceduto",
+                _ => "Sconosciuto"
+            };
+        }
+
+        /// <summary>
+        /// Gets comma-separated educators display string.
+        /// </summary>
+        private string GetEducatorsDisplay(TherapyProjectModel? project)
+        {
+            if (project?.ProfessionalEducators == null || !project.ProfessionalEducators.Any())
+                return "-";
+
+            return string.Join(", ", project.ProfessionalEducators.Select(e => e.LastName));
+        }
+
+        /// <summary>
+        /// Maps TherapyProjectModel to ActiveProjectViewModel.
+        /// </summary>
+        private ActiveProjectViewModel MapActiveProject(TherapyProjectModel model)
+        {
+            var startDate = model.StartDate;
+            var endDate = model.EndDate;
+
+            // Format period string with nullable endDate handling
+            var periodString = endDate.HasValue 
+                ? $"{startDate:MMMM yyyy} - {endDate.Value:MMMM yyyy}" 
+                : $"{startDate:MMMM yyyy} - In corso";
+
+            return new ActiveProjectViewModel
+            {
+                Id = model.Id,
+                Title = model.Title ?? string.Empty,
+                Period = periodString,
+                StartDate = startDate,
+                EndDate = endDate,
+                Educators = model.ProfessionalEducators?.Select(e => new EducatorViewModel
                 {
-                    Id = Guid.NewGuid(),
-                    FirstName = "Mario",
-                    LastName = "Rossi",
-                    CreatedAt = DateTime.Now.AddMonths(-6),
-                    ProjectState = "Active",
-                    ProjectStateDisplay = "Attivo",
-                    AssignedEducatorsDisplay = "Bianchi, Verdi",
-                    ActiveProject = new ActiveProjectViewModel
-                    {
-                        Id = Guid.NewGuid(),
-                        Title = "PTRP 2025-2027",
-                        Period = "Gennaio 2025 - Dicembre 2027",
-                        StartDate = new DateTime(2025, 1, 1),
-                        EndDate = new DateTime(2027, 12, 31),
-                        Educators = new List<EducatorViewModel>
-                        {
-                            new EducatorViewModel { Id = Guid.NewGuid(), Name = "Mario Bianchi", Initials = "MB", Role = "Coordinatore" },
-                            new EducatorViewModel { Id = Guid.NewGuid(), Name = "Laura Verdi", Initials = "LV", Role = "Educatore" }
-                        }
-                    },
-                    NextAppointment = new NextAppointmentViewModel
-                    {
-                        Id = Guid.NewGuid(),
-                        Type = "Prima Apertura",
-                        TypeDisplay = "Prima Apertura",
-                        ScheduledDate = new DateTime(2025, 4, 2, 14, 30, 0),
-                        Location = "Centro Diurno"
-                    }
-                },
-                new PatientViewModel
-                {
-                    Id = Guid.NewGuid(),
-                    FirstName = "Luca",
-                    LastName = "Bianchi",
-                    CreatedAt = DateTime.Now.AddMonths(-12),
-                    ProjectState = "Active",
-                    ProjectStateDisplay = "Attivo",
-                    AssignedEducatorsDisplay = "Gialli",
-                    ActiveProject = new ActiveProjectViewModel
-                    {
-                        Id = Guid.NewGuid(),
-                        Title = "PTRP 2024-2026",
-                        Period = "Gennaio 2024 - Dicembre 2026",
-                        StartDate = new DateTime(2024, 1, 1),
-                        EndDate = new DateTime(2026, 12, 31),
-                        Educators = new List<EducatorViewModel>
-                        {
-                            new EducatorViewModel { Id = Guid.NewGuid(), Name = "Giovanni Gialli", Initials = "GG", Role = "Educatore" }
-                        }
-                    },
-                    NextAppointment = new NextAppointmentViewModel
-                    {
-                        Id = Guid.NewGuid(),
-                        Type = "Visita Intermedia",
-                        TypeDisplay = "Visita Intermedia",
-                        ScheduledDate = new DateTime(2025, 5, 15, 10, 0, 0),
-                        Location = "Ambulatorio"
-                    }
-                },
-                new PatientViewModel
-                {
-                    Id = Guid.NewGuid(),
-                    FirstName = "Anna",
-                    LastName = "Verdi",
-                    CreatedAt = DateTime.Now.AddMonths(-18),
-                    ProjectState = "Suspended",
-                    ProjectStateDisplay = "Sospeso",
-                    AssignedEducatorsDisplay = "Rossi",
-                    ActiveProject = new ActiveProjectViewModel
-                    {
-                        Id = Guid.NewGuid(),
-                        Title = "PTRP 2023-2025",
-                        Period = "Gennaio 2023 - Dicembre 2025",
-                        StartDate = new DateTime(2023, 1, 1),
-                        EndDate = new DateTime(2025, 12, 31),
-                        Educators = new List<EducatorViewModel>
-                        {
-                            new EducatorViewModel { Id = Guid.NewGuid(), Name = "Paolo Rossi", Initials = "PR", Role = "Educatore" }
-                        }
-                    },
-                    NextAppointment = null // No upcoming appointment
-                },
-                new PatientViewModel
-                {
-                    Id = Guid.NewGuid(),
-                    FirstName = "Giuseppe",
-                    LastName = "Neri",
-                    CreatedAt = DateTime.Now.AddMonths(-24),
-                    ProjectState = "Completed",
-                    ProjectStateDisplay = "Completato",
-                    AssignedEducatorsDisplay = "-",
-                    ActiveProject = null, // No active project
-                    NextAppointment = null
-                }
+                    Id = e.Id,
+                    Name = $"{e.FirstName} {e.LastName}",
+                    Initials = $"{e.FirstName[0]}{e.LastName[0]}",
+                    Role = "Educatore" // TODO: Get from ProjectOperatorModel.RoleInProject when available
+                }).ToList() ?? new List<EducatorViewModel>()
             };
         }
 
@@ -239,21 +262,34 @@ namespace PTRP.ViewModels
         #region Partial Methods
 
         /// <summary>
-        /// Reapply filters when search term changes.
+        /// Reapply search when search term changes (debounced).
         /// </summary>
         partial void OnSearchTermChanged(string value)
         {
-            ApplyFilters();
+            _ = SearchPatientsAsync();
         }
 
         /// <summary>
-        /// Reapply filters when state filter changes.
+        /// Reapply search when state filter changes.
         /// </summary>
-        partial void OnSelectedStateFilterChanged(string value)
+        partial void OnSelectedStateFilterChanged(ProjectStateFilter value)
         {
-            ApplyFilters();
+            _ = SearchPatientsAsync();
         }
 
         #endregion
     }
+
+    #region Helper Classes
+
+    /// <summary>
+    /// Helper class for ComboBox binding with enum values.
+    /// </summary>
+    public class ProjectStateFilterItem
+    {
+        public ProjectStateFilter Value { get; set; }
+        public string Display { get; set; } = string.Empty;
+    }
+
+    #endregion
 }

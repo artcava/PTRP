@@ -8,6 +8,7 @@ using CommunityToolkit.Mvvm.Input;
 using MaterialDesignThemes.Wpf;
 using PTRP.Services.Interfaces;
 using PTRP.ViewModels.Educators;
+using PTRP.ViewModels.Patients;
 using PTRP.ViewModels.Projects;
 
 namespace PTRP.ViewModels;
@@ -205,7 +206,7 @@ public partial class MainViewModel : ViewModelBase
             {
                 Title = "Pazienti",
                 IconKind = PackIconKind.AccountGroup,
-                ViewModelType = typeof(PatientListViewModel) // Issue #51: IMPLEMENTED
+                ViewModelType = typeof(PatientListViewModel) // Issue #51/#74: IMPLEMENTED
             },
             new MenuItemViewModel
             {
@@ -285,7 +286,7 @@ public partial class MainViewModel : ViewModelBase
         CurrentViewModel = viewModel as ViewModelBase;
         CurrentPageTitle = CurrentViewModel?.DisplayName ?? "PTRP";
         
-        // Issue #51: Load patients when navigating to PatientListView
+        // Issue #51/#74: Load patients when navigating to PatientListView
         if (viewModel is PatientListViewModel patientListViewModel)
         {
             await patientListViewModel.LoadPatientsAsync();
@@ -569,7 +570,7 @@ public partial class MainViewModel : ViewModelBase
     [RelayCommand]
     private void NavigateToPatients()
     {
-        // Issue #51: PatientListViewModel implementato
+        // Issue #51/#74: PatientListViewModel implementato
         _navigationService.NavigateTo<PatientListViewModel>();
     }
     
