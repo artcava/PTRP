@@ -233,13 +233,18 @@ namespace PTRP.ViewModels.Patients
         private ActiveProjectViewModel MapActiveProject(TherapyProjectModel model)
         {
             var startDate = model.StartDate;
-            var endDate = model.EndDate; // Corrected property name
+            var endDate = model.EndDate;
+
+            // Format period string with nullable endDate handling
+            var periodString = endDate.HasValue 
+                ? $"{startDate:MMMM yyyy} - {endDate.Value:MMMM yyyy}" 
+                : $"{startDate:MMMM yyyy} - In corso";
 
             return new ActiveProjectViewModel
             {
                 Id = model.Id,
-                Title = model.Title,
-                Period = endDate.HasValue ? $"{startDate:MMMM yyyy} - {endDate:MMMM yyyy}" : $"{startDate:MMMM yyyy} - In corso",
+                Title = model.Title ?? string.Empty,
+                Period = periodString,
                 StartDate = startDate,
                 EndDate = endDate,
                 Educators = model.ProfessionalEducators?.Select(e => new EducatorViewModel

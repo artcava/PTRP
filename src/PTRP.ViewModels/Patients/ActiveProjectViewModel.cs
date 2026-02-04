@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace PTRP.ViewModels.Patients
 {
@@ -8,31 +7,13 @@ namespace PTRP.ViewModels.Patients
     /// ViewModel per rappresentare un progetto terapeutico attivo nella UI.
     /// Usato in PatientListView per visualizzare dettagli progetto nel pannello laterale.
     /// </summary>
-    public partial class ActiveProjectViewModel : ObservableObject
+    public class ActiveProjectViewModel
     {
-        [ObservableProperty]
-        private Guid _id;
-
-        [ObservableProperty]
-        private string _title = string.Empty;
-
-        [ObservableProperty]
-        private string _period = string.Empty;
-
-        [ObservableProperty]
-        private DateTime _startDate;
-
-        [ObservableProperty]
-        private DateTime? _endDate; // Nullable for ongoing projects
-
-        [ObservableProperty]
-        private List<EducatorViewModel> _educators = new();
-
-        /// <summary>
-        /// Formatted period string for display.
-        /// </summary>
-        public string FormattedPeriod => EndDate.HasValue 
-            ? $"{StartDate:dd/MM/yyyy} - {EndDate.Value:dd/MM/yyyy}"
-            : $"{StartDate:dd/MM/yyyy} - In corso";
+        public Guid Id { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public string Period { get; set; } = string.Empty;
+        public DateTime StartDate { get; set; }
+        public DateTime? EndDate { get; set; }
+        public List<EducatorViewModel> Educators { get; set; } = new();
     }
 }
