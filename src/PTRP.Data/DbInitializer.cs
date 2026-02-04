@@ -28,17 +28,17 @@ public static class DbInitializer
         // 1. Crea Educatori Professionali (7)
         var educators = CreateEducators();
         context.ProfessionalEducators.AddRange(educators);
-        context.SaveChanges();
+        context.SaveChanges(); // IMPORTANTE: Salva prima di creare relazioni
 
         // 2. Crea Pazienti (12)
         var patients = CreatePatients();
         context.Patients.AddRange(patients);
-        context.SaveChanges();
+        context.SaveChanges(); // IMPORTANTE: Salva prima di creare relazioni
 
         // 3. Crea Progetti Terapeutici con relazioni (20-25)
         var projects = CreateTherapyProjects(patients, educators);
         context.TherapyProjects.AddRange(projects);
-        context.SaveChanges();
+        context.SaveChanges(); // EF gestisce automaticamente la join table
 
         // 4. Crea Appuntamenti per progetti attivi
         var appointments = CreateScheduledVisits(projects);
@@ -114,12 +114,6 @@ public static class DbInitializer
                 var startDate = DateTime.UtcNow.AddMonths(-random.Next(3, 24));
                 var endDate = isActive ? null : (DateTime?)startDate.AddMonths(random.Next(6, 18));
 
-                // Assegna 1-3 educatori al progetto
-                var assignedEducators = educators
-                    .OrderBy(x => random.Next())
-                    .Take(random.Next(1, 4))
-                    .ToList();
-
                 var project = new TherapyProjectModel
                 {
                     Id = Guid.NewGuid(),
@@ -130,9 +124,20 @@ public static class DbInitializer
                     StartDate = startDate,
                     EndDate = endDate,
                     CreatedAt = startDate.AddDays(-7),
-                    UpdatedAt = DateTime.UtcNow,
-                    ProfessionalEducators = assignedEducators
+                    UpdatedAt = DateTime.UtcNow
                 };
+
+                // Assegna 1-3 educatori al progetto
+                // EF gestisce automaticamente la join table TherapyProjectEducator
+                var assignedEducators = educators
+                    .OrderBy(x => random.Next())
+                    .Take(random.Next(1, 4))
+                    .ToList();
+
+                foreach (var educator in assignedEducators)
+                {
+                    project.ProfessionalEducators.Add(educator);
+                }
 
                 projects.Add(project);
             }
@@ -154,7 +159,14 @@ public static class DbInitializer
         foreach (var project in activeProjects)
         {
             // 4 appuntamenti canonici per progetto attivo
-            var visitTypes = new[] { VisitType.Intake, VisitType.Intermediate, VisitType.Intermediate, VisitType.Final };
+            var visitTypes = new[] 
+            { 
+                VisitType.Intake, 
+                VisitType.Intermediate, 
+                VisitType.Intermediate, 
+                VisitType.Final 
+            };
+            
             var startDate = project.StartDate;
 
             for (int i = 0; i < visitTypes.Length; i++)
