@@ -6,10 +6,11 @@
              xmlns:vmPatients="clr-namespace:PTRP.ViewModels.Patients;assembly=PTRP.ViewModels"
              xmlns:vmEducators="clr-namespace:PTRP.ViewModels.Educators;assembly=PTRP.ViewModels"
              xmlns:vmProjects="clr-namespace:PTRP.ViewModels.Projects;assembly=PTRP.ViewModels"
-             xmlns:views="clr-namespace:PTRP.App.Views"
+             xmlns:viewsSetup="clr-namespace:PTRP.App.Views.Setup"
              xmlns:viewsPatients="clr-namespace:PTRP.App.Views.Patients"
              xmlns:viewsEducators="clr-namespace:PTRP.App.Views.Educators"
-             xmlns:viewsProjects="clr-namespace:PTRP.App.Views.Projects">
+             xmlns:viewsProjects="clr-namespace:PTRP.App.Views.Projects"
+             xmlns:viewsSync="clr-namespace:PTRP.App.Views.Sync">
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
@@ -32,16 +33,12 @@
             
             <!-- First Run / Setup -->
             <DataTemplate DataType="{x:Type vm:FirstRunViewModel}">
-                <views:FirstRunView />
+                <viewsSetup:FirstRunView />
             </DataTemplate>
             
             <!-- Patients Module (Issue #51, #74) -->
             <DataTemplate DataType="{x:Type vmPatients:PatientListViewModel}">
                 <viewsPatients:PatientListView />
-            </DataTemplate>
-            
-            <DataTemplate DataType="{x:Type vmPatients:PatientDetailViewModel}">
-                <viewsPatients:PatientDetailView />
             </DataTemplate>
             
             <!-- Educators Module (Issue #63) -->
@@ -60,13 +57,13 @@
             
             <!-- Sync Module (Issue #52) -->
             <DataTemplate DataType="{x:Type vm:SyncViewModel}">
-                <views:SyncView />
+                <viewsSync:SyncView />
             </DataTemplate>
             
             <!-- TODO: Dashboard Module (Issue #50) -->
             <!-- 
             <DataTemplate DataType="{x:Type vm:DashboardViewModel}">
-                <views:DashboardView />
+                <viewsDashboard:DashboardView />
             </DataTemplate>
             -->
             
