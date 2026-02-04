@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 
 namespace PTRP.ViewModels.Projects;
 
@@ -39,6 +40,16 @@ public partial class ProjectListViewModel : ViewModelBase
 
     [ObservableProperty]
     private bool _isLoading;
+
+    // Progetti completati per lo stesso paziente del progetto selezionato
+    [ObservableProperty]
+    private ObservableCollection<ProjectViewModel> _completedProjectsForCurrentPatient = new();
+
+    [ObservableProperty]
+    private bool _hasCompletedProjects;
+
+    [ObservableProperty]
+    private bool _isLoadingCompletedProjects;
 
     public override string DisplayName => "Progetti";
 
@@ -587,5 +598,64 @@ public partial class ProjectListViewModel : ViewModelBase
     partial void OnSelectedStateFilterChanged(string value)
     {
         ApplyFilters();
+    }
+
+    /// <summary>
+    /// Handler chiamato quando cambia il progetto selezionato.
+    /// Carica lo storico dei progetti completati per lo stesso paziente.
+    /// </summary>
+    /// <param name="value">Nuovo progetto selezionato.</param>
+    partial void OnSelectedProjectChanged(ProjectViewModel? value)
+    {
+        if (value != null)
+        {
+            _ = LoadCompletedProjectsForPatientAsync(value.Patient.PatientId);
+        }
+        else
+        {
+            CompletedProjectsForCurrentPatient.Clear();
+            HasCompletedProjects = false;
+        }
+    }
+
+    /// <summary>
+    /// Carica i progetti completati per il paziente specificato.
+    /// </summary>
+    private async Task LoadCompletedProjectsForPatientAsync(Guid patientId)
+    {
+        IsLoadingCompletedProjects = true;
+        try
+        {
+            await Task.Delay(300); // Simula chiamata API
+
+            var completedProjects = _allProjects
+                .Where(p => p.Patient.PatientId == patientId
+                         && p.State == "Completed"
+                         && p.Id != SelectedProject?.Id)
+                .OrderByDescending(p => p.CompletedAt ?? p.EndDate)
+                .ToList();
+
+            CompletedProjectsForCurrentPatient = new ObservableCollection<ProjectViewModel>(completedProjects);
+            HasCompletedProjects = CompletedProjectsForCurrentPatient.Any();
+        }
+        finally
+        {
+            IsLoadingCompletedProjects = false;
+        }
+    }
+
+    /// <summary>
+    /// Seleziona un progetto completato storico per visualizzarne i dettagli.
+    /// </summary>
+    /// <param name="completedProject">Progetto completato selezionato.</param>
+    [RelayCommand]
+    private void SelectCompletedProject(ProjectViewModel completedProject)
+    {
+        if (completedProject is null)
+        {
+            return;
+        }
+
+        SelectedProject = completedProject;
     }
 }
