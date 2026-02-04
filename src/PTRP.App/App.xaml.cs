@@ -9,9 +9,11 @@ using PTRP.ViewModels.Projects;
 using PTRP.Data;
 using PTRP.Data.Repositories;
 using PTRP.Data.Repositories.Interfaces;
+using PTRP.App.Infrastructure;
 using PTRP.App.Views.Patients;
 using PTRP.App.Views.Educators;
 using PTRP.App.Views.Projects;
+using PTRP.App.Views.Sync;
 using System.IO;
 using System.Windows;
 
@@ -112,6 +114,9 @@ namespace PTRP.App
             services.AddSingleton<INavigationService, NavigationService>();  // Issue #46: Navigation Service
             services.AddScoped<IConfigurationService, ConfigurationService>(); // Issue #49: Configuration Service
 
+            // Registra ViewLocator (Issue #94: DI-based View resolution)
+            services.AddSingleton<ViewLocator>();
+
             // Registra i ViewModels
             services.AddSingleton<MainViewModel>();  // Singleton per condividere stato app
             // TODO: Issue #49 - Uncomment when implemented
@@ -125,11 +130,12 @@ namespace PTRP.App
             services.AddTransient<SyncViewModel>();        // Issue #52: Sync ViewModel
             services.AddTransient<ConflictResolutionViewModel>(); // Issue #52: Conflict Resolution ViewModel
 
-            // Registra le Views
+            // Registra le Views (Issue #94: Views with DI-based constructors)
             services.AddScoped<MainWindow>();
             services.AddScoped<PatientListView>();  // Issue #51/#74: Patient List View
             services.AddScoped<EducatorListView>();  // Issue #63: Educator List View
             services.AddScoped<ProjectListView>();  // Issue #64: Project List View
+            services.AddScoped<SyncView>();         // Issue #52: Sync View
         }
 
         /// <summary>
