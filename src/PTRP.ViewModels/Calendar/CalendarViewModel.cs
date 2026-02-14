@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using System.Collections.ObjectModel;
+using System.Globalization;
 
 namespace PTRP.ViewModels.Calendar;
 
@@ -9,6 +10,8 @@ namespace PTRP.ViewModels.Calendar;
 /// </summary>
 public partial class CalendarViewModel : ViewModelBase
 {
+    private static readonly CultureInfo ItalianCulture = new("it-IT");
+    
     public override string DisplayName => "Calendario Appuntamenti";
 
     #region Properties
@@ -22,7 +25,7 @@ public partial class CalendarViewModel : ViewModelBase
     /// <summary>
     /// Display del mese corrente (es: "Febbraio 2026")
     /// </summary>
-    public string CurrentMonthDisplay => CurrentMonth.ToString("MMMM yyyy");
+    public string CurrentMonthDisplay => CurrentMonth.ToString("MMMM yyyy", ItalianCulture);
 
     /// <summary>
     /// Giorni del mese visualizzati nella griglia (include giorni mese precedente/successivo per completare settimane)
@@ -232,7 +235,8 @@ public partial class CalendarViewModel : ViewModelBase
     {
         IsLoading = true;
         try
-        {            // TODO: Sostituire con chiamata a IScheduledVisitService
+        {
+            // TODO: Sostituire con chiamata a IScheduledVisitService
             await Task.Delay(300); // Simula API call
 
             // Genera giorni del mese (con padding per settimane complete)
