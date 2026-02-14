@@ -595,10 +595,11 @@ public partial class MainViewModel : ViewModelBase
     }
     
     [RelayCommand]
-    private void NavigateToCalendar()
+    private async Task NavigateToCalendarAsync()
     {
         // Issue #75: CalendarViewModel implementato
         _navigationService.NavigateTo<CalendarViewModel>();
+        // L'inizializzazione viene gestita in OnCurrentViewModelChanged
     }
     
     [RelayCommand]
