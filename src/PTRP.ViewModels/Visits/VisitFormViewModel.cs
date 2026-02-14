@@ -7,10 +7,12 @@ namespace PTRP.ViewModels.Visits;
 
 /// <summary>
 /// ViewModel per VisitFormView - Registrazione visita effettiva
+/// Eredita da ObservableValidator per supportare data annotations validation
 /// </summary>
-public partial class VisitFormViewModel : ViewModelBase
+public partial class VisitFormViewModel : ObservableValidator
 {
-    public override string DisplayName => "Registrazione Visita";
+    // DisplayName implementato come property normale (non da ViewModelBase)
+    public string DisplayName => "Registrazione Visita";
 
     #region Read-Only Info (da appuntamento)
 
@@ -45,13 +47,14 @@ public partial class VisitFormViewModel : ViewModelBase
 
     #endregion
 
-    #region Editable Fields
+    #region Editable Fields with Validation
 
     /// <summary>
     /// Data effettiva visita (non può essere futura)
     /// </summary>
     [ObservableProperty]
     [Required(ErrorMessage = "La data effettiva è obbligatoria")]
+    [CustomValidation(typeof(VisitFormViewModel), nameof(ValidateActualDate))]
     private DateTime _actualDate = DateTime.Today;
 
     /// <summary>
@@ -66,6 +69,7 @@ public partial class VisitFormViewModel : ViewModelBase
     /// </summary>
     [ObservableProperty]
     [Required(ErrorMessage = "L'ora di fine è obbligatoria")]
+    [CustomValidation(typeof(VisitFormViewModel), nameof(ValidateEndTime))]
     private TimeSpan _endTime = new TimeSpan(10, 0, 0);
 
     /// <summary>
@@ -120,62 +124,62 @@ public partial class VisitFormViewModel : ViewModelBase
 
     #endregion
 
-    #region Validation
+    #region Custom Validation Methods
 
     /// <summary>
-    /// Errori di validazione
+    /// Valida che la data effettiva non sia futura
     /// </summary>
-    [ObservableProperty]
-    private ObservableCollection<string> _validationErrors = new();
+    public static ValidationResult? ValidateActualDate(DateTime actualDate, ValidationContext context)
+    {
+        if (actualDate.Date > DateTime.Today)
+        {
+            return new ValidationResult("La data effettiva non può essere futura");
+        }
+        return ValidationResult.Success;
+    }
 
     /// <summary>
-    /// Indica se ci sono errori di validazione
+    /// Valida che EndTime sia successivo a StartTime
     /// </summary>
-    public bool HasValidationErrors => ValidationErrors.Count > 0;
+    public static ValidationResult? ValidateEndTime(TimeSpan endTime, ValidationContext context)
+    {
+        var instance = (VisitFormViewModel)context.ObjectInstance;
+        if (endTime <= instance.StartTime)
+        {
+            return new ValidationResult("L'ora di fine deve essere successiva all'ora di inizio");
+        }
+        return ValidationResult.Success;
+    }
+
+    #endregion
+
+    #region Additional Validation
 
     /// <summary>
-    /// Valida tutti i campi del form
+    /// Valida che almeno un operatore sia selezionato
+    /// </summary>
+    private bool ValidateOperators()
+    {
+        return SelectedOperatorsCount > 0;
+    }
+
+    /// <summary>
+    /// Valida l'intero form inclusi requisiti custom
     /// </summary>
     private bool ValidateForm()
     {
-        ValidationErrors.Clear();
+        // Valida properties con DataAnnotations
+        ValidateAllProperties();
 
-        // Data effettiva non futura
-        if (ActualDate.Date > DateTime.Today)
+        // Validazione custom: almeno un operatore
+        if (!ValidateOperators())
         {
-            ValidationErrors.Add("La data effettiva non può essere futura");
+            // Non possiamo aggiungere errori custom direttamente alle properties
+            // Usiamo una property separata per gli errori custom
+            return false;
         }
 
-        // Ora fine > ora inizio
-        if (EndTime <= StartTime)
-        {
-            ValidationErrors.Add("L'ora di fine deve essere successiva all'ora di inizio");
-        }
-
-        // Almeno un operatore selezionato
-        if (SelectedOperatorsCount == 0)
-        {
-            ValidationErrors.Add("Selezionare almeno un operatore presente");
-        }
-
-        // Note cliniche obbligatorie e lunghezza minima
-        if (string.IsNullOrWhiteSpace(ClinicalNotes))
-        {
-            ValidationErrors.Add("Le note cliniche sono obbligatorie");
-        }
-        else if (ClinicalNotes.Length < 10)
-        {
-            ValidationErrors.Add("Le note cliniche devono contenere almeno 10 caratteri");
-        }
-
-        // Presenza paziente selezionata
-        if (string.IsNullOrWhiteSpace(SelectedPresenceStatus))
-        {
-            ValidationErrors.Add("Selezionare lo stato di presenza del paziente");
-        }
-
-        OnPropertyChanged(nameof(HasValidationErrors));
-        return ValidationErrors.Count == 0;
+        return !HasErrors;
     }
 
     #endregion
@@ -185,12 +189,11 @@ public partial class VisitFormViewModel : ViewModelBase
     /// <summary>
     /// Salva visita
     /// </summary>
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanSaveVisit))]
     private async Task SaveVisitAsync()
     {
         if (!ValidateForm())
         {
-            // Mostra errori (già popolati in ValidationErrors)
             return;
         }
 
@@ -206,10 +209,22 @@ public partial class VisitFormViewModel : ViewModelBase
             // Chiudi form e torna al calendario
             // TODO: NavigationService.GoBack() o chiudi dialog
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            ValidationErrors.Add($"Errore durante il salvataggio: {ex.Message}");
+            // TODO: Gestire errore
         }
+    }
+
+    /// <summary>
+    /// Determina se il comando Save può essere eseguito
+    /// </summary>
+    private bool CanSaveVisit()
+    {
+        // Quick check senza validazione completa
+        return !string.IsNullOrWhiteSpace(ClinicalNotes) 
+            && ClinicalNotes.Length >= 10
+            && SelectedOperatorsCount > 0
+            && !string.IsNullOrWhiteSpace(SelectedPresenceStatus);
     }
 
     /// <summary>
@@ -283,6 +298,8 @@ public partial class VisitFormViewModel : ViewModelBase
 
     #endregion
 
+    #region Property Changed Handlers
+
     partial void OnScheduledDateChanged(DateTime value)
     {
         OnPropertyChanged(nameof(ScheduledDateDisplay));
@@ -299,15 +316,29 @@ public partial class VisitFormViewModel : ViewModelBase
                 {
                     OnPropertyChanged(nameof(SelectedOperators));
                     OnPropertyChanged(nameof(SelectedOperatorsCount));
+                    SaveVisitCommand.NotifyCanExecuteChanged();
                 }
             };
         }
     }
 
-    partial void OnValidationErrorsChanged(ObservableCollection<string> value)
+    partial void OnClinicalNotesChanged(string value)
     {
-        OnPropertyChanged(nameof(HasValidationErrors));
+        SaveVisitCommand.NotifyCanExecuteChanged();
     }
+
+    partial void OnSelectedPresenceStatusChanged(string value)
+    {
+        SaveVisitCommand.NotifyCanExecuteChanged();
+    }
+
+    partial void OnStartTimeChanged(TimeSpan value)
+    {
+        // Rivalidare EndTime quando cambia StartTime
+        ValidateProperty(EndTime, nameof(EndTime));
+    }
+
+    #endregion
 }
 
 /// <summary>
