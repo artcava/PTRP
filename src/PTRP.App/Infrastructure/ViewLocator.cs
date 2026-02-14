@@ -1,12 +1,14 @@
 using System;
 using System.Windows.Controls;
 using Microsoft.Extensions.DependencyInjection;
+using PTRP.App.Views.Calendar;
 using PTRP.App.Views.Educators;
 using PTRP.App.Views.Patients;
 using PTRP.App.Views.Projects;
 using PTRP.App.Views.Setup;
 using PTRP.App.Views.Sync;
 using PTRP.ViewModels;
+using PTRP.ViewModels.Calendar;
 using PTRP.ViewModels.Educators;
 using PTRP.ViewModels.Patients;
 using PTRP.ViewModels.Projects;
@@ -55,6 +57,9 @@ public class ViewLocator
             // ProjectFormView is created manually with specific patient context,
             // so it's not navigated to directly - it's opened in dialogs
             ProjectFormViewModel => new ProjectFormView(),
+
+            // Calendar Module (Issue #75)
+            CalendarViewModel => _serviceProvider.GetRequiredService<CalendarView>(),
 
             // Sync Module (requires IServiceProvider in constructor)
             SyncViewModel => _serviceProvider.GetRequiredService<SyncView>(),
