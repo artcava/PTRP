@@ -54,6 +54,7 @@ public class VisitFormViewModelTests
         
         // Act
         viewModel.ActualDate = DateTime.Today.AddDays(1);
+        viewModel.ValidateAllProperties();
         
         // Assert
         viewModel.HasErrors.Should().BeTrue();
@@ -69,6 +70,7 @@ public class VisitFormViewModelTests
         
         // Act
         viewModel.ActualDate = DateTime.Today;
+        viewModel.ValidateAllProperties();
         
         // Assert
         var errors = viewModel.GetErrors(nameof(viewModel.ActualDate));
@@ -87,6 +89,7 @@ public class VisitFormViewModelTests
         
         // Act
         viewModel.ActualDate = DateTime.Today.AddDays(-1);
+        viewModel.ValidateAllProperties();
         
         // Assert
         var errors = viewModel.GetErrors(nameof(viewModel.ActualDate));
@@ -110,6 +113,7 @@ public class VisitFormViewModelTests
         // Act
         viewModel.StartTime = TimeSpan.FromHours(10);
         viewModel.EndTime = TimeSpan.FromHours(9); // End before start
+        viewModel.ValidateAllProperties();
         
         // Assert
         viewModel.HasErrors.Should().BeTrue();
@@ -126,6 +130,8 @@ public class VisitFormViewModelTests
         // Act
         viewModel.StartTime = TimeSpan.FromHours(10);
         viewModel.EndTime = TimeSpan.FromHours(11);
+        viewModel.ClinicalNotes = "Note valide di almeno 10 caratteri"; // To avoid other validation errors
+        viewModel.ValidateAllProperties();
         
         // Assert
         var errors = viewModel.GetErrors(nameof(viewModel.EndTime));
@@ -145,6 +151,7 @@ public class VisitFormViewModelTests
         // Act
         viewModel.StartTime = TimeSpan.FromHours(10);
         viewModel.EndTime = TimeSpan.FromHours(10); // Equal
+        viewModel.ValidateAllProperties();
         
         // Assert
         viewModel.HasErrors.Should().BeTrue();
@@ -162,6 +169,7 @@ public class VisitFormViewModelTests
         
         // Act
         viewModel.ClinicalNotes = "";
+        viewModel.ValidateAllProperties();
         
         // Assert
         viewModel.HasErrors.Should().BeTrue();
@@ -177,6 +185,7 @@ public class VisitFormViewModelTests
         
         // Act
         viewModel.ClinicalNotes = "Short"; // Less than 10 characters
+        viewModel.ValidateAllProperties();
         
         // Assert
         viewModel.HasErrors.Should().BeTrue();
@@ -192,6 +201,9 @@ public class VisitFormViewModelTests
         
         // Act
         viewModel.ClinicalNotes = "È una nota clinica valida di lunghezza sufficiente.";
+        viewModel.StartTime = TimeSpan.FromHours(10);
+        viewModel.EndTime = TimeSpan.FromHours(11);
+        viewModel.ValidateAllProperties();
         
         // Assert
         var errors = viewModel.GetErrors(nameof(viewModel.ClinicalNotes));
@@ -365,6 +377,7 @@ public class VisitFormViewModelTests
         // Arrange
         var viewModel = CreateViewModel();
         viewModel.ClinicalNotes = ""; // Invalid
+        viewModel.ValidateAllProperties();
         
         // Act
         var canExecute = viewModel.SaveVisitCommand.CanExecute(null);
