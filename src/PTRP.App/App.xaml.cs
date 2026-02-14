@@ -3,17 +3,21 @@ using Microsoft.Extensions.DependencyInjection;
 using PTRP.Services;
 using PTRP.Services.Interfaces;
 using PTRP.ViewModels;
+using PTRP.ViewModels.Calendar;
 using PTRP.ViewModels.Educators;
 using PTRP.ViewModels.Patients;
 using PTRP.ViewModels.Projects;
+using PTRP.ViewModels.Visits;
 using PTRP.Data;
 using PTRP.Data.Repositories;
 using PTRP.Data.Repositories.Interfaces;
 using PTRP.App.Infrastructure;
+using PTRP.App.Views.Calendar;
 using PTRP.App.Views.Patients;
 using PTRP.App.Views.Educators;
 using PTRP.App.Views.Projects;
 using PTRP.App.Views.Sync;
+using PTRP.App.Views.Visits;
 using System.IO;
 using System.Windows;
 
@@ -127,6 +131,8 @@ namespace PTRP.App
             services.AddTransient<EducatorListViewModel>(); // Issue #63: Educator List ViewModel
             services.AddTransient<ProjectListViewModel>(); // Issue #64: Project List ViewModel
             services.AddTransient<ProjectFormViewModel>(); // Issue #74: Project Form ViewModel
+            services.AddTransient<CalendarViewModel>();    // Issue #75: Calendar ViewModel
+            services.AddTransient<VisitFormViewModel>();   // Issue #75: Visit Form ViewModel
             services.AddTransient<SyncViewModel>();        // Issue #52: Sync ViewModel
             services.AddTransient<ConflictResolutionViewModel>(); // Issue #52: Conflict Resolution ViewModel
 
@@ -135,6 +141,8 @@ namespace PTRP.App
             services.AddScoped<PatientListView>();  // Issue #51/#74: Patient List View
             services.AddScoped<EducatorListView>();  // Issue #63: Educator List View
             services.AddScoped<ProjectListView>();  // Issue #64: Project List View
+            services.AddScoped<CalendarView>();     // Issue #75: Calendar View
+            services.AddScoped<VisitFormView>();    // Issue #75: Visit Form View
             services.AddScoped<SyncView>();         // Issue #52: Sync View
         }
 
