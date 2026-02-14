@@ -1,0 +1,172 @@
+<UserControl x:Class="PTRP.App.Views.Visits.VisitFormView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+             xmlns:vm="clr-namespace:PTRP.ViewModels.Visits;assembly=PTRP.ViewModels"
+             d:DataContext="{d:DesignInstance Type=vm:VisitFormViewModel}"
+             Background="{DynamicResource MaterialDesignPaper}"
+             MaxWidth="800">
+
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis" />
+    </UserControl.Resources>
+
+    <materialDesign:Card Padding="30" Margin="20">
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <!-- Header -->
+                <Grid Margin="0,0,0,20">
+                    <TextBlock Text="Registrazione Visita" 
+                               Style="{StaticResource MaterialDesignHeadline5TextBlock}" 
+                               HorizontalAlignment="Left" />
+
+                    <Button Style="{StaticResource MaterialDesignIconButton}" 
+                            Command="{Binding CancelCommand}" 
+                            HorizontalAlignment="Right"
+                            ToolTip="Chiudi">
+                        <materialDesign:PackIcon Kind="Close" />
+                    </Button>
+                </Grid>
+
+                <!-- Info Read-Only dall'Appuntamento -->
+                <Border Background="{DynamicResource MaterialDesignDivider}" 
+                        CornerRadius="4" Padding="15" Margin="0,0,0,20">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Grid.Row="0" Margin="0,0,0,5">
+                            <Run Text="Paziente:" FontWeight="SemiBold" />
+                            <Run Text="{Binding PatientName}" FontSize="16" />
+                        </TextBlock>
+
+                        <TextBlock Grid.Row="1" Margin="0,0,0,5">
+                            <Run Text="Tipo Appuntamento:" FontWeight="SemiBold" />
+                            <Run Text="{Binding AppointmentTypeDisplay}" />
+                        </TextBlock>
+
+                        <TextBlock Grid.Row="2">
+                            <Run Text="Data Programmata:" FontWeight="SemiBold" />
+                            <Run Text="{Binding ScheduledDateDisplay}" />
+                        </TextBlock>
+                    </Grid>
+                </Border>
+
+                <!-- Errori Validazione (se presenti) -->
+                <Border Background="#FFEBEE" 
+                        BorderBrush="#F44336" BorderThickness="1" 
+                        CornerRadius="4" Padding="15" Margin="0,0,0,20"
+                        Visibility="{Binding HasValidationErrors, Converter={StaticResource BoolToVis}}">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                            <materialDesign:PackIcon Kind="AlertCircle" 
+                                                     Foreground="#F44336" 
+                                                     VerticalAlignment="Center" Margin="0,0,5,0" />
+                            <TextBlock Text="Errori di Validazione:" 
+                                       FontWeight="SemiBold" 
+                                       Foreground="#F44336" />
+                        </StackPanel>
+
+                        <ItemsControl ItemsSource="{Binding ValidationErrors}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding}" 
+                                               Foreground="#D32F2F" 
+                                               Margin="20,2,0,2" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+
+                <!-- Form Fields -->
+                
+                <!-- Data Effettiva -->
+                <DatePicker materialDesign:HintAssist.Hint="Data Effettiva *" 
+                            SelectedDate="{Binding ActualDate, UpdateSourceTrigger=PropertyChanged}" 
+                            Margin="0,0,0,15"
+                            Style="{StaticResource MaterialDesignFloatingHintDatePicker}" />
+
+                <!-- Ora Inizio e Fine -->
+                <Grid Margin="0,0,0,15">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="20" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <materialDesign:TimePicker Grid.Column="0" 
+                                              materialDesign:HintAssist.Hint="Ora Inizio *" 
+                                              SelectedTime="{Binding StartTime, UpdateSourceTrigger=PropertyChanged}" 
+                                              Style="{StaticResource MaterialDesignFloatingHintTimePicker}" />
+
+                    <materialDesign:TimePicker Grid.Column="2" 
+                                              materialDesign:HintAssist.Hint="Ora Fine *" 
+                                              SelectedTime="{Binding EndTime, UpdateSourceTrigger=PropertyChanged}" 
+                                              Style="{StaticResource MaterialDesignFloatingHintTimePicker}" />
+                </Grid>
+
+                <!-- Operatori Presenti -->
+                <TextBlock Text="Operatori Presenti *" 
+                           FontWeight="SemiBold" 
+                           Margin="0,0,0,10" />
+
+                <ItemsControl ItemsSource="{Binding AvailableOperators}" 
+                              Margin="0,0,0,15">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <CheckBox Content="{Binding DisplayName}" 
+                                      IsChecked="{Binding IsSelected}" 
+                                      Margin="0,0,0,5" />
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <!-- Note Cliniche -->
+                <TextBox materialDesign:HintAssist.Hint="Note Cliniche *" 
+                         Text="{Binding ClinicalNotes, UpdateSourceTrigger=PropertyChanged}" 
+                         TextWrapping="Wrap" 
+                         AcceptsReturn="True" 
+                         MinLines="4" MaxLines="8" 
+                         VerticalScrollBarVisibility="Auto" 
+                         Margin="0,0,0,15"
+                         Style="{StaticResource MaterialDesignOutlinedTextBox}" />
+
+                <!-- Esiti e Obiettivi (opzionale) -->
+                <TextBox materialDesign:HintAssist.Hint="Esiti e Obiettivi (opzionale)" 
+                         Text="{Binding Outcomes, UpdateSourceTrigger=PropertyChanged}" 
+                         TextWrapping="Wrap" 
+                         AcceptsReturn="True" 
+                         MinLines="3" MaxLines="6" 
+                         VerticalScrollBarVisibility="Auto" 
+                         Margin="0,0,0,15"
+                         Style="{StaticResource MaterialDesignOutlinedTextBox}" />
+
+                <!-- Presenza Paziente -->
+                <ComboBox materialDesign:HintAssist.Hint="Presenza Paziente *" 
+                          ItemsSource="{Binding PresenceStatusOptions}" 
+                          SelectedValue="{Binding SelectedPresenceStatus}" 
+                          DisplayMemberPath="Display" 
+                          SelectedValuePath="Value" 
+                          Margin="0,0,0,20"
+                          Style="{StaticResource MaterialDesignFloatingHintComboBox}" />
+
+                <!-- Azioni -->
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10">
+                    <Button Content="Annulla" 
+                            Command="{Binding CancelCommand}" 
+                            Style="{StaticResource MaterialDesignOutlinedButton}" 
+                            MinWidth="120" />
+
+                    <Button Content="Salva Visita" 
+                            Command="{Binding SaveVisitCommand}" 
+                            Style="{StaticResource MaterialDesignRaisedButton}" 
+                            MinWidth="120" />
+                </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
+    </materialDesign:Card>
+</UserControl>
