@@ -1,8 +1,5 @@
 using FluentAssertions;
 using Moq;
-using PTRP.Data.Models;
-using PTRP.Data.Models.Enums;
-using PTRP.Services.Interfaces;
 using PTRP.ViewModels.Visits;
 using Xunit;
 
