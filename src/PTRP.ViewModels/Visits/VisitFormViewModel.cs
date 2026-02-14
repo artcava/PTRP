@@ -164,6 +164,14 @@ public partial class VisitFormViewModel : ObservableValidator
     }
 
     /// <summary>
+    /// Metodo pubblico per eseguire validazione completa (utile per testing)
+    /// </summary>
+    public void Validate()
+    {
+        ValidateAllProperties();
+    }
+
+    /// <summary>
     /// Valida l'intero form inclusi requisiti custom
     /// </summary>
     private bool ValidateForm()
