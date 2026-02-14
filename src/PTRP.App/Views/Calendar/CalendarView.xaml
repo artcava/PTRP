@@ -13,7 +13,7 @@
     <UserControl.Resources>
         <!-- Converters -->
         <BooleanToVisibilityConverter x:Key="BoolToVis" />
-        <converters:InverseBoolToVisibilityConverter x:Key="InverseBoolToVis" />
+        <converters:InverseBooleanToVisibilityConverter x:Key="InverseBoolToVis" />
         <converters:BoolToColorConverter x:Key="BoolToColorConverter" />
         <converters:BoolToFontWeightConverter x:Key="BoolToFontWeightConverter" />
     </UserControl.Resources>
