@@ -5,13 +5,17 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
              xmlns:vm="clr-namespace:PTRP.ViewModels.Calendar;assembly=PTRP.ViewModels"
+             xmlns:converters="clr-namespace:PTRP.App.Converters"
              mc:Ignorable="d"
              d:DataContext="{d:DesignInstance Type=vm:CalendarViewModel}"
              Background="{DynamicResource MaterialDesignPaper}">
 
     <UserControl.Resources>
-        <!-- Converter per colore badge giorno -->
+        <!-- Converters -->
         <BooleanToVisibilityConverter x:Key="BoolToVis" />
+        <converters:InverseBoolToVisibilityConverter x:Key="InverseBoolToVis" />
+        <converters:BoolToColorConverter x:Key="BoolToColorConverter" />
+        <converters:BoolToFontWeightConverter x:Key="BoolToFontWeightConverter" />
     </UserControl.Resources>
 
     <Grid Margin="20">
@@ -70,9 +74,15 @@
 
             <!-- PANNELLO SINISTRO: Calendario Mensile + Filtri + Legenda -->
             <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto" Margin="0,0,20,0">
-                <StackPanel>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    
                     <!-- Calendario mensile -->
-                    <materialDesign:Card Padding="20" Margin="0,0,0,20">
+                    <materialDesign:Card Grid.Row="0" Padding="20" Margin="0,0,0,20">
                         <Grid>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto" />
@@ -138,40 +148,40 @@
                     </materialDesign:Card>
 
                     <!-- Legenda Stati Progetto -->
-                    <materialDesign:Card Padding="15" Margin="0,0,0,20">
+                    <materialDesign:Card Grid.Row="1" Padding="15" Margin="0,0,0,20">
                         <StackPanel>
                             <TextBlock Text="Legenda (Stato Progetto):" FontWeight="SemiBold" Margin="0,0,0,10" />
-                            <StackPanel Orientation="Horizontal">
-                                <StackPanel Orientation="Horizontal" Margin="0,0,15,0">
+                            <WrapPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,15,5">
                                     <Ellipse Width="12" Height="12" Fill="#28A745" VerticalAlignment="Center" />
                                     <TextBlock Text="Active" Margin="5,0,0,0" VerticalAlignment="Center" />
                                 </StackPanel>
-                                <StackPanel Orientation="Horizontal" Margin="0,0,15,0">
+                                <StackPanel Orientation="Horizontal" Margin="0,0,15,5">
                                     <Ellipse Width="12" Height="12" Fill="#FFC107" VerticalAlignment="Center" />
                                     <TextBlock Text="Suspended" Margin="5,0,0,0" VerticalAlignment="Center" />
                                 </StackPanel>
-                                <StackPanel Orientation="Horizontal" Margin="0,0,15,0">
+                                <StackPanel Orientation="Horizontal" Margin="0,0,15,5">
                                     <Ellipse Width="12" Height="12" Fill="#6C757D" VerticalAlignment="Center" />
                                     <TextBlock Text="Completed" Margin="5,0,0,0" VerticalAlignment="Center" />
                                 </StackPanel>
-                                <StackPanel Orientation="Horizontal">
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
                                     <Ellipse Width="12" Height="12" Fill="#000000" VerticalAlignment="Center" />
                                     <TextBlock Text="Deceased" Margin="5,0,0,0" VerticalAlignment="Center" />
                                 </StackPanel>
-                            </StackPanel>
+                            </WrapPanel>
                         </StackPanel>
                     </materialDesign:Card>
 
                     <!-- Filtri -->
-                    <materialDesign:Card Padding="15">
+                    <materialDesign:Card Grid.Row="2" Padding="15">
                         <StackPanel>
                             <TextBlock Text="Filtri:" FontWeight="SemiBold" Margin="0,0,0,10" />
 
                             <!-- Tipo Appuntamento -->
                             <WrapPanel Margin="0,0,0,10">
-                                <CheckBox Content="Prima Apertura" IsChecked="{Binding FilterIntake}" Margin="0,0,15,0" />
-                                <CheckBox Content="Verifiche" IsChecked="{Binding FilterVerifiche}" Margin="0,0,15,0" />
-                                <CheckBox Content="Dimissioni" IsChecked="{Binding FilterDimissioni}" />
+                                <CheckBox Content="Prima Apertura" IsChecked="{Binding FilterIntake}" Margin="0,0,15,5" />
+                                <CheckBox Content="Verifiche" IsChecked="{Binding FilterVerifiche}" Margin="0,0,15,5" />
+                                <CheckBox Content="Dimissioni" IsChecked="{Binding FilterDimissioni}" Margin="0,0,0,5" />
                             </WrapPanel>
 
                             <!-- Educatore -->
@@ -194,7 +204,7 @@
                                     Style="{StaticResource MaterialDesignRaisedButton}" />
                         </StackPanel>
                     </materialDesign:Card>
-                </StackPanel>
+                </Grid>
             </ScrollViewer>
 
             <!-- PANNELLO DESTRO: Appuntamenti del Giorno Selezionato -->
@@ -252,23 +262,24 @@
                                                 </TextBlock>
 
                                                 <!-- Azioni (solo se CanManage) -->
-                                                <WrapPanel Visibility="{Binding CanManage, Converter={StaticResource BoolToVis}}">
+                                                <WrapPanel Margin="0,0,0,5" Visibility="{Binding CanManage, Converter={StaticResource BoolToVis}}">
                                                     <Button Content="Registra Visita" 
                                                             Command="{Binding DataContext.RegisterVisitCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" 
                                                             CommandParameter="{Binding}" 
                                                             Style="{StaticResource MaterialDesignRaisedButton}" 
-                                                            Margin="0,0,10,0" />
+                                                            Margin="0,0,10,5" />
 
                                                     <Button Content="Riprogramma" 
                                                             Command="{Binding DataContext.RescheduleAppointmentCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" 
                                                             CommandParameter="{Binding}" 
                                                             Style="{StaticResource MaterialDesignOutlinedButton}" 
-                                                            Margin="0,0,10,0" />
+                                                            Margin="0,0,10,5" />
 
                                                     <Button Content="Segna Mancato" 
                                                             Command="{Binding DataContext.MarkAsMissedCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" 
                                                             CommandParameter="{Binding}" 
-                                                            Style="{StaticResource MaterialDesignOutlinedButton}" />
+                                                            Style="{StaticResource MaterialDesignOutlinedButton}" 
+                                                            Margin="0,0,0,5" />
                                                 </WrapPanel>
 
                                                 <!-- Status se completato/mancato -->
