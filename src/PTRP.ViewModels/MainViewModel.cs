@@ -7,6 +7,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MaterialDesignThemes.Wpf;
 using PTRP.Services.Interfaces;
+using PTRP.ViewModels.Calendar;
 using PTRP.ViewModels.Educators;
 using PTRP.ViewModels.Patients;
 using PTRP.ViewModels.Projects;
@@ -225,7 +226,7 @@ public partial class MainViewModel : ViewModelBase
                 Title = "Calendario",
                 IconKind = PackIconKind.Calendar,
                 BadgeCount = 0, // TODO: Aggiornato dinamicamente
-                // ViewModelType = typeof(CalendarViewModel) // TODO: FASE 2
+                ViewModelType = typeof(CalendarViewModel) // Issue #75: IMPLEMENTED
             },
             new MenuItemViewModel
             {
@@ -254,7 +255,7 @@ public partial class MainViewModel : ViewModelBase
                 Title = "I Miei Appuntamenti",
                 IconKind = PackIconKind.CalendarCheck,
                 BadgeCount = 0, // TODO: Aggiornato dinamicamente
-                // ViewModelType = typeof(MyAppointmentsViewModel) // TODO: FASE 2
+                ViewModelType = typeof(CalendarViewModel) // Issue #75: Educatore usa stesso calendario filtrato
             },
             new MenuItemViewModel
             {
@@ -300,6 +301,11 @@ public partial class MainViewModel : ViewModelBase
         else if (viewModel is ProjectListViewModel projectListViewModel)
         {
             await projectListViewModel.LoadProjectsAsync();
+        }
+        // Issue #75: Load calendar data when navigating to CalendarViewModel
+        else if (viewModel is CalendarViewModel calendarViewModel)
+        {
+            await calendarViewModel.LoadMonthAsync();
         }
         // TODO: Issue #50 - Uncomment when DashboardViewModel is implemented
         // else if (viewModel is DashboardViewModel dashboardViewModel)
@@ -591,8 +597,8 @@ public partial class MainViewModel : ViewModelBase
     [RelayCommand]
     private void NavigateToCalendar()
     {
-        ShowInfo("Calendario - In sviluppo (FASE 2)");
-        CurrentPageTitle = "Calendario";
+        // Issue #75: CalendarViewModel implementato
+        _navigationService.NavigateTo<CalendarViewModel>();
     }
     
     [RelayCommand]
