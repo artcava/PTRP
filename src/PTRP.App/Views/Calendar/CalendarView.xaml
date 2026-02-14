@@ -33,21 +33,24 @@
                        VerticalAlignment="Center" />
 
             <!-- Navigazione mese -->
-            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="10">
+            <StackPanel Grid.Column="2" Orientation="Horizontal">
                 <Button Command="{Binding GoToPreviousMonthCommand}" 
                         ToolTip="Mese precedente"
-                        Style="{StaticResource MaterialDesignIconButton}">
+                        Style="{StaticResource MaterialDesignIconButton}"
+                        Margin="0,0,5,0">
                     <materialDesign:PackIcon Kind="ChevronLeft" />
                 </Button>
 
                 <TextBlock Text="{Binding CurrentMonthDisplay}" 
                            FontSize="18" FontWeight="SemiBold" 
                            VerticalAlignment="Center" 
-                           MinWidth="150" TextAlignment="Center" />
+                           MinWidth="150" TextAlignment="Center"
+                           Margin="5,0" />
 
                 <Button Command="{Binding GoToNextMonthCommand}" 
                         ToolTip="Mese successivo"
-                        Style="{StaticResource MaterialDesignIconButton}">
+                        Style="{StaticResource MaterialDesignIconButton}"
+                        Margin="5,0">
                     <materialDesign:PackIcon Kind="ChevronRight" />
                 </Button>
 
@@ -138,16 +141,16 @@
                     <materialDesign:Card Padding="15" Margin="0,0,0,20">
                         <StackPanel>
                             <TextBlock Text="Legenda (Stato Progetto):" FontWeight="SemiBold" Margin="0,0,0,10" />
-                            <StackPanel Orientation="Horizontal" Spacing="15">
-                                <StackPanel Orientation="Horizontal">
+                            <StackPanel Orientation="Horizontal">
+                                <StackPanel Orientation="Horizontal" Margin="0,0,15,0">
                                     <Ellipse Width="12" Height="12" Fill="#28A745" VerticalAlignment="Center" />
                                     <TextBlock Text="Active" Margin="5,0,0,0" VerticalAlignment="Center" />
                                 </StackPanel>
-                                <StackPanel Orientation="Horizontal">
+                                <StackPanel Orientation="Horizontal" Margin="0,0,15,0">
                                     <Ellipse Width="12" Height="12" Fill="#FFC107" VerticalAlignment="Center" />
                                     <TextBlock Text="Suspended" Margin="5,0,0,0" VerticalAlignment="Center" />
                                 </StackPanel>
-                                <StackPanel Orientation="Horizontal">
+                                <StackPanel Orientation="Horizontal" Margin="0,0,15,0">
                                     <Ellipse Width="12" Height="12" Fill="#6C757D" VerticalAlignment="Center" />
                                     <TextBlock Text="Completed" Margin="5,0,0,0" VerticalAlignment="Center" />
                                 </StackPanel>
