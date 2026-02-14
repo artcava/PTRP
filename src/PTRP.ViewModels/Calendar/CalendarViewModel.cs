@@ -9,7 +9,7 @@ namespace PTRP.ViewModels.Calendar;
 /// </summary>
 public partial class CalendarViewModel : ViewModelBase
 {
-    public override string DisplayName => "Calendario";
+    public override string DisplayName => "Calendario Appuntamenti";
 
     #region Properties
 
@@ -219,6 +219,11 @@ public partial class CalendarViewModel : ViewModelBase
     #endregion
 
     #region Data Loading
+
+    /// <summary>
+    /// Alias per LoadMonthDataAsync() - usato da MainViewModel
+    /// </summary>
+    public Task LoadMonthAsync() => LoadMonthDataAsync();
 
     /// <summary>
     /// Carica dati del mese corrente
