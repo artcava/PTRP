@@ -213,82 +213,84 @@
 
                     <!-- Lista appuntamenti o messaggio vuoto -->
                     <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-                        <!-- Appuntamenti -->
-                        <ItemsControl ItemsSource="{Binding SelectedDayAppointments}" 
-                                      Visibility="{Binding HasSelectedDayAppointments, Converter={StaticResource BoolToVis}}">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <Border BorderBrush="{DynamicResource MaterialDesignDivider}" 
-                                            BorderThickness="0,0,0,1" 
-                                            Padding="0,10" Margin="0,0,0,10">
-                                        <StackPanel>
-                                            <!-- Tipo + Ora -->
-                                            <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
-                                                <Ellipse Width="10" Height="10" 
-                                                         Fill="{Binding ProjectStateBadgeColor}" 
-                                                         VerticalAlignment="Center" Margin="0,0,5,0" />
-                                                <TextBlock Text="{Binding VisitTypeDisplay}" FontWeight="SemiBold" />
-                                                <TextBlock Text=" - " />
-                                                <TextBlock Text="{Binding TimeDisplay}" />
+                        <Grid>
+                            <!-- Appuntamenti -->
+                            <ItemsControl ItemsSource="{Binding SelectedDayAppointments}" 
+                                          Visibility="{Binding HasSelectedDayAppointments, Converter={StaticResource BoolToVis}}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border BorderBrush="{DynamicResource MaterialDesignDivider}" 
+                                                BorderThickness="0,0,0,1" 
+                                                Padding="0,10" Margin="0,0,0,10">
+                                            <StackPanel>
+                                                <!-- Tipo + Ora -->
+                                                <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                                                    <Ellipse Width="10" Height="10" 
+                                                             Fill="{Binding ProjectStateBadgeColor}" 
+                                                             VerticalAlignment="Center" Margin="0,0,5,0" />
+                                                    <TextBlock Text="{Binding VisitTypeDisplay}" FontWeight="SemiBold" />
+                                                    <TextBlock Text=" - " />
+                                                    <TextBlock Text="{Binding TimeDisplay}" />
+                                                </StackPanel>
+
+                                                <!-- Paziente -->
+                                                <TextBlock Text="{Binding PatientName}" FontSize="15" Margin="0,0,0,3" />
+
+                                                <!-- Progetto -->
+                                                <TextBlock Margin="0,0,0,3">
+                                                    <Run Text="Progetto:" FontWeight="SemiBold" />
+                                                    <Run Text="{Binding ProjectTitle}" />
+                                                    <Run Text="(" />
+                                                    <Run Text="{Binding ProjectStateDisplay}" />
+                                                    <Run Text=")" />
+                                                </TextBlock>
+
+                                                <!-- Educatori -->
+                                                <TextBlock Margin="0,0,0,10">
+                                                    <Run Text="Educatori:" FontWeight="SemiBold" />
+                                                    <Run Text="{Binding EducatorNames}" />
+                                                </TextBlock>
+
+                                                <!-- Azioni (solo se CanManage) -->
+                                                <WrapPanel Visibility="{Binding CanManage, Converter={StaticResource BoolToVis}}">
+                                                    <Button Content="Registra Visita" 
+                                                            Command="{Binding DataContext.RegisterVisitCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" 
+                                                            CommandParameter="{Binding}" 
+                                                            Style="{StaticResource MaterialDesignRaisedButton}" 
+                                                            Margin="0,0,10,0" />
+
+                                                    <Button Content="Riprogramma" 
+                                                            Command="{Binding DataContext.RescheduleAppointmentCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" 
+                                                            CommandParameter="{Binding}" 
+                                                            Style="{StaticResource MaterialDesignOutlinedButton}" 
+                                                            Margin="0,0,10,0" />
+
+                                                    <Button Content="Segna Mancato" 
+                                                            Command="{Binding DataContext.MarkAsMissedCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" 
+                                                            CommandParameter="{Binding}" 
+                                                            Style="{StaticResource MaterialDesignOutlinedButton}" />
+                                                </WrapPanel>
+
+                                                <!-- Status se completato/mancato -->
+                                                <TextBlock Text="✅ Visita Registrata" 
+                                                           Foreground="Green" FontWeight="SemiBold" 
+                                                           Visibility="{Binding IsCompleted, Converter={StaticResource BoolToVis}}" />
+
+                                                <TextBlock Text="❌ Appuntamento Mancato" 
+                                                           Foreground="Red" FontWeight="SemiBold" 
+                                                           Visibility="{Binding IsMissed, Converter={StaticResource BoolToVis}}" />
                                             </StackPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
 
-                                            <!-- Paziente -->
-                                            <TextBlock Text="{Binding PatientName}" FontSize="15" Margin="0,0,0,3" />
-
-                                            <!-- Progetto -->
-                                            <TextBlock Margin="0,0,0,3">
-                                                <Run Text="Progetto:" FontWeight="SemiBold" />
-                                                <Run Text="{Binding ProjectTitle}" />
-                                                <Run Text="(" />
-                                                <Run Text="{Binding ProjectStateDisplay}" />
-                                                <Run Text=")" />
-                                            </TextBlock>
-
-                                            <!-- Educatori -->
-                                            <TextBlock Margin="0,0,0,10">
-                                                <Run Text="Educatori:" FontWeight="SemiBold" />
-                                                <Run Text="{Binding EducatorNames}" />
-                                            </TextBlock>
-
-                                            <!-- Azioni (solo se CanManage) -->
-                                            <WrapPanel Visibility="{Binding CanManage, Converter={StaticResource BoolToVis}}">
-                                                <Button Content="Registra Visita" 
-                                                        Command="{Binding DataContext.RegisterVisitCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" 
-                                                        CommandParameter="{Binding}" 
-                                                        Style="{StaticResource MaterialDesignRaisedButton}" 
-                                                        Margin="0,0,10,0" />
-
-                                                <Button Content="Riprogramma" 
-                                                        Command="{Binding DataContext.RescheduleAppointmentCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" 
-                                                        CommandParameter="{Binding}" 
-                                                        Style="{StaticResource MaterialDesignOutlinedButton}" 
-                                                        Margin="0,0,10,0" />
-
-                                                <Button Content="Segna Mancato" 
-                                                        Command="{Binding DataContext.MarkAsMissedCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" 
-                                                        CommandParameter="{Binding}" 
-                                                        Style="{StaticResource MaterialDesignOutlinedButton}" />
-                                            </WrapPanel>
-
-                                            <!-- Status se completato/mancato -->
-                                            <TextBlock Text="✅ Visita Registrata" 
-                                                       Foreground="Green" FontWeight="SemiBold" 
-                                                       Visibility="{Binding IsCompleted, Converter={StaticResource BoolToVis}}" />
-
-                                            <TextBlock Text="❌ Appuntamento Mancato" 
-                                                       Foreground="Red" FontWeight="SemiBold" 
-                                                       Visibility="{Binding IsMissed, Converter={StaticResource BoolToVis}}" />
-                                        </StackPanel>
-                                    </Border>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-
-                        <!-- Messaggio nessun appuntamento -->
-                        <TextBlock Text="{Binding NoAppointmentsMessage}" 
-                                   Foreground="Gray" FontStyle="Italic" 
-                                   TextAlignment="Center" VerticalAlignment="Center"
-                                   Visibility="{Binding HasSelectedDayAppointments, Converter={StaticResource InverseBoolToVis}}" />
+                            <!-- Messaggio nessun appuntamento -->
+                            <TextBlock Text="{Binding NoAppointmentsMessage}" 
+                                       Foreground="Gray" FontStyle="Italic" 
+                                       TextAlignment="Center" VerticalAlignment="Center"
+                                       Visibility="{Binding HasSelectedDayAppointments, Converter={StaticResource InverseBoolToVis}}" />
+                        </Grid>
                     </ScrollViewer>
                 </Grid>
             </materialDesign:Card>
