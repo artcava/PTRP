@@ -8,7 +8,7 @@ Questo documento descrive lo **schema logico del database SQLite** utilizzato da
 - **Database Locale**: SQLite criptato con AES-256
 - **Nessun SQL Server Esterno**: Ogni installazione è completamente autonoma
 - **Migrazioni EF Core**: Schema versionato e migrabile
-- **Idempotenza**: Seeding automatico alla prima esecuzione (vedi [SEED.md](../SEED.md))
+- **Idempotenza**: Seeding automatico alla prima esecuzione (vedi [SEED.md](./SEED.md))
 - **Integrità Referenziale**: FK con ON DELETE CASCADE/SET NULL secondo logica di dominio
 - **Audit Trail**: Timestamp CreatedAt/UpdatedAt su tutte le entità
 - **Offline-First Sync**: GUID come identificatori per sincronizzazione cross-database
